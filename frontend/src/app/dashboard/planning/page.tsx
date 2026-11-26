@@ -258,7 +258,7 @@ export default function PlanningPage() {
   return (
     <ModuleWorkspace
       title={tx("Planning")}
-      description="Advanced planning, MRP, MPS, capacity, simulation"
+      description={tx("Advanced planning, MRP, MPS, capacity, simulation")}
       permission="planning.view"
       tabs={tabs}
       defaultTab="advanced"

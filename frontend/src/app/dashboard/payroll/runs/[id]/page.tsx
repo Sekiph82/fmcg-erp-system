@@ -12,7 +12,7 @@ const kes = (v: unknown) => `KES ${Number(v ?? 0).toLocaleString(undefined, { mi
 
 function errorText(e: unknown): string {
   const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
-  return typeof d === "string" ? d : "The action failed.";
+  return typeof d === "string" ? d : tx("The action failed.");
 }
 
 function PayrollRunDetail({ id }: { id: string }) {
@@ -39,9 +39,9 @@ function PayrollRunDetail({ id }: { id: string }) {
     Number(((l.components_json as { employer?: { total?: number } } | undefined)?.employer?.total) ?? 0);
   const employerTotal = lines.reduce((s, l) => s + employerOf(l), 0);
   const totals: [string, unknown][] = [
-    ["Gross", run.total_gross], ["PAYE", run.total_paye], ["NSSF", run.total_nssf],
-    ["SHIF / NHIF", run.total_nhif], ["Housing levy", run.total_housing_levy], ["Net pay", run.total_net],
-    ["Employer contributions", employerTotal], ["Total cost to company", Number(run.total_gross) + employerTotal],
+    [tx("Gross"), run.total_gross], ["PAYE", run.total_paye], ["NSSF", run.total_nssf],
+    [tx("SHIF / NHIF"), run.total_nhif], [tx("Housing levy"), run.total_housing_levy], [tx("Net pay"), run.total_net],
+    [tx("Employer contributions"), employerTotal], [tx("Total cost to company"), Number(run.total_gross) + employerTotal],
   ];
   const actionError = calculate.error || approve.error;
 

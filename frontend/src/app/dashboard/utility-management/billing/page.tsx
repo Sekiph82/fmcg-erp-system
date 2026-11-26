@@ -107,7 +107,7 @@ function PostToGLModal({
     onSuccess: (result) => {
       qc.invalidateQueries({ queryKey: ["bills"] });
       qc.invalidateQueries({ queryKey: ["billing-kpis"] });
-      onSuccess(`Bill posted to GL: ${result.entry_no}`);
+      onSuccess(tx("Bill posted to GL: {entry_no}", { entry_no: result.entry_no }));
       onClose();
     },
   });
@@ -1371,7 +1371,7 @@ export default function UtilityBillingPage() {
                     <CartesianGrid strokeDasharray="3 3" horizontal={false} />
                     <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={v => fmt(v, 0)} />
                     <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={115} />
-                    <Tooltip formatter={(v: unknown) => [fmt(v as number | null | undefined), "Allocated Cost"]} />
+                    <Tooltip formatter={(v: unknown) => [fmt(v as number | null | undefined), tx("Allocated Cost")]} />
                     <Bar dataKey="cost" radius={[0, 4, 4, 0]}>
                       {report.rows.slice(0, 20).map((r, i) => (
                         <Cell key={i} fill={UTILITY_TYPE_COLORS[r.utility_type as UtilityTypeBilling] ?? "#60a5fa"} />

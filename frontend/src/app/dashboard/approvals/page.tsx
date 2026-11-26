@@ -8,20 +8,20 @@ import {
 } from "@/lib/approvals";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
-const MODULE_LABELS: Record<ApprovalModule, string> = {
-  PURCHASE_ORDER:       "Purchase Order",
-  PURCHASE_REQUISITION: "Purchase Requisition",
-  BUDGET:               "Budget",
-  PRODUCTION_ORDER:     "Production Order",
-  SALES_INVOICE:        "Sales Invoice",
-  EXPENSE:              "Expense",
-  CONTRACT:             "Contract",
-  PRICE_LIST:           "Price List",
-  CREDIT_NOTE:          "Credit Note",
-  OTHER:                "Other",
-};
+const MODULE_LABELS: Record<ApprovalModule, string> = lx(() => ({
+  PURCHASE_ORDER:       tx("Purchase Order"),
+  PURCHASE_REQUISITION: tx("Purchase Requisition"),
+  BUDGET:               tx("Budget"),
+  PRODUCTION_ORDER:     tx("Production Order"),
+  SALES_INVOICE:        tx("Sales Invoice"),
+  EXPENSE:              tx("Expense"),
+  CONTRACT:             tx("Contract"),
+  PRICE_LIST:           tx("Price List"),
+  CREDIT_NOTE:          tx("Credit Note"),
+  OTHER:                tx("Other"),
+}));
 
 function fmtDate(s?: string | null) {
   if (!s) return "—";
@@ -111,9 +111,9 @@ export default function ApprovalsPage() {
       {/* Tabs */}
       <div className="flex gap-1 border-b">
         {([
-          { key: "inbox", label: `My Inbox${inbox.length ? ` (${inbox.length})` : ""}` },
-          { key: "all",   label: "All Requests" },
-          { key: "rules", label: "Approval Rules" },
+          { key: "inbox", label: tx("My Inbox{inbox}", { inbox: inbox.length ? ` (${inbox.length})` : "" }) },
+          { key: "all",   label: tx("All Requests") },
+          { key: "rules", label: tx("Approval Rules") },
         ] as const).map((t) => (
           <button
             key={t.key}

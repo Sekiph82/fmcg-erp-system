@@ -150,7 +150,7 @@ export default function TrainingProgramsPage() {
                   {(() => {
                     const e = effectiveness[p.training_id] as { feedback_count: number; avg_rating?: number };
                     return e.feedback_count === 0
-                      ? "No feedback yet."
+                      ? tx("No feedback yet.")
                       : `${e.feedback_count} responses · Avg Rating: ${e.avg_rating}/5`;
                   })()}
                 </div>

@@ -56,13 +56,13 @@ function AIDashboardTab() {
   const generatePreds = useMutation({
     mutationFn: () => aiApi.generatePredictions(),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["ai-dashboard"] }),
-    onError: (err) => { const e = parseAIError(err); alert(e.message + (e.resetAt ? ` Reset at: ${new Date(e.resetAt).toLocaleTimeString()}` : "")); },
+    onError: (err) => { const e = parseAIError(err); alert(e.message + (e.resetAt ? tx(" Reset at: {date}", { date: new Date(e.resetAt).toLocaleTimeString() }) : "")); },
   });
 
   const generateRecs = useMutation({
     mutationFn: () => aiApi.generateRecommendations(),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["ai-dashboard"] }),
-    onError: (err) => { const e = parseAIError(err); alert(e.message + (e.resetAt ? ` Reset at: ${new Date(e.resetAt).toLocaleTimeString()}` : "")); },
+    onError: (err) => { const e = parseAIError(err); alert(e.message + (e.resetAt ? tx(" Reset at: {date}", { date: new Date(e.resetAt).toLocaleTimeString() }) : "")); },
   });
 
   const actionRec = useMutation({
@@ -263,7 +263,7 @@ export default function AIPage() {
   return (
     <ModuleWorkspace
       title="AI"
-      description="AI copilot, predictions, formulations, scenarios, governance"
+      description={tx("AI copilot, predictions, formulations, scenarios, governance")}
       permission="ai.view"
       tabs={tabs}
       defaultTab="dashboard"

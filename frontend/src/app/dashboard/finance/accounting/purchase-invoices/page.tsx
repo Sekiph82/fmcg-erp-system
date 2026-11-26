@@ -73,7 +73,7 @@ function PaymentModal({
           </div>
           <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1">{tx("Amount (KES)")}</label>
-            <input type="number" step="0.01" value={form.amount} placeholder={`Max: ${outstanding.toFixed(2)}`}
+            <input type="number" step="0.01" value={form.amount} placeholder={tx("Max: {outstanding}", { outstanding: outstanding.toFixed(2) })}
               onChange={(e) => setForm(f => ({ ...f, amount: e.target.value }))}
               className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300" />
           </div>

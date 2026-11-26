@@ -39,10 +39,10 @@ export function TranscriptReview({ callId, hasConsentedRecording }: { callId: st
 
   async function act(fn: () => Promise<unknown>, ok: string) {
     setBusy(true);
-    try { await fn(); setMsg(ok); setDrafts({}); await load(); } catch (e) { setMsg(detail(e, "That did not work.")); } finally { setBusy(false); }
+    try { await fn(); setMsg(ok); setDrafts({}); await load(); } catch (e) { setMsg(detail(e, tx("That did not work."))); } finally { setBusy(false); }
   }
   const available = engines.some((e) => e.state === "AVAILABLE");
-  const startReason = !hasConsentedRecording ? "Needs a consented https recording." : !available ? "No engine is available (see below)." : undefined;
+  const startReason = !hasConsentedRecording ? tx("Needs a consented https recording.") : !available ? tx("No engine is available (see below).") : undefined;
   const btn = "rounded border px-2 py-1 text-xs disabled:opacity-40 disabled:cursor-not-allowed";
 
   return (
@@ -52,7 +52,7 @@ export function TranscriptReview({ callId, hasConsentedRecording }: { callId: st
           <option value="auto">{tx("Auto-detect")}</option><option value="en">{tx("English")}</option><option value="sw">{tx("Kiswahili")}</option><option value="tr">{tx("Turkce")}</option></select></label>
         <label title={tx("Speaker labels come from the diarization model; sw/tr quality is not verified.")}><input type="checkbox" checked={diarize} onChange={(e) => setDiarize(e.target.checked)} /> {tx("Speaker labels")}</label>
         <button className={btn} disabled={busy || !!startReason || (!!job && job.status !== "FAILED")} title={startReason}
-          onClick={() => act(() => apiClient.post(BASE, { source_type: "call", source_id: callId, language: lang, diarize }), "Transcription finished; review it before approving.")}>{tx("Start transcription")}</button>
+          onClick={() => act(() => apiClient.post(BASE, { source_type: "call", source_id: callId, language: lang, diarize }), tx("Transcription finished; review it before approving."))}>{tx("Start transcription")}</button>
         {startReason && <span className="text-gray-500">{startReason}</span>}
       </div>
       <ul className="text-gray-600">
@@ -74,25 +74,25 @@ export function TranscriptReview({ callId, hasConsentedRecording }: { callId: st
             return (
               <div key={i} className="flex gap-1 items-start">
                 <span className="w-12 text-gray-400">{s.start !== null ? `${s.start.toFixed(1)}s` : ""}</span>
-                <input className="border rounded px-1 w-20" aria-label={`Speaker ${i + 1}`} value={d.speaker} placeholder={tx("speaker")} maxLength={20} onChange={(e) => setDrafts({ ...drafts, [i]: { ...d, speaker: e.target.value } })} />
-                <textarea className="border rounded px-1 flex-1" aria-label={`Segment ${i + 1}`} rows={2} maxLength={4000} value={d.text} onChange={(e) => setDrafts({ ...drafts, [i]: { ...d, text: e.target.value } })} />
+                <input className="border rounded px-1 w-20" aria-label={tx("Speaker {i}", { i: i + 1 })} value={d.speaker} placeholder={tx("speaker")} maxLength={20} onChange={(e) => setDrafts({ ...drafts, [i]: { ...d, speaker: e.target.value } })} />
+                <textarea className="border rounded px-1 flex-1" aria-label={tx("Segment {i}", { i: i + 1 })} rows={2} maxLength={4000} value={d.text} onChange={(e) => setDrafts({ ...drafts, [i]: { ...d, text: e.target.value } })} />
                 <button className={btn} disabled={busy || !drafts[i] || (d.text === s.text && d.speaker === (s.speaker ?? ""))}
-                  onClick={() => act(() => apiClient.patch(`${BASE}/${job.id}/segments/${i}`, { text: d.text, speaker: d.speaker }), "Segment saved.")}>{s.edited ? tx("Saved*") : tx("Save")}</button>
+                  onClick={() => act(() => apiClient.patch(`${BASE}/${job.id}/segments/${i}`, { text: d.text, speaker: d.speaker }), tx("Segment saved."))}>{s.edited ? tx("Saved*") : tx("Save")}</button>
               </div>
             );
           })}
           <div className="flex gap-2">
             <button className={btn} disabled={busy || job.status !== "DONE" || job.review_status === "REVIEWED"} title={job.status !== "DONE" ? tx("Only a finished transcript can be approved.") : undefined}
-              onClick={() => act(() => apiClient.post(`${BASE}/${job.id}/approve`), "Approved: coaching can now use this transcript.")}>{tx("Approve for coaching")}</button>
+              onClick={() => act(() => apiClient.post(`${BASE}/${job.id}/approve`), tx("Approved: coaching can now use this transcript."))}>{tx("Approve for coaching")}</button>
             {job.status === "FAILED" && <button className={btn} disabled={busy} onClick={() => act(() => apiClient.post(`${BASE}/${job.id}/retry`), "Retried.")}>{tx("Retry")}</button>}
             <button className="rounded border border-red-300 text-red-700 px-2 py-1 text-xs disabled:opacity-40" disabled={busy || job.status === "WITHDRAWN"}
-              onClick={() => { if (confirm(tx("Withdraw this transcript? The text, edits and coaching notes quoted from it are deleted."))) act(() => apiClient.post(`${BASE}/${job.id}/withdraw`), "Transcript withdrawn."); }}>{tx("Withdraw")}</button>
+              onClick={() => { if (confirm(tx("Withdraw this transcript? The text, edits and coaching notes quoted from it are deleted."))) act(() => apiClient.post(`${BASE}/${job.id}/withdraw`), tx("Transcript withdrawn.")); }}>{tx("Withdraw")}</button>
           </div>
           {job.status === "FAILED" && (
             <div className="space-y-1">
               <p className="text-gray-600">{tx("Fallback: type or paste the transcript yourself (one line per segment).")}</p>
               <textarea className="border rounded w-full px-1" rows={3} aria-label={tx("Manual transcript")} value={manual} onChange={(e) => setManual(e.target.value)} />
-              <button className={btn} disabled={busy || manual.trim().length < 3} onClick={() => act(() => apiClient.put(`${BASE}/${job.id}/manual`, { text: manual }), "Manual transcript saved.")}>{tx("Use typed transcript")}</button>
+              <button className={btn} disabled={busy || manual.trim().length < 3} onClick={() => act(() => apiClient.put(`${BASE}/${job.id}/manual`, { text: manual }), tx("Manual transcript saved."))}>{tx("Use typed transcript")}</button>
             </div>
           )}
         </div>

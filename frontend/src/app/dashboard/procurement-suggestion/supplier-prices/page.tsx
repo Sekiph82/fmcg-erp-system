@@ -66,13 +66,13 @@ function PriceForm({
       <div className="grid grid-cols-2 gap-3">
         {field("Supplier ID", "supplier_id")}
         {field("Material ID", "material_id")}
-        {field("Unit Price", "unit_price", "number")}
+        {field(tx("Unit Price"), "unit_price", "number")}
         {field("Currency", "currency")}
         {field("MOQ", "moq", "number")}
-        {field("Pack Size", "pack_size", "number")}
-        {field("Lead Time Days", "lead_time_days", "number")}
-        {field("Buffer Days", "buffer_days", "number")}
-        {field("Customs Days", "customs_days", "number")}
+        {field(tx("Pack Size"), "pack_size", "number")}
+        {field(tx("Lead Time Days"), "lead_time_days", "number")}
+        {field(tx("Buffer Days"), "buffer_days", "number")}
+        {field(tx("Customs Days"), "customs_days", "number")}
         <div>
           <label className="text-xs text-gray-600 block mb-0.5">{tx("Priority")}</label>
           <select
@@ -83,10 +83,10 @@ function PriceForm({
             {PRIORITY_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
-        {field("Reliability Score (0-100)", "reliability_score", "number")}
-        {field("Contract No", "contract_no")}
-        {field("Valid From", "valid_from", "date")}
-        {field("Valid To", "valid_to", "date")}
+        {field(tx("Reliability Score (0-100)"), "reliability_score", "number")}
+        {field(tx("Contract No"), "contract_no")}
+        {field(tx("Valid From"), "valid_from", "date")}
+        {field(tx("Valid To"), "valid_to", "date")}
       </div>
       <div>
         <label className="text-xs text-gray-600">{tx("Notes")}</label>

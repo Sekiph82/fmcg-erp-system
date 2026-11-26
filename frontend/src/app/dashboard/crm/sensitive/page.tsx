@@ -6,7 +6,7 @@ import { apiClient } from "@/lib/api";
 import { tx } from "@/lib/i18n/core";
 
 type F = { entity: string; field: string; sensitive: boolean; retention_days: number | null };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 
 // M47.S01.T010 field-level permissions: role → field → hidden / read-only (superusers and roles.manage are exempt)
 type Rule = { id: string; entity: string; role_name: string; field_key: string; access: string };
@@ -47,17 +47,17 @@ export default function SensitivePage() {
   return (
     <div className="p-4 space-y-4 text-sm">
       <h2 className="text-lg font-semibold">{tx("Sensitive data")}</h2>
-      <p className="text-xs text-gray-500">{tx("Classified fields are masked in screens, the API and exports for anyone without the \"View sensitive data\" right. Custom fields use their own \"sensitive\" flag. Every reveal is audited.")}{pol ? ` You ${pol.can_view ? "can" : "cannot"} see them.` : ""}</p>
+      <p className="text-xs text-gray-500">{tx("Classified fields are masked in screens, the API and exports for anyone without the \"View sensitive data\" right. Custom fields use their own \"sensitive\" flag. Every reveal is audited.")}{pol ? (pol.can_view ? tx(" You can see them.") : tx(" You cannot see them.")) : ""}</p>
       {msg && <p role="status" className="text-xs">{msg}</p>}
       {pol && <table className="text-xs bg-white border w-full max-w-2xl"><thead><tr className="bg-gray-50 text-left"><th className="p-1">{tx("Record")}</th><th>{tx("Field")}</th><th>{tx("Sensitive")}</th><th>{tx("Clear after inactive (days)")}</th></tr></thead>
         <tbody>{pol.fields.map((f) => <tr key={f.entity + f.field} className="border-t"><td className="p-1">{f.entity}</td><td>{f.field}</td>
           <td><input type="checkbox" aria-label={tx("{entity} {field} sensitive", { entity: f.entity, field: f.field })} checked={f.sensitive} onChange={(e) => set(f, { sensitive: e.target.checked })} /></td>
           <td><input aria-label={tx("{entity} {field} retention", { entity: f.entity, field: f.field })} type="number" min={30} className="border rounded px-1 w-24" defaultValue={f.retention_days ?? ""} onBlur={(e) => set(f, { retention_days: e.target.value ? +e.target.value : null })} /></td></tr>)}</tbody></table>}
       <section className="border rounded p-3 bg-white space-y-2 max-w-2xl"><h3 className="font-semibold">{tx("Reveal one value")}</h3>
-        <div className="flex flex-wrap gap-2 text-xs"><select aria-label={tx("Record type")} className="border rounded px-1" value={rev.entity} onChange={(e) => setRev({ ...rev, entity: e.target.value })}><option>{tx("customer")}</option><option>{tx("contact")}</option></select>
+        <div className="flex flex-wrap gap-2 text-xs"><select aria-label={tx("Record type")} className="border rounded px-1" value={rev.entity} onChange={(e) => setRev({ ...rev, entity: e.target.value })}><option value="customer">{tx("customer")}</option><option value="contact">{tx("contact")}</option></select>
           <input aria-label={tx("Record id")} className="border rounded px-1 w-72" placeholder={tx("record id")} value={rev.record_id} onChange={(e) => setRev({ ...rev, record_id: e.target.value })} />
           <input aria-label={tx("Field")} className="border rounded px-1 w-28" value={rev.field} onChange={(e) => setRev({ ...rev, field: e.target.value })} />
-          <button className="border rounded px-2" onClick={() => apiClient.post("/api/v1/sensitive-data/reveal", rev).then((r) => setMsg(`Value: ${r.data.value ?? "(empty)"} (this reveal was logged)`)).catch((e) => setMsg(err(e)))}>{tx("Reveal")}</button></div></section>
+          <button className="border rounded px-2" onClick={() => apiClient.post("/api/v1/sensitive-data/reveal", rev).then((r) => setMsg(tx("Value: {value} (this reveal was logged)", { value: r.data.value ?? "(empty)" }))).catch((e) => setMsg(err(e)))}>{tx("Reveal")}</button></div></section>
       <FieldPermissions />
     </div>
   );

@@ -7,7 +7,7 @@ import { tx } from "@/lib/i18n/core";
 
 type Sess = { id: string; actor: string; target: string; reason: string; started_at: string; expires_at: string; ended_at: string | null; ended_reason: string | null };
 type Pol = { notification_type: string; channel: string; default_enabled: boolean; mandatory: boolean };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 
 export default function SupportAccessPage() {
   const [q, setQ] = useState("");
@@ -43,7 +43,7 @@ export default function SupportAccessPage() {
           <button className="bg-red-700 text-white rounded px-3 py-1" disabled={!target || reason.trim().length < 10} onClick={start}>{tx("Start support session")}</button></div>
       </section>
       <section className="border rounded p-3 bg-white space-y-1"><h3 className="font-semibold">{tx("Support sessions")}</h3>
-        <ul className="text-xs divide-y">{sessions.map((s) => <li key={s.id} className="py-1">{new Date(s.started_at).toLocaleString()} · <b>{s.actor}</b> {tx("as")} <b>{s.target}</b> · {s.reason} · {s.ended_at ? `${(s.ended_reason ?? "").toLowerCase()} ${new Date(s.ended_at).toLocaleTimeString()}` : `until ${new Date(s.expires_at).toLocaleTimeString()}`}</li>)}</ul></section>
+        <ul className="text-xs divide-y">{sessions.map((s) => <li key={s.id} className="py-1">{new Date(s.started_at).toLocaleString()} · <b>{s.actor}</b> {tx("as")} <b>{s.target}</b> · {s.reason} · {s.ended_at ? `${(s.ended_reason ?? "").toLowerCase()} ${new Date(s.ended_at).toLocaleTimeString()}` : tx("until {date}", { date: new Date(s.expires_at).toLocaleTimeString() })}</li>)}</ul></section>
       {pols && <section className="border rounded p-3 bg-white space-y-1 overflow-x-auto"><h3 className="font-semibold">{tx("Company notification defaults")}</h3>
         <p className="text-xs text-gray-500">{tx("Users can change non-mandatory notifications for themselves; mandatory ones are always delivered.")}</p>
         <table className="text-xs"><thead><tr><th className="text-left p-1">{tx("Type")}</th>{pols.channels.map((c) => <th key={c} className="p-1">{c}</th>)}</tr></thead>

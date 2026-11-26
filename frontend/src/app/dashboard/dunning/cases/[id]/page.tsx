@@ -82,10 +82,10 @@ export default function DunningCaseDetail() {
 
   const TABS: { key: Tab; label: string }[] = [
     { key: "overview", label: tx("Overview") },
-    { key: "invoices", label: `Invoices (${invoices.length})` },
-    { key: "timeline", label: `Timeline (${actions.length})` },
-    { key: "ptps", label: `PTPs (${ptps.length})` },
-    { key: "exceptions", label: `Exceptions (${exceptions.length})` },
+    { key: "invoices", label: tx("Invoices ({length})", { length: invoices.length }) },
+    { key: "timeline", label: tx("Timeline ({length})", { length: actions.length }) },
+    { key: "ptps", label: tx("PTPs ({length})", { length: ptps.length }) },
+    { key: "exceptions", label: tx("Exceptions ({length})", { length: exceptions.length }) },
   ];
 
   return (
@@ -146,13 +146,13 @@ export default function DunningCaseDetail() {
               <h3 className="font-semibold text-gray-900 mb-3">{tx("Case Summary")}</h3>
               <div className="space-y-2 text-sm">
                 {[
-                  ["Total Overdue", `${Number(dc.total_overdue_amount).toLocaleString()}`],
-                  ["Oldest Due Date", dc.oldest_due_date || "—"],
-                  ["Current Level", `Level ${dc.current_level_no}`],
-                  ["Next Action Date", dc.next_action_date || "—"],
-                  ["Last Action", dc.latest_action_date ? new Date(dc.latest_action_date).toLocaleDateString() : "—"],
-                  ["Credit Hold", dc.credit_hold_flag ? `YES — ${dc.credit_hold_date}` : "No"],
-                  ["Hold Reason", dc.credit_hold_reason || "—"],
+                  [tx("Total Overdue"), `${Number(dc.total_overdue_amount).toLocaleString()}`],
+                  [tx("Oldest Due Date"), dc.oldest_due_date || "—"],
+                  [tx("Current Level"), tx("Level {current_level_no}", { current_level_no: dc.current_level_no })],
+                  [tx("Next Action Date"), dc.next_action_date || "—"],
+                  [tx("Last Action"), dc.latest_action_date ? new Date(dc.latest_action_date).toLocaleDateString() : "—"],
+                  [tx("Credit Hold"), dc.credit_hold_flag ? tx("YES — {credit_hold_date}", { credit_hold_date: dc.credit_hold_date }) : "No"],
+                  [tx("Hold Reason"), dc.credit_hold_reason || "—"],
                 ].map(([k, v]) => (
                   <div key={String(k)} className="flex justify-between">
                     <span className="text-gray-500">{k}</span>

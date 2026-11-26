@@ -77,32 +77,32 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 function AssetDetailView({ asset, onClose }: { asset: UtilityAsset; onClose: () => void }) {
   const rows: [string, string | null | undefined][] = [
-    ["Asset Code", asset.asset_no],
-    ["Name", asset.name],
-    ["Category", asset.category_name ? `${asset.category_name} (${asset.category_code})` : asset.category_code],
-    ["Utility Type", UTILITY_TYPE_LABELS[asset.utility_type]],
-    ["Operating Status", ASSET_STATUS_LABELS[asset.status]],
-    ["Lifecycle Status", asset.lifecycle_status ? LIFECYCLE_STATUS_LABELS[asset.lifecycle_status] : null],
-    ["Criticality", asset.criticality_level ? CRITICALITY_LABELS[asset.criticality_level] : null],
-    ["Subsystem", asset.subsystem],
-    ["Location", asset.location],
-    ["Department", asset.department],
-    ["Building/Area", asset.building_area],
-    ["Line ID", asset.line_id],
-    ["Machine ID", asset.machine_id],
-    ["Parent Asset", asset.parent_asset_no],
-    ["Manufacturer", asset.manufacturer],
-    ["Model", asset.equipment_model],
-    ["Serial No.", asset.serial_no],
-    ["Install/Commission Date", asset.install_date],
-    ["Warranty Expiry", asset.warranty_expiry],
-    ["Rated Capacity", asset.rated_capacity ? `${asset.rated_capacity} ${asset.capacity_unit ?? ""}`.trim() : null],
-    ["Rated Power", asset.rated_power ? `${asset.rated_power} ${asset.rated_power_unit ?? ""}`.trim() : null],
-    ["Flow Capacity", asset.flow_capacity ? String(asset.flow_capacity) : null],
-    ["Pressure Capacity", asset.pressure_capacity ? String(asset.pressure_capacity) : null],
-    ["Temperature Range", asset.temperature_range],
-    ["Maintenance Strategy", asset.maintenance_strategy],
-    ["Notes", asset.notes],
+    [tx("Asset Code"), asset.asset_no],
+    [tx("Name"), asset.name],
+    [tx("Category"), asset.category_name ? `${asset.category_name} (${asset.category_code})` : asset.category_code],
+    [tx("Utility Type"), UTILITY_TYPE_LABELS[asset.utility_type]],
+    [tx("Operating Status"), ASSET_STATUS_LABELS[asset.status]],
+    [tx("Lifecycle Status"), asset.lifecycle_status ? LIFECYCLE_STATUS_LABELS[asset.lifecycle_status] : null],
+    [tx("Criticality"), asset.criticality_level ? CRITICALITY_LABELS[asset.criticality_level] : null],
+    [tx("Subsystem"), asset.subsystem],
+    [tx("Location"), asset.location],
+    [tx("Department"), asset.department],
+    [tx("Building/Area"), asset.building_area],
+    [tx("Line ID"), asset.line_id],
+    [tx("Machine ID"), asset.machine_id],
+    [tx("Parent Asset"), asset.parent_asset_no],
+    [tx("Manufacturer"), asset.manufacturer],
+    [tx("Model"), asset.equipment_model],
+    [tx("Serial No."), asset.serial_no],
+    [tx("Install/Commission Date"), asset.install_date],
+    [tx("Warranty Expiry"), asset.warranty_expiry],
+    [tx("Rated Capacity"), asset.rated_capacity ? `${asset.rated_capacity} ${asset.capacity_unit ?? ""}`.trim() : null],
+    [tx("Rated Power"), asset.rated_power ? `${asset.rated_power} ${asset.rated_power_unit ?? ""}`.trim() : null],
+    [tx("Flow Capacity"), asset.flow_capacity ? String(asset.flow_capacity) : null],
+    [tx("Pressure Capacity"), asset.pressure_capacity ? String(asset.pressure_capacity) : null],
+    [tx("Temperature Range"), asset.temperature_range],
+    [tx("Maintenance Strategy"), asset.maintenance_strategy],
+    [tx("Notes"), asset.notes],
   ];
   return (
     <div className="space-y-1">
@@ -346,7 +346,7 @@ export default function UtilityAssetsPage() {
             keyField="id"
             data={filteredAssets}
             emptyMessage={
-              search ? "No assets match your search." : "No utility assets registered yet."
+              search ? tx("No assets match your search.") : tx("No utility assets registered yet.")
             }
             columns={[
               {

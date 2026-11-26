@@ -50,7 +50,7 @@ export default function MaintenanceReportsPage() {
         <div className="bg-white rounded-lg border p-5">
           <p className="text-xs text-gray-500 uppercase tracking-wide">{tx("Worst Asset")}</p>
           <p className="text-xl font-bold mt-1 text-gray-800 truncate">{worstAsset?.asset_name ?? "—"}</p>
-          <p className="text-xs text-gray-400 mt-1">{worstAsset ? `${(worstAsset.total_downtime_minutes / 60).toFixed(1)} hrs downtime` : tx("No data")}</p>
+          <p className="text-xs text-gray-400 mt-1">{worstAsset ? tx("{total_downtime_minutes} hrs downtime", { total_downtime_minutes: (worstAsset.total_downtime_minutes / 60).toFixed(1) }) : tx("No data")}</p>
         </div>
         <div className="bg-white rounded-lg border p-5">
           <p className="text-xs text-gray-500 uppercase tracking-wide">{tx("Best MTBF")}</p>

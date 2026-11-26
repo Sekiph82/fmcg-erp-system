@@ -9,7 +9,7 @@ type Acl = { id: string; name: string; account_ids: string[]; account_types: str
 type Account = { id: string; code: string; name: string | null; type: string; status: string };
 type Media = { id: string; kind: string; title: string; mime: string; size: number; captions: string[]; podcast: string | null; public: boolean; access_list_id: string | null; views: number;
   page_id: string | null; poster: boolean };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : typeof (d as { detail?: unknown })?.detail === "string" ? (d as { detail: string }).detail : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : typeof (d as { detail?: unknown })?.detail === "string" ? (d as { detail: string }).detail : tx("Something went wrong."); };
 
 export default function MembersMediaPage() {
   const [acls, setAcls] = useState<Acl[]>([]);
@@ -66,12 +66,12 @@ export default function MembersMediaPage() {
             <option value="">{tx("Staff only (not shown)")}</option><option value="PUBLIC">{tx("Public")}</option>{acls.map((a) => <option key={a.id} value={a.id}>{tx("Members:")} {a.name}</option>)}</select>
           <button className="bg-indigo-600 text-white rounded px-3 py-1" onClick={upload} disabled={!up.file}>{tx("Upload")}</button></div>
         <ul className="divide-y">{media.length === 0 ? <li className="py-1 text-gray-500">{tx("No media yet.")}</li> : media.map((m) => <li key={m.id} className="py-1 space-y-1">
-          <div className="flex flex-wrap justify-between gap-2"><span><b>{m.title}</b> · {m.kind.toLowerCase()} · {(m.size / 1048576).toFixed(1)} {tx("MB ·")} {m.public ? tx("public") : m.access_list_id ? `members: ${acls.find((a) => a.id === m.access_list_id)?.name ?? "list"}` : tx("staff only")}
+          <div className="flex flex-wrap justify-between gap-2"><span><b>{m.title}</b> · {m.kind.toLowerCase()} · {(m.size / 1048576).toFixed(1)} {tx("MB ·")} {m.public ? tx("public") : m.access_list_id ? tx("members: {find}", { find: acls.find((a) => a.id === m.access_list_id)?.name ?? "list" }) : tx("staff only")}
             {m.podcast ? tx(" · podcast {podcast}", { podcast: m.podcast }) : ""}{m.page_id ? tx(" · page narration") : ""}{m.poster ? tx(" · poster set") : ""} {tx("· captions")} {m.captions.join(", ") || tx("none")} · {m.views} {tx("plays · id")} <code className="select-all">{m.id}</code></span>
             <span className="flex gap-2"><button className="underline" onClick={() => setCap({ id: m.id, locale: "en", vtt: "WEBVTT\n\n00:00.000 --> 00:03.000\n" })}>{tx("Captions")}</button>
               <button className="underline" onClick={() => setCut(cut?.id === m.id ? null : { id: m.id, at: "0", start: "0", end: "10" })}>{tx("Poster / Trim")}</button>
               <button className="underline" onClick={() => apiClient.get(`/api/v1/cms/media/${m.id}/views`).then((r) => setViews({ id: m.id, rows: r.data }))}>{tx("Plays")}</button></span></div>
-          {cap?.id === m.id && <div className="space-y-1"><select aria-label={tx("Caption language")} className="border rounded" value={cap.locale} onChange={(e) => setCap({ ...cap, locale: e.target.value })}>{[tx("en"), tx("sw"), tx("tr")].map((l) => <option key={l}>{l}</option>)}</select>
+          {cap?.id === m.id && <div className="space-y-1"><select aria-label={tx("Caption language")} className="border rounded" value={cap.locale} onChange={(e) => setCap({ ...cap, locale: e.target.value })}>{[tx("en"), tx("sw"), tx("tr")].map((l) => <option key={l} value={l}>{l}</option>)}</select>
             <textarea aria-label={tx("WebVTT captions")} rows={5} className="border rounded w-full font-mono" value={cap.vtt} onChange={(e) => setCap({ ...cap, vtt: e.target.value })} />
             <button className="border rounded px-2" onClick={() => apiClient.put(`/api/v1/cms/media/${m.id}/captions/${cap.locale}`, { vtt: cap.vtt }).then(() => { setCap(null); load(); }).catch((e) => setMsg(err(e)))}>{tx("Save captions")}</button></div>}
           {cut?.id === m.id && <div className="flex flex-wrap gap-2 items-center">

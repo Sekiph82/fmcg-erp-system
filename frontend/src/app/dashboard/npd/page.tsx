@@ -245,7 +245,7 @@ export default function NPDPage() {
   return (
     <ModuleWorkspace
       title="NPD"
-      description="New product development, formulation trials, stage-gate"
+      description={tx("New product development, formulation trials, stage-gate")}
       permission="npd.view"
       tabs={tabs}
       defaultTab="npd"

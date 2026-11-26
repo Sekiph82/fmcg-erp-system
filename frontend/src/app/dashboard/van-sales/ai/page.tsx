@@ -1,13 +1,13 @@
 "use client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { vanSalesApi, SEVERITY_COLORS } from "@/lib/van_sales";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
-const AGENT_LABELS: Record<string, string> = {
-  ROUTE_OPTIMIZER: "Route Optimizer",
-  SALES_ASSISTANT: "Sales Assistant",
-  RISK_MONITOR:    "Risk Monitor",
-};
+const AGENT_LABELS: Record<string, string> = lx(() => ({
+  ROUTE_OPTIMIZER: tx("Route Optimizer"),
+  SALES_ASSISTANT: tx("Sales Assistant"),
+  RISK_MONITOR:    tx("Risk Monitor"),
+}));
 
 export default function VanSalesAIPage() {
   const qc = useQueryClient();

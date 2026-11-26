@@ -7,7 +7,7 @@ function errorText(e: unknown) {
   const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
   if (typeof detail === "string") return detail;
   if (detail && typeof detail === "object" && "detail" in detail) return String((detail as { detail: unknown }).detail);
-  return "Could not load the funnel.";
+  return tx("Could not load the funnel.");
 }
 
 function iso(d: Date) { return d.toISOString().slice(0, 10); }

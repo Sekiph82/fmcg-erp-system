@@ -16,7 +16,7 @@ import {
   fmt,
 } from "@/lib/analytics";
 import { TrendLineChart, HBarChart, Sparkline } from "@/components/bi/Charts";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 // ── Shared UI primitives ──────────────────────────────────────────────────────
 
@@ -87,17 +87,17 @@ const SEV_CLS: Record<string, string> = {
 
 // ── Tab definitions ───────────────────────────────────────────────────────────
 
-const TABS = [
-  { id: "overview",    label: "Overview" },
-  { id: "campaigns",  label: "Campaigns" },
-  { id: "spend",      label: "Spend" },
-  { id: "influencers",label: "Influencers" },
-  { id: "social",     label: "Social" },
-  { id: "ads",        label: "Ads" },
-  { id: "ecommerce",  label: "E-commerce" },
+const TABS = lx(() => [
+  { id: "overview",    label: tx("Overview") },
+  { id: "campaigns",  label: tx("Campaigns") },
+  { id: "spend",      label: tx("Spend") },
+  { id: "influencers",label: tx("Influencers") },
+  { id: "social",     label: tx("Social") },
+  { id: "ads",        label: tx("Ads") },
+  { id: "ecommerce",  label: tx("E-commerce") },
   { id: "crm",        label: "CRM" },
-  { id: "returns",    label: "Returns" },
-] as const;
+  { id: "returns",    label: tx("Returns") },
+] as const);
 
 type TabId = (typeof TABS)[number]["id"];
 

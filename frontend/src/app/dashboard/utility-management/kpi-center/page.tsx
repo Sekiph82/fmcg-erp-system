@@ -170,9 +170,9 @@ function TopConsumersPanel({ dateFrom, dateTo }: { dateFrom: string; dateTo: str
 
   const rows = data?.rows ?? [];
   const dimLabels: Record<ConsumerDim, string> = {
-    department: "Department",
-    production_line: "Production Line",
-    machine_ref: "Machine",
+    department: tx("Department"),
+    production_line: tx("Production Line"),
+    machine_ref: tx("Machine"),
   };
 
   return (
@@ -410,7 +410,7 @@ export default function UtilityKpiCenter() {
                 (v ?? 0).toLocaleString(undefined, { maximumFractionDigits: 1 }),
                 UTILITY_CHART_LABELS[name as keyof typeof UTILITY_CHART_LABELS] ?? name,
               ]) as never}
-              labelFormatter={l => `Date: ${l}`}
+              labelFormatter={l => tx("Date: {l}", { l })}
             />
             <Legend formatter={name => UTILITY_CHART_LABELS[name] ?? name} />
             {TREND_KEYS.filter(k => trend.some(t => t[k] != null)).map(key => (

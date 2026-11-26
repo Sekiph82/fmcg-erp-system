@@ -10,7 +10,7 @@
 // Wrapped (only inside functions, i.e. evaluated at render/call time, never module-level constants):
 //   JSX text; JSX attributes placeholder/title/aria-label/alt/label; object properties label/title/description/placeholder/
 //   header/message/text; literal args of toast/alert/confirm/set*Msg/set*Error-style calls; `throw new Error("…")`.
-// Never wrapped: values, keys, className, href, ids, enum-like tokens, API payload objects, console.*, comparisons,
+// Never wrapped: text of an <option> without a `value` attribute (it is submitted as data; see scripts/i18n-options.mjs), values, keys, className, href, ids, enum-like tokens, API payload objects, console.*, comparisons,
 // anything that is not a source literal (user and API data never reach tx()).
 import ts from "typescript";
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSync, rmSync } from "node:fs";
@@ -23,16 +23,19 @@ const CATALOG = join(root, "src/lib/i18n/messages/staff_ui.json");
 const CHUNK_DIR = join(root, "src/lib/i18n/messages/staff_ui_chunks");
 const ROOTS = ["src/app/dashboard", "src/components"];
 const EXCLUDE = [/[\\/]components[\\/]site[\\/]/, /PartnerLogin\.tsx$/, /PartnerActivate\.tsx$/, /LanguageSwitcher\.tsx$/, /\.(test|spec|stories)\.tsx$/, /\.d\.ts$/];
-const ATTRS = new Set(["placeholder", "title", "aria-label", "alt", "label"]);
+const ATTRS = new Set(["placeholder", "title", "aria-label", "alt", "label", "description", "subtitle"]);   // display-only props (ModuleWorkspace, ChartCard, Section, DashboardShell)
 const PROPS = new Set(["label", "title", "description", "placeholder", "header", "message", "text", "desc", "badge", "group", "hint", "subtitle", "tooltip", "summary", "caption", "heading", "helper", "empty", "cta"]);
 const NEXT_EXPORTS = /^(metadata|viewport|dynamic|revalidate|runtime|fetchCache|preferredRegion|maxDuration|config)$/;
 const SKIP_ELEMENTS = new Set(["code", "pre", "kbd", "script", "style", "samp"]);
 const MESSAGE_CALLEES = new Set(["toast", "alert", "confirm", "prompt", "notify", "showToast", "showMessage", "showError", "showSuccess"]);
 const MESSAGE_RECEIVERS = new Set(["toast", "window", "notify"]);
-const SETTER_MSG = /^set\w*(Msg|Message|Error|Err|Notice|Toast|Flash|Feedback|Success|Warning|Banner)$/i;
+const SETTER_MSG = /^set\w*(Msg|Message|Error|Err|Notice|Toast|Flash|Feedback|Success|Warning|Banner|Info|Result|Output)$/i;
 const MUTATION_CALLEE = /^(post|put|patch|delete|request|fetch|stringify|append|set|assign|upload|send|create|update|save|mutate|submit|emit)$/i;
 const STATE_CALLEE = /^(useState|useReducer|useRef|useMemo|createContext)$/;
-const PAYLOAD_VAR = /(payload|body|params|query|req|request|data|form|draft|initial|default|values|input|dto)/i;
+const DATA_PROPS = new Set(["body", "subject", "font", "account_name", "bank_name", "notes", "note", "review_notes", "rejection_reason", "consent_text", "greeting_text", "target_market", "title_en", "slug", "url", "href", "path", "icon", "color", "fill", "stroke", "key", "id", "code", "type", "kind", "status", "role", "unit", "currency", "format", "method", "mode", "scope", "value", "src", "lang", "locale", "sql", "query", "formula", "expression"]);
+const DATA_CALLEES = /^(md|useState|useReducer|useRef|useMemo|join|split|includes|startsWith|endsWith|indexOf|replace|replaceAll|match|test|getItem|setItem|removeItem|get|has|set|append|parse|stringify|Number|String|RegExp|Date|require|import|querySelector|getElementById|setAttribute|assign|log|warn|info|post|put|patch|delete|request|fetch|upload|send|create|update|save|mutate|submit|emit|encodeURIComponent|toLocaleString|toLocaleDateString|toFixed|padStart|padEnd|trim|slice|substring|localeCompare)$/;
+const PAYLOAD_TOKEN = /^(payload|body|params?|query|req|request|data|forms?|drafts?|initial|defaults?|values?|input|dto)s?$/i;
+const PAYLOAD_VAR = { test: (name) => name.replace(/([a-z0-9])([A-Z])/g, "$1_$2").split(/[_\W]+/).some((t) => PAYLOAD_TOKEN.test(t)) };
 
 const FUNCTION_KINDS = new Set([ts.SyntaxKind.FunctionDeclaration, ts.SyntaxKind.FunctionExpression, ts.SyntaxKind.ArrowFunction,
   ts.SyntaxKind.MethodDeclaration, ts.SyntaxKind.Constructor, ts.SyntaxKind.GetAccessor, ts.SyntaxKind.SetAccessor]);
@@ -68,8 +71,25 @@ const callName = (call) => {
   if (ts.isPropertyAccessExpression(e)) return { name: e.name.text, recv: ts.isIdentifier(e.expression) ? e.expression.text : (ts.isPropertyAccessExpression(e.expression) ? e.expression.name.text : null) };
   return { name: null, recv: null };
 };
-const isTx = (n) => n && ts.isCallExpression(n) && ts.isIdentifier(n.expression) && n.expression.text === "tx";
+const isTx = (n) => n && ts.isCallExpression(n) && ts.isIdentifier(n.expression) && (n.expression.text === "tx" || n.expression.text === "xlate");
 const decode = (s) => s.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;|&#39;/g, "'");
+
+// An <option> without a `value` attribute SUBMITS ITS TEXT, so that text is data and must never be translated.
+const isValuelessOption = (el) => ts.isJsxElement(el) && el.openingElement.tagName.getText() === "option"
+  && !el.openingElement.attributes.properties.some((a) => ts.isJsxSpreadAttribute(a) || a.name.getText() === "value");
+const inValuelessOption = (node) => {
+  for (let p = node.parent; p; p = p.parent) {
+    if (isValuelessOption(p)) return true;
+    if (FUNCTION_KINDS.has(p.kind)) return false;
+  }
+  return false;
+};
+const mapsToValuelessOption = (call) => {            // arr.map((x) => <option key={x}>{x}</option>)
+  let found = false;
+  const v = (n) => { if (isValuelessOption(n)) found = true; ts.forEachChild(n, v); };
+  v(call.arguments[0] ?? call);
+  return found;
+};
 
 /** Analyse one file. Returns {edits, skipped, sentences, source, needsImport}. */
 export function analyze(file, skipTexts = new Set()) {
@@ -78,8 +98,17 @@ export function analyze(file, skipTexts = new Set()) {
   const edits = [];
   const skipped = [];
   let needsLx = false;
-  if (/\btx\b/.test(source) && !/import\s*\{[^}]*\btx\b[^}]*\}\s*from\s*["']@\/lib\/i18n/.test(source)) {
-    return { edits, skipped: [{ reason: "tx_name_conflict", text: "tx", line: 1 }], sentences: [], source, sf };
+  // a file whose own code already uses the identifier `tx` (a transaction row, …) imports the translator as `xlate` instead
+  let TX = "tx";
+  if (/\btx as xlate\b/.test(source)) TX = "xlate";
+  else if (!/import\s*\{[^}]*\btx\b[^}]*\}\s*from\s*["']@\/lib\/i18n/.test(source)) {
+    let used = false;
+    const find = (n) => { if (ts.isIdentifier(n) && n.text === "tx") used = true; if (!used) ts.forEachChild(n, find); };
+    find(sf);
+    if (used) {
+      if (/\bxlate\b/.test(source)) return { edits, skipped: [{ reason: "tx_name_conflict", text: "tx", line: 1 }], sentences: [], source, sf };
+      TX = "xlate";
+    }
   }
   const handled = new Set();
   const compared = new Set();
@@ -105,7 +134,7 @@ export function analyze(file, skipTexts = new Set()) {
     for (const d of st.declarationList.declarations) {
       if (!ts.isIdentifier(d.name) || !d.initializer || NEXT_EXPORTS.test(d.name.text) || PAYLOAD_VAR.test(d.name.text)) continue;
       let init = d.initializer;
-      while (ts.isParenthesizedExpression(init) || ts.isSatisfiesExpression(init) || (ts.isAsExpression(init) && !(ts.isTypeReferenceNode(init.type) && init.type.typeName.getText(sf) === "const"))) init = init.expression;
+      while (ts.isParenthesizedExpression(init) || ts.isSatisfiesExpression(init) || ts.isAsExpression(init)) init = init.expression;
       if (ts.isArrayLiteralExpression(init) || ts.isObjectLiteralExpression(init)) lazy.set(d.initializer, d.initializer);
     }
   }
@@ -133,9 +162,65 @@ export function analyze(file, skipTexts = new Set()) {
     if (skipTexts.has(text)) return skip(node, "type_constrained", text);
     const ctx = context(node);
     if (!ctx.inFn) return skip(node, "module_level", text);
-    if (kind === "prop" && (ctx.payload || ctx.asConst)) return skip(node, ctx.payload ? "api_payload" : "as_const", text);
+    if (kind === "prop" && ctx.payload) return skip(node, "api_payload", text);
     handled.add(node);
     edits.push({ start: node.getStart(sf), end: node.end, text: extra.replacement ?? `tx(${JSON.stringify(text)})`, node });
+  }
+
+  // `Text ${a.b} more ${f(x)}` -> tx("Text {b} more {x}", { b: a.b, x: f(x) }); plural suffixes `${n === 1 ? "" : "s"}` become two keys
+  const GLOBALS = new Set(["Number", "Math", "String", "Object", "Array", "Date", "new", "JSON", "parseInt", "parseFloat", "typeof", "undefined", "null", "true", "false", "toFixed", "toLocaleString", "toLocaleDateString", "toLocaleTimeString", "toLowerCase", "toUpperCase", "join", "slice", "map", "filter", "length", "round", "abs", "max", "min", "replace", "trim", "entries", "keys", "values", "String", "Intl"]);
+  const hoistName = (code, taken) => {
+    let base = /^\(?\s*new Date\(/.test(code) ? "date" : null;
+    if (!base) for (const m of code.matchAll(/[A-Za-z_$][\w$]*(?:\??\.[A-Za-z_$][\w$]*)*/g)) {
+      const parts = m[0].split(/\??\./).filter((x) => !GLOBALS.has(x));
+      if (parts.length && !GLOBALS.has(m[0].split(/\??\./)[0])) { base = parts[parts.length - 1]; break; }
+      if (parts.length && m[0].includes(".") && !/^(Number|Math|String|Object|Array|Date|JSON|Intl)$/.test(m[0].split(".")[0])) { base = parts[parts.length - 1]; break; }
+    }
+    base = (base ?? "v").replace(/\W/g, "") || "v";
+    if (/^\d/.test(base)) base = "v";
+    let name = base, i = 2;
+    while (taken.has(name)) name = base + i++;
+    return name;
+  };
+  function wrapTemplate(expr, mode = "msg") {
+    const stat = expr.head.text + expr.templateSpans.map((s) => s.literal.text).join(" ");
+    const words = stat.replace(/\b(KES|USD|EUR|TRY|min|km|kg|hr|ms|mm|cm|kWh|kW|MWh|ltr|pct|PO|SKU|GRN|SLA)\b/g, "").replace(/\bhttps?:\/\/\S+/g, "");
+    const markDone = () => { const v = (n) => { handled.add(n); ts.forEachChild(n, v); }; v(expr); };
+    if (!/[A-Za-z]{3,}/.test(words)) return markDone();              // numbers, units, separators only: nothing to translate
+    if (/[<>]|=\s*["']|\bhttps?:|^\s*\//.test(stat)) return markDone();   // markup / URL / code snippet, not prose
+    const names = new Map();
+    let eng = expr.head.text, plural = null;
+    for (const sp of expr.templateSpans) {
+      let e = sp.expression;
+      while (ts.isParenthesizedExpression(e) || ts.isNonNullExpression(e)) e = e.expression;
+      const code = e.getText(sf);
+      if (ts.isConditionalExpression(e) && !plural) {
+        const lit = (x) => (ts.isStringLiteral(x) || ts.isNoSubstitutionTemplateLiteral(x)) ? x.text : null;
+        const t = lit(e.whenTrue), f = lit(e.whenFalse);
+        if ((t === "s" || t === "es") && f === "") { plural = { cond: e.condition.getText(sf), suffix: t, neg: false }; eng += "\u0000" + sp.literal.text; continue; }
+        if (t === "" && (f === "s" || f === "es")) { plural = { cond: e.condition.getText(sf), suffix: f, neg: true }; eng += "\u0000" + sp.literal.text; continue; }
+      }
+      let name = [...names.entries()].find(([, c]) => c === code)?.[0];
+      if (!name) {
+        const chain = (x) => ts.isIdentifier(x) || (ts.isPropertyAccessExpression(x) && chain(x.expression));
+        if (chain(e)) { const base = (ts.isIdentifier(e) ? e.text : e.name.text).replace(/\W/g, "") || "v"; name = base; let i = 2; while (names.has(name)) name = base + i++; }
+        else name = hoistName(code, names);
+        names.set(name, code);
+      }
+      eng += `{${name}}` + sp.literal.text;
+    }
+    if (!plural && compared.has(eng)) return;
+    if (!context(expr).inFn) return skip(expr, "module_level", expr.getText(sf));
+    const vars = [...names.entries()].map(([n, c]) => (n === c ? n : `${n}: ${c}`)).join(", ");
+    const call = (k) => `tx(${JSON.stringify(k)}${vars ? `, { ${vars} }` : ""})`;
+    const single = (suffix) => call(eng.replace(" ", suffix));
+    const fixed = !plural ? call(eng)
+      : plural.neg ? `(${plural.cond}) ? ${single("")} : ${single(plural.suffix)}`   // condition true => singular
+        : `(${plural.cond}) ? ${single(plural.suffix)} : ${single("")}`;
+    const out = plural ? `(${fixed})` : fixed;
+    handled.add(expr);
+    const v = (n) => { handled.add(n); ts.forEachChild(n, v); }; ts.forEachChild(expr, v);
+    edits.push({ start: expr.getStart(sf), end: expr.end, text: out, node: expr });
   }
 
   // wrap the string leaves of a message expression (literals, "a" + b, cond ? "a" : "b", x ?? "fallback", simple templates)
@@ -146,28 +231,7 @@ export function analyze(file, skipTexts = new Set()) {
       if (strictCase && !(/\s/.test(expr.text.trim()) || /^[A-Z]/.test(expr.text))) return handled.add(expr);
       return propose(expr, expr.text, "msg");
     }
-    if (ts.isTemplateExpression(expr)) {
-      const names = new Map();
-      let eng = expr.head.text;
-      let ok = true;
-      for (const sp of expr.templateSpans) {
-        let e = sp.expression;
-        while (ts.isParenthesizedExpression(e) || ts.isNonNullExpression(e)) e = e.expression;
-        const chain = (x) => ts.isIdentifier(x) || (ts.isPropertyAccessExpression(x) && chain(x.expression));
-        if (!chain(e)) { ok = false; break; }
-        const code = e.getText(sf);
-        const base = (ts.isIdentifier(e) ? e.text : e.name.text).replace(/\W/g, "") || "v";
-        let name = [...names.entries()].find(([, c]) => c === code)?.[0];
-        if (!name) { name = base; let i = 2; while (names.has(name)) name = base + i++; names.set(name, code); }
-        eng += `{${name}}` + sp.literal.text;
-      }
-      if (!ok) return skip(expr, "complex_template", expr.getText(sf));
-      const letters = eng.replace(/\{\w+\}/g, "");
-      if (!translatable(letters) && !/\s/.test(letters.trim())) return handled.add(expr);
-      if (compared.has(eng)) return;
-      const vars = [...names.entries()].map(([n, c]) => (n === c ? n : `${n}: ${c}`)).join(", ");
-      return propose(expr, eng, "msg", { replacement: `tx(${JSON.stringify(eng)}, { ${vars} })` });
-    }
+    if (ts.isTemplateExpression(expr)) return wrapTemplate(expr);
     if (ts.isConditionalExpression(expr)) { wrapLeaves(expr.whenTrue, strictCase); wrapLeaves(expr.whenFalse, strictCase); return; }
     if (ts.isBinaryExpression(expr) && [ts.SyntaxKind.PlusToken, ts.SyntaxKind.QuestionQuestionToken, ts.SyntaxKind.BarBarToken, ts.SyntaxKind.AmpersandAmpersandToken].includes(expr.operatorToken.kind)) {
       wrapLeaves(expr.left, strictCase); wrapLeaves(expr.right, strictCase);
@@ -190,6 +254,7 @@ export function analyze(file, skipTexts = new Set()) {
       const core = raw.trim();
       const key = decode(core.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).join(" "));
       if (!translatable(key)) return;
+      if (inValuelessOption(n)) return skip(n, "option_without_value", key);
       if (compared.has(key)) return skip(n, "compared_in_code", key);
       if (skipTexts.has(key)) return skip(n, "type_constrained", key);
       if (!context(n).inFn) return skip(n, "module_level", key);
@@ -199,11 +264,12 @@ export function analyze(file, skipTexts = new Set()) {
       return;
     }
     if (ts.isJsxExpression(n) && n.expression && (ts.isJsxElement(n.parent) || ts.isJsxFragment(n.parent) || (ts.isJsxAttribute(n.parent) && ATTRS.has(n.parent.name.getText(sf))))) {
-      wrapLeaves(n.expression, false); // {cond ? "A" : "B"}, {x ?? "Fallback"} rendered as text
+      if (!inValuelessOption(n)) wrapLeaves(n.expression, false);   // option text is data: left alone // {cond ? "A" : "B"}, {x ?? "Fallback"} rendered as text
     } else if (ts.isArrayLiteralExpression(n) && n.elements.length && n.elements.every((e) => ts.isStringLiteral(e)) && ts.isPropertyAccessExpression(n.parent)
       && n.parent.name.text === "map" && ts.isCallExpression(n.parent.parent) && n.parent.parent.expression === n.parent
       && /<[A-Za-z]/.test(n.parent.parent.arguments[0]?.getText(sf) ?? "")) {
-      n.elements.forEach((e) => propose(e, e.text, "msg")); // ["Item", "Qty"].map((h) => <th>{h}</th>)
+      if (mapsToValuelessOption(n.parent.parent)) n.elements.forEach((e) => skip(e, "option_without_value", e.text));
+      else n.elements.forEach((e) => propose(e, e.text, "msg")); // ["Item", "Qty"].map((h) => <th>{h}</th>)
     }
     if (ts.isJsxAttribute(n) && n.initializer && ts.isStringLiteral(n.initializer) && ATTRS.has(n.name.getText(sf))) {
       const v = n.initializer.text;
@@ -230,6 +296,86 @@ export function analyze(file, skipTexts = new Set()) {
     ts.forEachChild(n, visit);
   }
   visit(sf);
+  // Sentence-like string literals no earlier rule covers (tuple labels, helper-call args, ternaries, return values, label maps):
+  // wrapped when the context is display text; left reported when it is data (payload, state default, comparison, API field).
+  const sentences = [];
+  const isSentence = (t) => !/^[MmLlHhVvCcSsQqTtAaZz][\d.\-]/.test(t) && /^[A-Z][^\n]*\s[^\n]*[a-z]/.test(t) && t.trim().split(/\s+/).length >= 2 && !enumLike(t);
+  const keyLike = (e) => ts.isStringLiteral(e) && (enumLike(e.text) || /^[a-z][a-z0-9_.\/-]*$/.test(e.text) || e.text === "");
+  const wrapLit = (e) => {
+    if (handled.has(e) || !ts.isStringLiteral(e) || !translatable(e.text) || compared.has(e.text) || skipTexts.has(e.text)) return false;
+    if (!/^[A-Z]/.test(e.text) || enumLike(e.text)) return false;
+    handled.add(e);
+    edits.push({ start: e.getStart(sf), end: e.end, text: `tx(${JSON.stringify(e.text)})`, node: e });
+    return true;
+  };
+  const sentenceVerdict = (n) => {
+    const p = n.parent;
+    if (!context(n).inFn) return "module_level";
+    const ctx = context(n);
+    if (ctx.payload) return "payload";
+    if (ts.isArrayLiteralExpression(p) || ts.isConditionalExpression(p) || ts.isReturnStatement(p) || ts.isParenthesizedExpression(p) || ts.isAsExpression(p)
+      || ts.isVariableDeclaration(p) || ts.isParameter(p) || ts.isBindingElement(p) || ts.isArrowFunction(p)) return "ok";
+    if (ts.isConditionalExpression(p)) return "ok";
+    if (ts.isBinaryExpression(p)) return [ts.SyntaxKind.QuestionQuestionToken, ts.SyntaxKind.BarBarToken, ts.SyntaxKind.AmpersandAmpersandToken].includes(p.operatorToken.kind) ? "ok" : "concat";
+    if (ts.isPropertyAssignment(p) && p.initializer === n) {
+      const k = p.name.getText(sf).replace(/["']/g, "");
+      if (DATA_PROPS.has(k)) return "data_prop";
+      if (k === "name" && !p.parent.properties.some((q) => ts.isPropertyAssignment(q) && /^(color|value|data|fill|target)$/.test(q.name.getText(sf)))) return "data_prop";
+      return "ok";
+    }
+    if (ts.isCallExpression(p) && p.arguments.includes(n)) {
+      const { name, recv } = callName(p);
+      if (!name || DATA_CALLEES.test(name) || (recv && /^(JSON|Object|Array|localStorage|sessionStorage|URLSearchParams|document|Math|Number)$/.test(recv))) return "data_call";
+      return "ok";
+    }
+    return "other";
+  };
+  // template literals outside the JSX/message rules (tuple labels, helper-call args, ternary branches, returned messages)
+  const displayTemplate = (n) => {
+    const pieces = [n.head.text, ...n.templateSpans.map((x) => x.literal.text)];
+    const stat = pieces.join(" ");
+    if (/[<>=]/.test(stat) || /(^|\s)(px|py|text|bg|border|font|rounded|flex|grid|gap|w|h|min|max)-[\w\[]/.test(stat)) return false;
+    for (let i = 0; i < n.templateSpans.length; i++) if (/[\w][.:\-=\/_]$/.test(pieces[i]) || /^[.:=\/\-_\[]/.test(pieces[i + 1])) return false;
+    const words = stat.replace(/\b(KES|USD|EUR|TRY|min|km|kg|hr|ms|mm|cm|kWh|kW|MWh|ltr|pct|PO|SKU|GRN|SLA)\b/g, "");
+    return /^[A-Z]/.test(n.head.text.trimStart()) ? /[A-Za-z]{3,}/.test(words) : pieces.slice(1).some((x) => /^\s+[a-z]{3,}/.test(x) || /^\s*\(?[a-z]{3,}\s/.test(x)) || /^\s[a-z]{3,}/.test(n.head.text);
+  };
+
+  const scan = (n) => {
+    if (ts.isTemplateExpression(n) && !handled.has(n) && !isTx(n.parent) && displayTemplate(n)) {
+      const p = n.parent;
+      const okParent = ts.isArrowFunction(p) || ts.isReturnStatement(p) || ts.isConditionalExpression(p) || ts.isArrayLiteralExpression(p) || ts.isParenthesizedExpression(p)
+        || (ts.isPropertyAssignment(p) && p.initializer === n && !DATA_PROPS.has(p.name.getText(sf).replace(/["']/g, "")))
+        || (ts.isBinaryExpression(p) && [ts.SyntaxKind.QuestionQuestionToken, ts.SyntaxKind.BarBarToken, ts.SyntaxKind.AmpersandAmpersandToken].includes(p.operatorToken.kind))
+        || (ts.isCallExpression(p) && p.arguments.includes(n) && (() => { const { name, recv } = callName(p); return name && !DATA_CALLEES.test(name) && !/^(set\w*Busy|set\w*Loading|download\w*|window)$/.test(name) && !(recv && /^(JSON|Object|Array|localStorage|sessionStorage|URLSearchParams|document|Math|Number|window|parts|warnings)$/.test(recv)); })());
+      if (okParent && !context(n).payload && !compared.has(n.head.text)) { wrapTemplate(n); if (handled.has(n)) return; }
+    }
+    if (ts.isStringLiteral(n) && !handled.has(n) && isSentence(n.text)) {
+      const p = n.parent;
+      const bad = ts.isImportDeclaration(p) || ts.isExportDeclaration(p) || ts.isLiteralTypeNode(p) || (ts.isPropertyAssignment(p) && p.name === n)
+        || ts.isJsxAttribute(p) || isTx(p) || (ts.isCallExpression(p) && /^(console|require)$/.test(callName(p).recv ?? callName(p).name ?? ""))
+        || (ts.isBinaryExpression(p) && compared.has(n.text)) || ts.isCaseClause(p) || ts.isElementAccessExpression(p);
+      if (!bad && !skipTexts.has(n.text) && !compared.has(n.text)) {
+        const v = sentenceVerdict(n);
+        if (v === "ok") {
+          wrapLit(n);
+          // siblings: every string of a label map / label list / tuple that carries a flagged sentence
+          if (ts.isPropertyAssignment(p) && p.parent.properties.every((q) => ts.isPropertyAssignment(q) && ts.isStringLiteral(q.initializer)) && !context(n).payload)
+            p.parent.properties.forEach((q) => { if (!DATA_PROPS.has(q.name.getText(sf))) wrapLit(q.initializer); });
+          if (ts.isArrayLiteralExpression(p)) {
+            if (p.elements.every((e) => ts.isStringLiteral(e))) p.elements.forEach(wrapLit);
+            else if (ts.isArrayLiteralExpression(p.parent) || (ts.isAsExpression(p.parent) && ts.isArrayLiteralExpression(p.parent.expression))) {
+              const outer = ts.isArrayLiteralExpression(p.parent) ? p.parent : p.parent.expression;
+              for (const t of outer.elements) if (ts.isArrayLiteralExpression(t) && t.elements.length <= 4 && t.elements.some((e) => !ts.isStringLiteral(e) || keyLike(e)))
+                t.elements.forEach((e) => { if (ts.isStringLiteral(e) && !keyLike(e)) wrapLit(e); });
+            }
+          }
+        } else sentences.push({ text: n.text.slice(0, 80), line: lineOf(n), reason: v });
+      }
+    }
+    ts.forEachChild(n, scan);
+  };
+  scan(sf);
+  for (const s of sentences) if (!/^(module_level)$/.test(s.reason)) { /* kept as reported: data / concat / other */ }
   for (const init of lazy.values()) {
     if (edits.some((e) => e.start >= init.getStart(sf) && e.end <= init.end)) {
       const obj = init.getText(sf).startsWith("{"); // arrow body: an object literal needs parentheses
@@ -238,27 +384,15 @@ export function analyze(file, skipTexts = new Set()) {
     }
   }
 
-  // sentence-like literals no rule covers (arrays of strings, ternaries in JSX, etc.): reported, never rewritten
-  const sentences = [];
-  const scan = (n) => {
-    if (ts.isStringLiteral(n) && !handled.has(n) && /^[A-Z][^\n]*\s[^\n]*[a-z]/.test(n.text) && n.text.trim().split(/\s+/).length >= 2 && !enumLike(n.text)) {
-      const p = n.parent;
-      const bad = ts.isImportDeclaration(p) || ts.isExportDeclaration(p) || ts.isLiteralTypeNode(p) || (ts.isPropertyAssignment(p) && p.name === n)
-        || ts.isJsxAttribute(p) || isTx(p) || (ts.isCallExpression(p) && /^(console|require)$/.test(callName(p).recv ?? callName(p).name ?? ""))
-        || (ts.isBinaryExpression(p) && compared.has(n.text)) || ts.isCaseClause(p) || ts.isElementAccessExpression(p);
-      if (!bad) sentences.push({ text: n.text.slice(0, 80), line: lineOf(n) });
-    }
-    ts.forEachChild(n, scan);
-  };
-  scan(sf);
-  return { edits, skipped, sentences, source, sf, needsLx };
+  if (TX !== "tx") for (const e of edits) e.text = e.text.replace(/\btx\(/g, `${TX}(`);
+  return { edits, skipped, sentences, source, sf, needsLx, alias: TX !== "tx" };
 }
 
 function apply(file, res) {
   if (!res.edits.length) return false;
   let out = res.source;
   [...res.edits].sort((a, b) => b.start - a.start).forEach((e) => { out = out.slice(0, e.start) + e.text + out.slice(e.end); });
-  const want = res.needsLx ? ["tx", "lx"] : ["tx"];
+  const want = [res.alias ? "tx as xlate" : "tx", ...(res.needsLx ? ["lx"] : [])];
   const m = out.match(/import \{([^}]*)\} from "@\/lib\/i18n\/core";/);
   if (m) {
     const have = m[1].split(",").map((x) => x.trim()).filter(Boolean);

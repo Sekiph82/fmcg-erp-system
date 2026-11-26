@@ -9,7 +9,7 @@ type Result = { kind: string; id: string; company_name: string; city: string | n
 type Cand = { id: string; value: string; citation: string; confidence: number; status: string; age_days: number };
 type FieldView = { field: string; current: string | null; verified: boolean; applicable: boolean; unknown: boolean; conflict: boolean; candidates: Cand[] };
 type Source = { id: string; name: string; rows: number; license_note: string; expires_at: string };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : (d as { message?: string })?.message ?? "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : (d as { message?: string })?.message ?? tx("Something went wrong."); };
 const box = "border rounded p-3 bg-white space-y-2";
 const inp = "border rounded px-2 py-1";
 
@@ -46,7 +46,7 @@ export default function DataHubPage() {
     if (crit.keywords) body.keywords = crit.keywords.split(",").map((s) => s.trim()).filter(Boolean);
     go(apiClient.post("/api/v1/customer-data/prospect", body).then((r) => setRun(r.data)));
   };
-  const outreach = (r: Result) => go(apiClient.post(`/api/v1/customer-data/prospect/runs/${run!.run_id}/outreach`, { result_id: r.id }), "E-mail proposed: a colleague approves it under CRM → Add-ins & AI access.");
+  const outreach = (r: Result) => go(apiClient.post(`/api/v1/customer-data/prospect/runs/${run!.run_id}/outreach`, { result_id: r.id }), tx("E-mail proposed: a colleague approves it under CRM → Add-ins & AI access."));
   const showDraft = (r: Result) => go(apiClient.post(`/api/v1/customer-data/prospect/runs/${run!.run_id}/draft`, { result_id: r.id }).then((x) => setPreview({ id: r.id, ...x.data })));
   const findCust = () => apiClient.get("/api/v1/customer-intel/customers", { params: { q, limit: 10 } }).then((r) => setCusts(r.data)).catch((e) => setMsg(err(e)));
   const doResearch = (id: string) => go(apiClient.post(`/api/v1/customer-data/research/${id}`).then((r) => setResearch(r.data)));
@@ -69,7 +69,7 @@ export default function DataHubPage() {
         <input aria-label={tx("Column mapping")} className={`${inp} w-full text-xs`} value={src.mapping} onChange={(e) => setSrc({ ...src, mapping: e.target.value })} />
         <button className="bg-indigo-600 text-white rounded px-3 py-1 text-xs" onClick={importSrc}>{tx("Import")}</button>
         <ul className="text-xs">{sources.map((s) => <li key={s.id}>{s.name} · {s.rows} {tx("rows ·")} {s.license_note} {tx("· deleted on")} {new Date(s.expires_at).toLocaleDateString()}
-          <button className="ml-2 text-red-600 underline" onClick={() => go(apiClient.delete(`/api/v1/customer-data/sources/${s.id}`).then(load), "Source deleted.")}>{tx("Delete")}</button></li>)}</ul>
+          <button className="ml-2 text-red-600 underline" onClick={() => go(apiClient.delete(`/api/v1/customer-data/sources/${s.id}`).then(load), tx("Source deleted."))}>{tx("Delete")}</button></li>)}</ul>
       </section>
 
       <section className={box}>
@@ -112,7 +112,7 @@ export default function DataHubPage() {
             go(apiClient.post("/api/v1/crm/card-ocr/scan", fd, { headers: { "Content-Type": "multipart/form-data" } }).then((r) => {
               setDraft(r.data.id); setCard(r.data.text);
               setCardFields(Object.fromEntries(["full_name", "job_title", "company", "email", "phone"].map((k) => [k, r.data.fields[k]?.value ?? ""]))); setConfirmed(false);
-            }).finally(() => setScanBusy(false)), "Card read. Check every field below.");
+            }).finally(() => setScanBusy(false)), tx("Card read. Check every field below."));
           }} /></label>
         <button className="border rounded px-3 py-1 text-xs" onClick={() => go(apiClient.post("/api/v1/customer-data/business-card/parse", { text: card }).then((r) => {
           setCardFields(Object.fromEntries(["full_name", "job_title", "company", "email", "phone"].map((k) => [k, r.data.fields[k]?.value ?? ""]))); setConfirmed(false); }))}>{tx("Read fields")}</button>
@@ -120,8 +120,8 @@ export default function DataHubPage() {
           <label className="flex items-center gap-2 sm:col-span-2"><input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />{draft ? tx("I checked every field, and the card holder gave me their card for business contact so I may keep these details") : tx("I checked every field")}</label>
           <button className="bg-indigo-600 text-white rounded px-3 py-1" disabled={!confirmed} onClick={() => go((draft
             ? apiClient.post(`/api/v1/crm/card-ocr/${draft}/confirm`, { ...cardFields, email: cardFields.email || null, phone: cardFields.phone || null, consent: confirmed })
-            : apiClient.post("/api/v1/customer-data/business-card/save", { ...cardFields, email: cardFields.email || null, phone: cardFields.phone || null, confirmed })).then(() => { setCardFields(null); setCard(""); setDraft(null); }), "Contact created.")}>{tx("Create contact")}</button>
-          {draft && <button className="border rounded px-3 py-1" onClick={() => go(apiClient.post(`/api/v1/crm/card-ocr/${draft}/discard`).then(() => { setCardFields(null); setCard(""); setDraft(null); }), "Scan discarded.")}>{tx("Discard scan")}</button>}</div>}
+            : apiClient.post("/api/v1/customer-data/business-card/save", { ...cardFields, email: cardFields.email || null, phone: cardFields.phone || null, confirmed })).then(() => { setCardFields(null); setCard(""); setDraft(null); }), tx("Contact created."))}>{tx("Create contact")}</button>
+          {draft && <button className="border rounded px-3 py-1" onClick={() => go(apiClient.post(`/api/v1/crm/card-ocr/${draft}/discard`).then(() => { setCardFields(null); setCard(""); setDraft(null); }), tx("Scan discarded."))}>{tx("Discard scan")}</button>}</div>}
       </section>
     </div>
   );

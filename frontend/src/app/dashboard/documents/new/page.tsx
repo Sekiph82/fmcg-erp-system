@@ -6,35 +6,35 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { docsApi, CATEGORY_LABELS, DocumentCategory } from "@/lib/documents";
 import { RequirePermission } from "@/components/PermissionGuard";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 const CATEGORIES = Object.entries(CATEGORY_LABELS) as [DocumentCategory, string][];
 
-const ENTITY_TYPES = [
+const ENTITY_TYPES = lx(() => [
   ["mpesa_transaction", "M-Pesa Transaction"],
-  ["purchase_order", "Purchase Order"],
-  ["sales_order", "Sales Order"],
+  ["purchase_order", tx("Purchase Order")],
+  ["sales_order", tx("Sales Order")],
   ["invoice", "Invoice"],
   ["shipment", "Shipment"],
-  ["international_shipment", "International Shipment"],
-  ["qc_inspection", "QC Inspection"],
-  ["production_order", "Production Order"],
-  ["goods_receipt", "Goods Receipt"],
+  ["international_shipment", tx("International Shipment")],
+  ["qc_inspection", tx("QC Inspection")],
+  ["production_order", tx("Production Order")],
+  ["goods_receipt", tx("Goods Receipt")],
   ["supplier", "Supplier"],
   ["employee", "Employee"],
   ["asset", "Asset"],
-  ["delivery_trip", "Delivery Trip"],
-  ["cash_transaction", "Cash Transaction"],
-  ["payroll_period", "Payroll Period"],
+  ["delivery_trip", tx("Delivery Trip")],
+  ["cash_transaction", tx("Cash Transaction")],
+  ["payroll_period", tx("Payroll Period")],
   // Marketing entities
   ["mkt_campaign", "Campaign"],
   ["mkt_promotion", "Promotion"],
   ["mkt_influencer", "Influencer"],
   ["mkt_survey", "Survey"],
-  ["mkt_brand_spend", "Brand Spend"],
-  ["mkt_trade_spend", "Trade Spend"],
-  ["mkt_store", "E-commerce Store"],
-];
+  ["mkt_brand_spend", tx("Brand Spend")],
+  ["mkt_trade_spend", tx("Trade Spend")],
+  ["mkt_store", tx("E-commerce Store")],
+]);
 
 function NewDocumentContent() {
   const router = useRouter();
@@ -118,7 +118,7 @@ function NewDocumentContent() {
         </h1>
         <p className="text-sm text-gray-500 mt-1">
           {supersedeId
-            ? `Creating next version — supersedes document ${supersedeId.slice(0, 8)}…`
+            ? tx("Creating next version — supersedes document {supersedeId}…", { supersedeId: supersedeId.slice(0, 8) })
             : tx("Add a document record to the ERP document store")}
         </p>
         {supersedeId && parentDoc && (

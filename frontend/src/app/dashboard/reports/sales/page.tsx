@@ -19,7 +19,7 @@ function SalesDashboard() {
   return (
     <DashboardShell
       title={tx("Sales & Revenue Analytics")}
-      subtitle="Revenue trends, channel mix, and top customers"
+      subtitle={tx("Revenue trends, channel mix, and top customers")}
       days={days}
       onDaysChange={setDays}
       backHref="/dashboard/reports"

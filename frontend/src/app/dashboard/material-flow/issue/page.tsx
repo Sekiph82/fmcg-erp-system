@@ -514,7 +514,7 @@ export default function IssuePage() {
                       aria-label={tx("Scrap reason for issue line {line_no}", { line_no: line.line_no })}
                     >
                       <option value="">{tx("Select reason")}</option>
-                      {[["SPILLAGE", "Spillage"], ["CONTAMINATION", "Contamination"], ["DAMAGE", "Damage"], ["PROCESS_LOSS", "Process loss"], ["OTHER", "Other"]].map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                      {[["SPILLAGE", "Spillage"], ["CONTAMINATION", "Contamination"], ["DAMAGE", "Damage"], ["PROCESS_LOSS", tx("Process loss")], ["OTHER", "Other"]].map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                     </select>
                   </td>
                   <td className="px-3 py-2">

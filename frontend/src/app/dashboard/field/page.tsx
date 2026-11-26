@@ -6,10 +6,10 @@ import {
   fx, fpost, newRef, currentPosition, kes, mapsLink,
   type FieldMe, type Today, type Stop, type CatalogItem, type OpenInvoice, type Trip, type TripStop, type AuditRow, type CollectorAccount,
 } from "@/lib/field";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 type Tab = "route" | "collect" | "trips" | "audits";
-const OUTCOMES: [string, string][] = [["NO_ORDER", "Visited, no order"], ["ORDERED", "Ordered"], ["CUSTOMER_CLOSED", "Shop closed"], ["CREDIT_HOLD", "Credit hold"], ["NOT_FOUND", "Could not find shop"]];
+const OUTCOMES: [string, string][] = lx(() => [["NO_ORDER", tx("Visited, no order")], ["ORDERED", "Ordered"], ["CUSTOMER_CLOSED", tx("Shop closed")], ["CREDIT_HOLD", tx("Credit hold")], ["NOT_FOUND", tx("Could not find shop")]]);
 const box = "bg-white rounded-xl border p-3";
 const btn = "px-3 py-2 rounded-lg text-sm font-medium disabled:opacity-50";
 const input = "border rounded-lg px-2 py-2 text-sm w-full";
@@ -27,10 +27,10 @@ export default function FieldApp() {
 
   if (!me) return <main className="p-4 text-sm text-gray-500">{msg?.text ?? tx("Loading…")}</main>;
   const tabs: [Tab, string][] = [
-    ...(me.rep ? [["route", me.rep.vehicle_type === "MOTORBIKE" ? "My route (moto)" : "My route"] as [Tab, string]] : []),
-    ...(me.is_collector ? [["collect", "My collections"] as [Tab, string]] : []),
-    ...(me.is_driver ? [["trips", "My deliveries"] as [Tab, string]] : []),
-    ...(me.can_audit ? [["audits", "Outlet audits"] as [Tab, string]] : []),
+    ...(me.rep ? [["route", me.rep.vehicle_type === "MOTORBIKE" ? tx("My route (moto)") : tx("My route")] as [Tab, string]] : []),
+    ...(me.is_collector ? [["collect", tx("My collections")] as [Tab, string]] : []),
+    ...(me.is_driver ? [["trips", tx("My deliveries")] as [Tab, string]] : []),
+    ...(me.can_audit ? [["audits", tx("Outlet audits")] as [Tab, string]] : []),
   ];
   return (
     <main className="min-h-screen bg-gray-50 -m-4 sm:m-0">
@@ -191,7 +191,7 @@ function OrderForm({ stop, say, fail, reload }: Say & { stop: Stop; reload: () =
         <label className="text-xs text-gray-600">{tx("Delivery")}<input type="date" value={when} onChange={(e) => setWhen(e.target.value)} className={input} /></label>
         <label className="text-xs text-gray-600">{tx("Payment")}<select value={pay} onChange={(e) => setPay(e.target.value)} className={input}><option value="cash">{tx("Cash")}</option><option value="mpesa">{tx("M-Pesa")}</option><option value="credit">{tx("Credit")}</option></select></label>
       </div>
-      <button onClick={place} disabled={busy || lines.length === 0} className={`${btn} w-full bg-indigo-600 text-white`}>{busy ? tx("Sending…") : `Send order · ${kes(total, stop.currency)}`}</button>
+      <button onClick={place} disabled={busy || lines.length === 0} className={`${btn} w-full bg-indigo-600 text-white`}>{busy ? tx("Sending…") : tx("Send order · {kes}", { kes: kes(total, stop.currency) })}</button>
     </div>
   );
 }
@@ -242,7 +242,7 @@ function CollectForm({ stop, say, fail, reload }: Say & { stop: Pick<Stop, "cust
         method: form.method, amount: form.amount, mpesa_code: form.method === "MPESA" ? form.mpesa_code.toUpperCase() : null,
         mpesa_phone: form.method === "MPESA" && form.mpesa_phone ? form.mpesa_phone : null, reference: form.reference || null, lat: gps?.lat, lng: gps?.lng });
       ref.current = newRef();
-      say(true, `Collection ${r.collection_no} recorded — give the customer this number as the receipt. Finance confirms it.`); reload();
+      say(true, tx("Collection {collection_no} recorded — give the customer this number as the receipt. Finance confirms it.", { collection_no: r.collection_no })); reload();
     } catch (e) { fail(e); } finally { setBusy(false); }
   }
   async function stk() {
@@ -286,8 +286,8 @@ function TripsTab({ say, fail }: Say) {
   return (<div className="space-y-3">{trips.map((t) => (
     <div key={t.id} className={box + " space-y-2"}>
       <div className="flex justify-between items-center"><div><p className="font-semibold">{t.trip_no}</p><p className="text-xs text-gray-500">{t.trip_date} · {t.vehicle ?? ""} · {t.status.replace(/_/g, " ").toLowerCase()}</p></div>
-        {["PLANNED", "LOADING"].includes(t.status) && <button onClick={() => act(`/field/trips/${t.id}/start`, "Trip started.")} className={`${btn} bg-indigo-600 text-white`}>{tx("Start trip")}</button>}
-        {t.status === "IN_TRANSIT" && <button onClick={() => act(`/field/trips/${t.id}/finish`, "Trip completed.")} className={`${btn} border`}>{tx("Finish trip")}</button>}</div>
+        {["PLANNED", "LOADING"].includes(t.status) && <button onClick={() => act(`/field/trips/${t.id}/start`, tx("Trip started."))} className={`${btn} bg-indigo-600 text-white`}>{tx("Start trip")}</button>}
+        {t.status === "IN_TRANSIT" && <button onClick={() => act(`/field/trips/${t.id}/finish`, tx("Trip completed."))} className={`${btn} border`}>{tx("Finish trip")}</button>}</div>
       {t.stops.map((s) => (
         <div key={s.id} className="border-t pt-2">
           <button className="w-full text-left flex justify-between" aria-expanded={open === s.id} onClick={() => setOpen(open === s.id ? null : s.id)}>
@@ -332,11 +332,11 @@ function DeliveryPanel({ stop, tripActive, say, fail, reload }: Say & { stop: Tr
       fd.append("signature", sig!, "signature.png");
       for (const p of photos) fd.append("photos", p);
       const r = await fpost<{ id: string | null; duplicate: boolean }>(`/field/trip-orders/${stop.id}/deliver`, fd);
-      say(true, r.duplicate ? `Delivery to ${stop.customer} was already recorded.` : `Delivered to ${stop.customer}.`); reload();
+      say(true, r.duplicate ? tx("Delivery to {customer} was already recorded.", { customer: stop.customer }) : `Delivered to ${stop.customer}.`); reload();
     } catch (e) { fail(e); } finally { setBusy(false); }
   }
   async function failed() {
-    try { await fpost(`/field/trip-orders/${stop.id}/fail`, { reason }); say(true, "Marked as not delivered."); reload(); } catch (e) { fail(e); }
+    try { await fpost(`/field/trip-orders/${stop.id}/fail`, { reason }); say(true, tx("Marked as not delivered.")); reload(); } catch (e) { fail(e); }
   }
   return (
     <div className="mt-2 space-y-2">
@@ -387,7 +387,7 @@ function AuditsTab({ say, fail }: Say) {
       for (const p of photos.slice(sentPhotos.current)) { const fd = new FormData(); fd.append("file", p); await fpost(`/field/audits/${r.id}/photo`, fd); sentPhotos.current += 1; }
       sentPhotos.current = 0;
       ref.current = newRef(); setOutlet(null); setNotes(""); setPhotos([]); setAns(Object.fromEntries(items.map((i) => [i.key, { ok: true, note: "" }])));
-      say(true, `Audit ${r.audit_no} saved — score ${r.score}%.`); loadRecent();
+      say(true, tx("Audit {audit_no} saved — score {score}%.", { audit_no: r.audit_no, score: r.score })); loadRecent();
     } catch (e) { fail(e); } finally { setBusy(false); }
   }
   return (
@@ -452,7 +452,7 @@ function ShelfForm({ stop, say, fail }: Say & { stop: Stop }) {
         if (row) { const fd = new FormData(); fd.append("file", l.photo!); await fpost(`/field/shelf/${row.id}/photo`, fd); }
       }
       setLines((ls) => ls.map((l) => ({ ...l, photo: null, saved: true })));
-      say(true, `Shelf check for ${stop.name} saved (${lines.length} products).`);
+      say(true, tx("Shelf check for {name} saved ({length} products).", { name: stop.name, length: lines.length }));
     } catch (e) { fail(e); } finally { setBusy(false); }
   }
   return (
@@ -470,7 +470,7 @@ function ShelfForm({ stop, say, fail }: Say & { stop: Stop }) {
           </div>
           <div className="flex gap-2 text-xs" role="radiogroup" aria-label={tx("Planogram for {name}", { name: l.name })}>
             <span className="text-gray-600 self-center">{tx("Planogram:")}</span>
-            {([[true, "As agreed"], [false, "Not as agreed"]] as const).map(([v, t]) => (
+            {([[true, tx("As agreed")], [false, tx("Not as agreed")]] as const).map(([v, t]) => (
               <button key={t} type="button" role="radio" aria-checked={l.planogram_ok === v} onClick={() => upd(l.product_id, { planogram_ok: v })}
                 className={`px-2 py-1 rounded border ${l.planogram_ok === v ? (v ? "bg-emerald-600 text-white" : "bg-red-600 text-white") : ""}`}>{t}</button>))}
           </div>

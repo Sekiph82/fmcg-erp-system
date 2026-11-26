@@ -115,7 +115,7 @@ function SuppliersListTab() {
             { header: tx("Contact"), accessor: (r) => r.contact_person ?? "—" },
             { header: tx("Email"), accessor: (r) => r.email ?? "—" },
             { header: tx("Country"), accessor: (r) => r.country ?? "—" },
-            { header: tx("Payment Terms"), accessor: (r) => `${r.payment_terms_days} days` },
+            { header: tx("Payment Terms"), accessor: (r) => tx("{payment_terms_days} days", { payment_terms_days: r.payment_terms_days }) },
             {
               header: tx("Qualification"),
               accessor: (r) => {
@@ -168,7 +168,7 @@ function SuppliersListTab() {
         </form>
       </Modal>
 
-      <Modal open={!!governanceId} onClose={() => setGovernanceId(null)} title={`Supplier governance: ${governanceSupplier?.name ?? ""}`}>
+      <Modal open={!!governanceId} onClose={() => setGovernanceId(null)} title={tx("Supplier governance: {name}", { name: governanceSupplier?.name ?? "" })}>
         <div className="space-y-5">
           <section className="space-y-3">
             <h2 className="text-sm font-semibold text-gray-800">{tx("Qualification decision")}</h2>
@@ -231,7 +231,7 @@ export default function SuppliersPage() {
   return (
     <ModuleWorkspace
       title={tx("Suppliers")}
-      description="Supplier master, contacts, performance, approved vendors"
+      description={tx("Supplier master, contacts, performance, approved vendors")}
       permission="suppliers.view"
       tabs={tabs}
       defaultTab="suppliers"

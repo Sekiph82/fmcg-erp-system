@@ -674,7 +674,7 @@ function MySignatureCard() {
       <div className="text-sm">
         <div className="font-semibold text-gray-900">{tx("My signature")}</div>
         <div className="text-xs text-gray-500">{data.has_signature
-          ? `Registered by IT on ${new Date(data.registered_at!).toLocaleDateString()} — applied automatically when you sign.`
+          ? tx("Registered by IT on {date} — applied automatically when you sign.", { date: new Date(data.registered_at!).toLocaleDateString() })
           : tx("No signature on file yet. IT registers it for you; until then you can draw one when signing.")}</div>
       </div>
       {data.has_signature && (

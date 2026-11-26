@@ -429,7 +429,7 @@ export default function UtilityReadingsPage() {
                 required
               />
               <Input
-                label={`Cumulative Value ${selectedDevice?.reading_type === "CUMULATIVE" ? "*" : "(opt.)"}`}
+                label={tx("Cumulative Value {reading_type}", { reading_type: selectedDevice?.reading_type === "CUMULATIVE" ? "*" : "(opt.)" })}
                 type="number"
                 step="any"
                 value={String(form.cumulative_value ?? "")}

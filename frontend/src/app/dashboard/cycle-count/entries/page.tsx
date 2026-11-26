@@ -50,7 +50,7 @@ function EntriesContent() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{tx("Count Entries")}</h1>
           <p className="text-sm text-gray-500 mt-1">
-            {taskId ? `Task: ${taskId.slice(0, 8)}... · ` : ""}{entries.length} {tx("record(s)")}
+            {taskId ? tx("Task: {taskId}... · ", { taskId: taskId.slice(0, 8) }) : ""}{entries.length} {tx("record(s)")}
           </p>
         </div>
         <Button onClick={() => setShowForm(!showForm)}>{showForm ? tx("Cancel") : tx("Record Count")}</Button>

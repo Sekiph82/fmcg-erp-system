@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { MpesaSummary } from "@/lib/dashboard";
+import { tx as xlate, lx } from "@/lib/i18n/core";
 
-const statusConfig: Record<string, { badge: string; label: string }> = {
-  completed: { badge: "bg-emerald-100 text-emerald-700", label: "Success" },
-  pending:   { badge: "bg-amber-100 text-amber-700",    label: "Pending" },
-  failed:    { badge: "bg-red-100 text-red-600",         label: "Failed"  },
-  cancelled: { badge: "bg-gray-100 text-gray-500",       label: "Cancelled" },
-};
+const statusConfig: Record<string, { badge: string; label: string }> = lx(() => ({
+  completed: { badge: xlate("bg-emerald-100 text-emerald-700"), label: xlate("Success") },
+  pending:   { badge: xlate("bg-amber-100 text-amber-700"),    label: xlate("Pending") },
+  failed:    { badge: xlate("bg-red-100 text-red-600"),         label: xlate("Failed")  },
+  cancelled: { badge: xlate("bg-gray-100 text-gray-500"),       label: xlate("Cancelled") },
+}));
 
 interface MpesaSectionProps {
   data: MpesaSummary;
@@ -27,21 +28,21 @@ export function MpesaSection({ data }: MpesaSectionProps) {
       {/* Summary grid */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-3 text-center">
-          <p className="text-[11px] uppercase tracking-wide text-emerald-600 font-medium">Collected</p>
+          <p className="text-[11px] uppercase tracking-wide text-emerald-600 font-medium">{xlate("Collected")}</p>
           <p className="text-xl font-bold text-emerald-700 mt-0.5">
             KES {data.today_collected.toLocaleString(undefined, { maximumFractionDigits: 0 })}
           </p>
         </div>
         <div className="rounded-xl bg-amber-50 border border-amber-100 p-3 text-center">
-          <p className="text-[11px] uppercase tracking-wide text-amber-600 font-medium">Pending</p>
+          <p className="text-[11px] uppercase tracking-wide text-amber-600 font-medium">{xlate("Pending")}</p>
           <p className="text-xl font-bold text-amber-700 mt-0.5">{data.pending_count}</p>
         </div>
         <div className="rounded-xl bg-red-50 border border-red-100 p-3 text-center">
-          <p className="text-[11px] uppercase tracking-wide text-red-600 font-medium">Failed</p>
+          <p className="text-[11px] uppercase tracking-wide text-red-600 font-medium">{xlate("Failed")}</p>
           <p className="text-xl font-bold text-red-700 mt-0.5">{data.failed_today}</p>
         </div>
         <div className="rounded-xl bg-white border border-gray-100 p-3 text-center">
-          <p className="text-[11px] uppercase tracking-wide text-gray-500 font-medium">Success Rate</p>
+          <p className="text-[11px] uppercase tracking-wide text-gray-500 font-medium">{xlate("Success Rate")}</p>
           <p className={`text-xl font-bold mt-0.5 ${successColor}`}>
             {data.success_rate.toFixed(0)}%
           </p>
@@ -51,8 +52,8 @@ export function MpesaSection({ data }: MpesaSectionProps) {
       {/* Success rate bar */}
       <div>
         <div className="flex justify-between text-xs text-gray-500 mb-1">
-          <span>Transaction success rate today</span>
-          <span>{data.total_today} total</span>
+          <span>{xlate("Transaction success rate today")}</span>
+          <span>{data.total_today} {xlate("total")}</span>
         </div>
         <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
           <div
@@ -71,14 +72,14 @@ export function MpesaSection({ data }: MpesaSectionProps) {
       {/* Last 10 transactions */}
       <div>
         <div className="flex items-center justify-between mb-2">
-          <h4 className="text-sm font-semibold text-gray-700">Recent Transactions</h4>
+          <h4 className="text-sm font-semibold text-gray-700">{xlate("Recent Transactions")}</h4>
           <Link href="/dashboard/finance/mpesa" className="text-xs text-indigo-500 hover:underline">
-            View all →
+            {xlate("View all →")}
           </Link>
         </div>
         <div className="space-y-1.5 max-h-64 overflow-y-auto pr-1">
           {data.last_10.length === 0 ? (
-            <p className="text-sm text-gray-400 py-2 text-center">No transactions today</p>
+            <p className="text-sm text-gray-400 py-2 text-center">{xlate("No transactions today")}</p>
           ) : (
             data.last_10.map((tx) => {
               const cfg = statusConfig[tx.status] ?? statusConfig.pending;

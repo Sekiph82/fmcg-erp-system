@@ -323,8 +323,8 @@ export default function CompressorPage() {
       <div className="bg-slate-800 border border-slate-700 rounded-lg p-4">
         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
           {[
-            ["Date From", "date", dateFrom, setDateFrom],
-            ["Date To",   "date", dateTo,   setDateTo],
+            [tx("Date From"), "date", dateFrom, setDateFrom],
+            [tx("Date To"),   "date", dateTo,   setDateTo],
           ].map(([lbl, type, val, setter]) => (
             <div key={String(lbl)}>
               <label className="text-xs text-slate-400 block mb-1">{String(lbl)}</label>
@@ -352,7 +352,7 @@ export default function CompressorPage() {
             <select value={shiftRef} onChange={e => setShiftRef(e.target.value)}
               className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-white">
               <option value="">{tx("All")}</option>
-              {["A","B","C",tx("Day"),tx("Night")].map(s => <option key={s}>{s}</option>)}
+              {[["A", "A"], ["B", "B"], ["C", "C"], ["Day", tx("Day")], ["Night", tx("Night")]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
           </div>
           <div>
@@ -392,11 +392,11 @@ export default function CompressorPage() {
             flagMsg="Above 20% — investigate demand"
             accent="border-amber-500/40" />
           <KPICard label={tx("Discharge Pressure")}
-            value={K.avg_discharge_pressure_bar != null ? `${n(K.avg_discharge_pressure_bar, 2)} bar` : "—"}
-            sub={K.avg_line_pressure_bar != null ? `Line: ${n(K.avg_line_pressure_bar, 2)} bar` : undefined}
+            value={K.avg_discharge_pressure_bar != null ? tx("{n} bar", { n: n(K.avg_discharge_pressure_bar, 2) }) : "—"}
+            sub={K.avg_line_pressure_bar != null ? tx("Line: {n} bar", { n: n(K.avg_line_pressure_bar, 2) }) : undefined}
             accent="border-blue-500/40" />
           <KPICard label={tx("Pressure Drop")}
-            value={K.avg_pressure_drop_bar != null ? `${n(K.avg_pressure_drop_bar, 3)} bar` : "—"}
+            value={K.avg_pressure_drop_bar != null ? tx("{n} bar", { n: n(K.avg_pressure_drop_bar, 3) }) : "—"}
             flag={K.flag_pressure_drop}
             flagMsg="Above 0.3 bar — check distribution"
             accent="border-violet-500/40" />
@@ -414,7 +414,7 @@ export default function CompressorPage() {
             accent="border-teal-500/40" />
           <KPICard label={tx("Air Cost / Nm³")}
             value={K.air_cost_per_nm3 != null ? `$${n(K.air_cost_per_nm3, 4)}` : "—"}
-            sub={K.air_cost_total != null ? `Total: $${n(K.air_cost_total, 0)}` : undefined}
+            sub={K.air_cost_total != null ? tx("Total: ${n}", { n: n(K.air_cost_total, 0) }) : undefined}
             accent="border-emerald-500/40" />
           <KPICard label={tx("Dryer Dew Point")}
             value={K.avg_dryer_dew_point_c != null ? `${n(K.avg_dryer_dew_point_c, 1)} °C` : "—"}
@@ -694,30 +694,30 @@ export default function CompressorPage() {
             )}
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
               {[
-                ["Shift",               viewRec.shift_ref],
-                ["Department",          viewRec.department],
-                ["Production Line",     viewRec.production_line],
-                ["Period (h)",          viewRec.period_hours],
-                ["Air Generated",       viewRec.air_generated_nm3 != null ? `${n(viewRec.air_generated_nm3, 0)} ${viewRec.air_unit ?? "Nm³"}` : null],
-                ["Electricity Used",    viewRec.electricity_used_kwh != null ? `${viewRec.electricity_used_kwh} kWh` : null],
-                ["Runtime (h)",         viewRec.runtime_hours],
-                ["Load Time (h)",       viewRec.load_time_hours],
-                ["Unload Time (h)",     viewRec.unload_time_hours],
-                ["Idle Time (h)",       viewRec.idle_time_hours],
-                ["Discharge (bar)",     viewRec.discharge_pressure_bar],
-                ["System (bar)",        viewRec.system_pressure_bar],
-                ["Receiver (bar)",      viewRec.receiver_tank_pressure_bar],
-                ["Line (bar)",          viewRec.line_pressure_bar],
-                ["Filter ΔP (bar)",     viewRec.filter_dp_bar],
-                ["Dryer Status",        viewRec.dryer_status],
-                ["Dryer Dew Point",     viewRec.dryer_dew_point_c != null ? `${viewRec.dryer_dew_point_c} °C` : null],
-                ["Spec. Energy",        viewRec.specific_energy_kwh_m3 != null ? `${viewRec.specific_energy_kwh_m3} kWh/Nm³` : null],
-                ["Leak Estimate",       viewRec.leak_estimation_pct != null ? `${viewRec.leak_estimation_pct}%` : null],
-                ["Night Idle kWh",      viewRec.night_idle_kwh],
-                ["Start-Stops",         viewRec.start_stop_count],
-                ["Downtime (min)",      viewRec.downtime_minutes],
-                ["Downtime Reason",     viewRec.downtime_reason],
-                ["Notes",               viewRec.notes],
+                [tx("Shift"),               viewRec.shift_ref],
+                [tx("Department"),          viewRec.department],
+                [tx("Production Line"),     viewRec.production_line],
+                [tx("Period (h)"),          viewRec.period_hours],
+                [tx("Air Generated"),       viewRec.air_generated_nm3 != null ? `${n(viewRec.air_generated_nm3, 0)} ${viewRec.air_unit ?? "Nm³"}` : null],
+                [tx("Electricity Used"),    viewRec.electricity_used_kwh != null ? `${viewRec.electricity_used_kwh} kWh` : null],
+                [tx("Runtime (h)"),         viewRec.runtime_hours],
+                [tx("Load Time (h)"),       viewRec.load_time_hours],
+                [tx("Unload Time (h)"),     viewRec.unload_time_hours],
+                [tx("Idle Time (h)"),       viewRec.idle_time_hours],
+                [tx("Discharge (bar)"),     viewRec.discharge_pressure_bar],
+                [tx("System (bar)"),        viewRec.system_pressure_bar],
+                [tx("Receiver (bar)"),      viewRec.receiver_tank_pressure_bar],
+                [tx("Line (bar)"),          viewRec.line_pressure_bar],
+                [tx("Filter ΔP (bar)"),     viewRec.filter_dp_bar],
+                [tx("Dryer Status"),        viewRec.dryer_status],
+                [tx("Dryer Dew Point"),     viewRec.dryer_dew_point_c != null ? `${viewRec.dryer_dew_point_c} °C` : null],
+                [tx("Spec. Energy"),        viewRec.specific_energy_kwh_m3 != null ? `${viewRec.specific_energy_kwh_m3} kWh/Nm³` : null],
+                [tx("Leak Estimate"),       viewRec.leak_estimation_pct != null ? `${viewRec.leak_estimation_pct}%` : null],
+                [tx("Night Idle kWh"),      viewRec.night_idle_kwh],
+                [tx("Start-Stops"),         viewRec.start_stop_count],
+                [tx("Downtime (min)"),      viewRec.downtime_minutes],
+                [tx("Downtime Reason"),     viewRec.downtime_reason],
+                [tx("Notes"),               viewRec.notes],
               ].map(([lbl, val]) =>
                 val != null ? (
                   <div key={String(lbl)} className="flex flex-col">
@@ -767,7 +767,7 @@ export default function CompressorPage() {
                   onChange={e => fSet("shift_ref", e.target.value || undefined)}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white">
                   <option value="">—</option>
-                  {["A","B","C",tx("Day"),tx("Night")].map(s => <option key={s}>{s}</option>)}
+                  {[["A", "A"], ["B", "B"], ["C", "C"], ["Day", tx("Day")], ["Night", tx("Night")]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
               <div>
@@ -801,15 +801,15 @@ export default function CompressorPage() {
               <legend className="text-xs text-slate-400 px-1">{tx("Air Production & Time Breakdown")}</legend>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  ["Period Hours",       "period_hours"],
-                  ["Air Generated (Nm³)","air_generated_nm3"],
-                  ["Electricity (kWh)",  "electricity_used_kwh"],
-                  ["Runtime (h)",        "runtime_hours"],
-                  ["Load Time (h)",      "load_time_hours"],
-                  ["Unload Time (h)",    "unload_time_hours"],
-                  ["Idle Time (h)",      "idle_time_hours"],
+                  [tx("Period Hours"),       "period_hours"],
+                  [tx("Air Generated (Nm³)"),"air_generated_nm3"],
+                  [tx("Electricity (kWh)"),  "electricity_used_kwh"],
+                  [tx("Runtime (h)"),        "runtime_hours"],
+                  [tx("Load Time (h)"),      "load_time_hours"],
+                  [tx("Unload Time (h)"),    "unload_time_hours"],
+                  [tx("Idle Time (h)"),      "idle_time_hours"],
                   ["Start-Stops",        "start_stop_count"],
-                  ["Downtime (min)",     "downtime_minutes"],
+                  [tx("Downtime (min)"),     "downtime_minutes"],
                 ].map(([lbl, key]) => (
                   <div key={key}>
                     <label className="text-xs text-slate-400 block mb-1">{lbl}</label>
@@ -830,7 +830,7 @@ export default function CompressorPage() {
                   ["Inlet",          "inlet_pressure_bar"],
                   ["Discharge",      "discharge_pressure_bar"],
                   ["System/Header",  "system_pressure_bar"],
-                  ["Receiver Tank",  "receiver_tank_pressure_bar"],
+                  [tx("Receiver Tank"),  "receiver_tank_pressure_bar"],
                   ["Line",           "line_pressure_bar"],
                   ["Filter ΔP",      "filter_dp_bar"],
                 ].map(([lbl, key]) => (
@@ -859,11 +859,11 @@ export default function CompressorPage() {
                   </select>
                 </div>
                 {[
-                  ["Dryer Dew Point (°C)",     "dryer_dew_point_c"],
-                  ["Compressor Dew Point (°C)","dew_point_c"],
+                  [tx("Dryer Dew Point (°C)"),     "dryer_dew_point_c"],
+                  [tx("Compressor Dew Point (°C)"),"dew_point_c"],
                   ["PDP (°C)",                 "pressure_dew_point_c"],
-                  ["Air Temp (°C)",             "air_temperature_c"],
-                  ["Spec. Energy (kWh/Nm³)",   "specific_energy_kwh_m3"],
+                  [tx("Air Temp (°C)"),             "air_temperature_c"],
+                  [tx("Spec. Energy (kWh/Nm³)"),   "specific_energy_kwh_m3"],
                 ].map(([lbl, key]) => (
                   <div key={key}>
                     <label className="text-xs text-slate-400 block mb-1">{lbl}</label>
@@ -886,10 +886,10 @@ export default function CompressorPage() {
                   <label htmlFor="leak_done" className="text-sm text-slate-300">{tx("Leak test done")}</label>
                 </div>
                 {[
-                  ["Leak Estimate (%)",   "leak_estimation_pct"],
-                  ["Leak Volume (Nm³)",   "leak_volume_nm3"],
-                  ["Night Idle kWh",      "night_idle_kwh"],
-                  ["Night Idle Nm³",      "night_idle_nm3"],
+                  [tx("Leak Estimate (%)"),   "leak_estimation_pct"],
+                  [tx("Leak Volume (Nm³)"),   "leak_volume_nm3"],
+                  [tx("Night Idle kWh"),      "night_idle_kwh"],
+                  [tx("Night Idle Nm³"),      "night_idle_nm3"],
                 ].map(([lbl, key]) => (
                   <div key={key}>
                     <label className="text-xs text-slate-400 block mb-1">{lbl}</label>

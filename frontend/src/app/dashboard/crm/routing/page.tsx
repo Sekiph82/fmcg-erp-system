@@ -29,7 +29,7 @@ export default function CRMRoutingPage() {
     apiClient.get("/api/v1/crm-routing/handoffs").then((r) => setHandoffs(r.data)).catch(() => setHandoffs([]));
   }, []);
   useEffect(() => { load(); }, [load]);
-  const act = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); setMsg(ok); load(); } catch (e) { setMsg(err(e, "Not allowed.")); } };
+  const act = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); setMsg(ok); load(); } catch (e) { setMsg(err(e, tx("Not allowed."))); } };
 
   return (
     <div className="p-4 grid lg:grid-cols-3 gap-4 text-xs">
@@ -38,10 +38,10 @@ export default function CRMRoutingPage() {
         <h3 className="text-sm font-semibold">{tx("Lead routing")}</h3>
         {rules.map((r) => <div key={r.id} className="border-b py-1">{r.priority}. {r.name} · {r.method.replace("_", " ").toLowerCase()} · {r.user_ids.length} {tx("people")}
           {Object.entries(r.conditions).filter(([, v]) => v).map(([k, v]) => <span key={k} className="text-gray-500"> · {k}={v}</span>)}
-          <button className="ml-2 text-red-600" onClick={() => act(() => apiClient.delete(`/api/v1/crm-routing/rules/${r.id}`), "Rule removed.")}>×</button></div>)}
+          <button className="ml-2 text-red-600" onClick={() => act(() => apiClient.delete(`/api/v1/crm-routing/rules/${r.id}`), tx("Rule removed."))}>×</button></div>)}
         <form className="space-y-1" onSubmit={(e) => { e.preventDefault();
           act(() => apiClient.post("/api/v1/crm-routing/rules", { name: rule.name, priority: rule.priority, method: rule.method, user_ids: rule.users,
-            conditions: { source_type: rule.source_type || null, sales_region_id: rule.sales_region_id || null } }), "Rule added."); }}>
+            conditions: { source_type: rule.source_type || null, sales_region_id: rule.sales_region_id || null } }), tx("Rule added.")); }}>
           <input required className="border rounded px-2 py-1 w-full" placeholder={tx("Rule name")} value={rule.name} onChange={(e) => setRule({ ...rule, name: e.target.value })} />
           <div className="flex gap-1">
             <select className="border rounded px-1" value={rule.method} onChange={(e) => setRule({ ...rule, method: e.target.value })}>
@@ -64,7 +64,7 @@ export default function CRMRoutingPage() {
             <button className="underline" onClick={() => { const reason = prompt(tx("Reason?")) ?? ""; act(() => apiClient.post(`/api/v1/crm-routing/approvals/${a.id}/decision`, { approve: false, reason }), "Rejected."); }}>{tx("Reject")}</button>
           </div>))}
         <form className="space-y-1 pt-2 border-t" onSubmit={(e) => { e.preventDefault();
-          act(() => apiClient.post("/api/v1/crm-routing/approval-rules", { name: ap.name, stage_id: ap.stage_id, min_expected_revenue: ap.min_expected_revenue ? +ap.min_expected_revenue : null }), "Approval rule added."); }}>
+          act(() => apiClient.post("/api/v1/crm-routing/approval-rules", { name: ap.name, stage_id: ap.stage_id, min_expected_revenue: ap.min_expected_revenue ? +ap.min_expected_revenue : null }), tx("Approval rule added.")); }}>
           <input required className="border rounded px-2 py-1 w-full" placeholder={tx("Rule name, e.g. Large deal sign-off")} value={ap.name} onChange={(e) => setAp({ ...ap, name: e.target.value })} />
           <input required className="border rounded px-2 py-1 w-full" placeholder={tx("Stage id that needs approval to enter")} value={ap.stage_id} onChange={(e) => setAp({ ...ap, stage_id: e.target.value })} />
           <input type="number" className="border rounded px-2 py-1 w-full" placeholder={tx("Only above expected value")} value={ap.min_expected_revenue} onChange={(e) => setAp({ ...ap, min_expected_revenue: e.target.value })} />
@@ -80,7 +80,7 @@ export default function CRMRoutingPage() {
             {h.brief.contacts.length > 0 && <div>{tx("Contacts:")} {h.brief.contacts.join("; ")}</div>}
             {h.brief.promises.length > 0 && <div>{tx("Promised by us:")} {h.brief.promises.join("; ")}</div>}
             {h.brief.open_tasks.length > 0 && <div>{tx("Open tasks:")} {h.brief.open_tasks.join("; ")}</div>}
-            <button className="underline" onClick={() => act(() => apiClient.post(`/api/v1/crm-routing/handoffs/${h.id}/acknowledge`), "Handoff taken over.")}>{tx("Take over")}</button>
+            <button className="underline" onClick={() => act(() => apiClient.post(`/api/v1/crm-routing/handoffs/${h.id}/acknowledge`), tx("Handoff taken over."))}>{tx("Take over")}</button>
           </div>))}
       </section>
     </div>

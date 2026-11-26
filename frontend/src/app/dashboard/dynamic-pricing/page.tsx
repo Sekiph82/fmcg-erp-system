@@ -167,9 +167,9 @@ export default function DynamicPricingPage() {
             { label: tx("Competitor Observations"), value: dash.total_competitor_observations, color: "text-gray-800" },
             { label: tx("Pending Recommendations"), value: dash.pending_recommendations, color: "text-amber-600" },
             { label: tx("Applied"), value: dash.applied_recommendations, color: "text-green-600" },
-            { label: "Undercut Alerts", value: dash.competitor_undercut_alerts, color: "text-red-600" },
+            { label: tx("Undercut Alerts"), value: dash.competitor_undercut_alerts, color: "text-red-600" },
           ].map((k) => (
-            <div key={k.label} className={`bg-white border rounded-lg p-4 shadow-sm ${k.label === "Undercut Alerts" && k.value > 0 ? "border-red-300 bg-red-50" : ""}`}>
+            <div key={k.label} className={`bg-white border rounded-lg p-4 shadow-sm ${k.label === tx("Undercut Alerts") && k.value > 0 ? "border-red-300 bg-red-50" : ""}`}>
               <p className="text-xs text-gray-500">{k.label}</p>
               <p className={`text-2xl font-bold mt-1 ${k.color}`}>{k.value}</p>
             </div>
@@ -179,7 +179,7 @@ export default function DynamicPricingPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 border-b">
-        {([["recs", "Price Recommendations"], ["competitors", "Competitor Data"], ["log", "Log Price"], ["generate", "Generate Recommendation"]] as const).map(([t, label]) => (
+        {([["recs", tx("Price Recommendations")], ["competitors", tx("Competitor Data")], ["log", tx("Log Price")], ["generate", tx("Generate Recommendation")]] as const).map(([t, label]) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${tab === t ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
             {label}
@@ -281,11 +281,11 @@ export default function DynamicPricingPage() {
           <h2 className="text-sm font-semibold text-gray-700">{tx("Log Competitor Price Observation")}</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {([
-              ["Product Name *", "product_name", "e.g. POVU AllClean Multi-Purpose Cleaner 1 L Bottle"],
+              [tx("Product Name *"), "product_name", "e.g. POVU AllClean Multi-Purpose Cleaner 1 L Bottle"],
               ["Our SKU", "our_sku", "e.g. MJ-500"],
-              ["Competitor Name *", "competitor_name", "e.g. Fresh Corp"],
+              [tx("Competitor Name *"), "competitor_name", "e.g. Fresh Corp"],
               ["Price *", "price", "e.g. 85.00"],
-              ["Pack Size", "pack_size", "e.g. 500ml"],
+              [tx("Pack Size"), "pack_size", "e.g. 500ml"],
               ["Source", "source", "field rep | web | nielsen"],
               ["Location", "location", "e.g. Naivas Karen"],
             ] as const).map(([label, key, ph]) => (
@@ -324,12 +324,12 @@ export default function DynamicPricingPage() {
             <p className="text-xs text-gray-400">{tx("Compares your price against recent competitor data and margin rules to produce a recommendation.")}</p>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {([
-                ["Product Name *", "product_name", "e.g. POVU AllClean Multi-Purpose Cleaner 1 L Bottle"],
+                [tx("Product Name *"), "product_name", "e.g. POVU AllClean Multi-Purpose Cleaner 1 L Bottle"],
                 ["Our SKU", "our_sku", "e.g. MJ-500"],
-                ["Current Price (KES) *", "current_price", "e.g. 95.00"],
-                ["Cost Price / COGS (KES)", "cost_price", "e.g. 55.00"],
-                ["Floor Margin %", "floor_margin_pct", "e.g. 20"],
-                ["Target Margin %", "target_margin_pct", "e.g. 35"],
+                [tx("Current Price (KES) *"), "current_price", "e.g. 95.00"],
+                [tx("Cost Price / COGS (KES)"), "cost_price", "e.g. 55.00"],
+                [tx("Floor Margin %"), "floor_margin_pct", "e.g. 20"],
+                [tx("Target Margin %"), "target_margin_pct", "e.g. 35"],
               ] as const).map(([label, key, ph]) => (
                 <div key={key}>
                   <label className="text-xs text-gray-500 block mb-1">{label}</label>
@@ -354,7 +354,7 @@ export default function DynamicPricingPage() {
           {genResult && (
             <div className={`bg-white border rounded-lg p-4 shadow-sm space-y-2 ${genResult.trigger === "COMPETITOR_UNDERCUT" || genResult.trigger === "LOW_MARGIN" ? "border-amber-300" : "border-green-300"}`}>
               <p className="text-sm font-semibold text-gray-800">
-                {tx("Result:")} {genResult.trigger === "HOLD" ? tx("Hold — No Change Needed") : `Action Required — ${genResult.trigger?.replace(/_/g, " ")}`}
+                {tx("Result:")} {genResult.trigger === "HOLD" ? tx("Hold — No Change Needed") : tx("Action Required — {trigger}", { trigger: genResult.trigger?.replace(/_/g, " ") })}
               </p>
               <div className="flex gap-4 text-sm flex-wrap">
                 <span>{tx("Current: KES")} {genResult.current_price?.toLocaleString()}</span>

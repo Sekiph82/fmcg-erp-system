@@ -123,7 +123,7 @@ export default function IMAIPage() {
               </div>
               <p className="text-xs text-gray-400">
                 {new Date(rec.created_at).toLocaleString()}
-                {rec.actioned_at && ` · Actioned ${new Date(rec.actioned_at).toLocaleString()}`}
+                {rec.actioned_at && tx(" · Actioned {date}", { date: new Date(rec.actioned_at).toLocaleString() })}
               </p>
             </div>
           ))}

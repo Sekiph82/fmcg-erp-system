@@ -1,13 +1,13 @@
 "use client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { subscriptionApi, SEVERITY_COLORS } from "@/lib/subscription";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
-const AGENT_LABELS: Record<string, string> = {
-  DEMAND_PREDICTOR:       "Demand Predictor",
-  RISK_MONITOR:           "Subscription Risk Monitor",
-  OPTIMIZATION_ASSISTANT: "Order Optimization Assistant",
-};
+const AGENT_LABELS: Record<string, string> = lx(() => ({
+  DEMAND_PREDICTOR:       tx("Demand Predictor"),
+  RISK_MONITOR:           tx("Subscription Risk Monitor"),
+  OPTIMIZATION_ASSISTANT: tx("Order Optimization Assistant"),
+}));
 
 export default function AIPage() {
   const qc = useQueryClient();

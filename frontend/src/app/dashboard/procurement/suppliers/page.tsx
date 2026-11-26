@@ -276,7 +276,7 @@ export default function SupplierEvaluationPage() {
                         {approval.approval_type}: {approval.status}
                         {approval.is_expired ? tx(" · expired") : ""}
                         {approval.is_current == null ? tx(" · expiry not recorded") : ""}
-                        {approval.audit_score != null ? ` · audit ${Number(approval.audit_score).toFixed(1)}` : ""}
+                        {approval.audit_score != null ? tx(" · audit {audit_score}", { audit_score: Number(approval.audit_score).toFixed(1) }) : ""}
                         {approval.expiry_date ? tx(" · exp {expiry_date}", { expiry_date: approval.expiry_date }) : ""}
                       </div>
                     );

@@ -66,7 +66,7 @@ export default function AccountingDashboardPage() {
         <KpiCard
           label={tx("Receivables")}
           value={isLoading ? "—" : fmtCurrency(data?.total_receivables ?? 0)}
-          sub={data ? `${data.overdue_sales_invoices} overdue` : undefined}
+          sub={data ? tx("{overdue_sales_invoices} overdue", { overdue_sales_invoices: data.overdue_sales_invoices }) : undefined}
           color={(data?.total_receivables ?? 0) > 0 ? "text-orange-600" : "text-green-600"}
         />
         <KpiCard
@@ -78,7 +78,7 @@ export default function AccountingDashboardPage() {
         <KpiCard
           label={tx("Payables")}
           value={isLoading ? "—" : fmtCurrency(data?.total_payables ?? 0)}
-          sub={data ? `${data.overdue_purchase_invoices} overdue` : undefined}
+          sub={data ? tx("{overdue_purchase_invoices} overdue", { overdue_purchase_invoices: data.overdue_purchase_invoices }) : undefined}
           color={(data?.total_payables ?? 0) > 0 ? "text-red-600" : "text-green-600"}
         />
         <KpiCard

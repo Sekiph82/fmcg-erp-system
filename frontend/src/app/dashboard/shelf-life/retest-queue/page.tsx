@@ -174,7 +174,7 @@ export default function RetestQueuePage() {
               <button onClick={() => setShowResult(null)} className="px-4 py-2 text-sm border rounded-lg">{tx("Cancel")}</button>
               <button onClick={handleResult} disabled={saving}
                 className={`px-4 py-2 text-sm text-white rounded-lg disabled:opacity-50 ${resultForm.result_passed ? "bg-green-600 hover:bg-green-700" : "bg-red-600 hover:bg-red-700"}`}>
-                {saving ? tx("Saving…") : `Record ${resultForm.result_passed ? "Pass" : "Fail"}`}
+                {saving ? tx("Saving…") : (resultForm.result_passed ? tx("Record Pass") : tx("Record Fail"))}
               </button>
             </div>
           </div>

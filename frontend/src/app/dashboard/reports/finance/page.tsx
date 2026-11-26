@@ -20,7 +20,7 @@ function FinanceDashboard() {
   return (
     <DashboardShell
       title={tx("Finance Analytics")}
-      subtitle="Cash position, receivables, payables, and cash flow"
+      subtitle={tx("Cash position, receivables, payables, and cash flow")}
       days={days}
       onDaysChange={setDays}
       backHref="/dashboard/reports"

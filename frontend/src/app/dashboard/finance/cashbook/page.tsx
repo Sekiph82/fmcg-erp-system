@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { financeApi, CashAccount, CashTransaction, CashAccountType } from "@/lib/finance";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { tx as xlate } from "@/lib/i18n/core";
 
 type Tab = "accounts" | "transactions" | "journal";
 
@@ -66,12 +67,12 @@ export default function CashbookPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Cashbook</h1>
-          <p className="text-sm text-gray-500 mt-1">Cash, bank and M-Pesa account management</p>
+          <h1 className="text-2xl font-bold text-gray-900">{xlate("Cashbook")}</h1>
+          <p className="text-sm text-gray-500 mt-1">{xlate("Cash, bank and M-Pesa account management")}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => { setTab("accounts"); setShowNewAccount(true); }}>New Account</Button>
-          {selectedAccount && <Button onClick={() => setShowNewTx(true)}>Add Transaction</Button>}
+          <Button variant="secondary" onClick={() => { setTab("accounts"); setShowNewAccount(true); }}>{xlate("New Account")}</Button>
+          {selectedAccount && <Button onClick={() => setShowNewTx(true)}>{xlate("Add Transaction")}</Button>}
         </div>
       </div>
 
@@ -85,7 +86,7 @@ export default function CashbookPage() {
               tab === t ? "border-indigo-600 text-indigo-700" : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
           >
-            {t === "transactions" && selectedAccount ? `Transactions — ${selectedAccount.name}` : t.charAt(0).toUpperCase() + t.slice(1)}
+            {t === "transactions" && selectedAccount ? xlate("Transactions — {name}", { name: selectedAccount.name }) : t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
         ))}
       </div>
@@ -96,12 +97,12 @@ export default function CashbookPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-5 py-2 text-left">Name</th>
-                <th className="px-5 py-2 text-left">Type</th>
-                <th className="px-5 py-2 text-left">Bank / Number</th>
-                <th className="px-5 py-2 text-right">Opening</th>
-                <th className="px-5 py-2 text-right">Current Balance</th>
-                <th className="px-5 py-2 text-left">Status</th>
+                <th className="px-5 py-2 text-left">{xlate("Name")}</th>
+                <th className="px-5 py-2 text-left">{xlate("Type")}</th>
+                <th className="px-5 py-2 text-left">{xlate("Bank / Number")}</th>
+                <th className="px-5 py-2 text-right">{xlate("Opening")}</th>
+                <th className="px-5 py-2 text-right">{xlate("Current Balance")}</th>
+                <th className="px-5 py-2 text-left">{xlate("Status")}</th>
                 <th className="px-5 py-2" />
               </tr>
             </thead>
@@ -113,19 +114,19 @@ export default function CashbookPage() {
                   <td className="px-5 py-3 text-gray-500">{[acc.bank_name, acc.account_number].filter(Boolean).join(" · ") || "—"}</td>
                   <td className="px-5 py-3 text-right">{Number(acc.opening_balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                   <td className="px-5 py-3 text-right font-semibold">{Number(acc.current_balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                  <td className="px-5 py-3"><Badge label={acc.is_active ? "Active" : "Inactive"} variant={acc.is_active ? "green" : "gray"} /></td>
+                  <td className="px-5 py-3"><Badge label={acc.is_active ? xlate("Active") : xlate("Inactive")} variant={acc.is_active ? "green" : "gray"} /></td>
                   <td className="px-5 py-3">
                     <button
                       className="text-xs text-indigo-600 hover:underline"
                       onClick={() => { setSelectedAccount(acc); setTab("transactions"); }}
                     >
-                      Transactions
+                      {xlate("Transactions")}
                     </button>
                   </td>
                 </tr>
               ))}
               {accounts.length === 0 && (
-                <tr><td colSpan={7} className="px-5 py-8 text-center text-gray-400">No accounts yet</td></tr>
+                <tr><td colSpan={7} className="px-5 py-8 text-center text-gray-400">{xlate("No accounts yet")}</td></tr>
               )}
             </tbody>
           </table>
@@ -136,17 +137,17 @@ export default function CashbookPage() {
       {tab === "transactions" && (
         <div className="bg-white rounded-lg border">
           {txLoading ? (
-            <p className="px-5 py-8 text-center text-gray-400">Loading…</p>
+            <p className="px-5 py-8 text-center text-gray-400">{xlate("Loading…")}</p>
           ) : (
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                  <th className="px-5 py-2 text-left">Date</th>
-                  <th className="px-5 py-2 text-left">Description</th>
-                  <th className="px-5 py-2 text-left">Direction</th>
-                  <th className="px-5 py-2 text-right">Amount</th>
-                  <th className="px-5 py-2 text-left">Status</th>
-                  <th className="px-5 py-2 text-left">Reference</th>
+                  <th className="px-5 py-2 text-left">{xlate("Date")}</th>
+                  <th className="px-5 py-2 text-left">{xlate("Description")}</th>
+                  <th className="px-5 py-2 text-left">{xlate("Direction")}</th>
+                  <th className="px-5 py-2 text-right">{xlate("Amount")}</th>
+                  <th className="px-5 py-2 text-left">{xlate("Status")}</th>
+                  <th className="px-5 py-2 text-left">{xlate("Reference")}</th>
                   <th className="px-5 py-2" />
                 </tr>
               </thead>
@@ -167,14 +168,14 @@ export default function CashbookPage() {
                           className="text-xs text-indigo-600 hover:underline"
                           onClick={() => clearTx.mutate(tx.id)}
                         >
-                          Clear
+                          {xlate("Clear")}
                         </button>
                       )}
                     </td>
                   </tr>
                 ))}
                 {transactions.length === 0 && (
-                  <tr><td colSpan={7} className="px-5 py-8 text-center text-gray-400">No transactions</td></tr>
+                  <tr><td colSpan={7} className="px-5 py-8 text-center text-gray-400">{xlate("No transactions")}</td></tr>
                 )}
               </tbody>
             </table>
@@ -188,13 +189,13 @@ export default function CashbookPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b bg-gray-50 text-xs text-gray-500 uppercase">
-                <th className="px-5 py-2 text-left">Entry No</th>
-                <th className="px-5 py-2 text-left">Date</th>
-                <th className="px-5 py-2 text-left">Description</th>
-                <th className="px-5 py-2 text-left">Module</th>
-                <th className="px-5 py-2 text-right">Debit</th>
-                <th className="px-5 py-2 text-right">Credit</th>
-                <th className="px-5 py-2 text-left">Posted</th>
+                <th className="px-5 py-2 text-left">{xlate("Entry No")}</th>
+                <th className="px-5 py-2 text-left">{xlate("Date")}</th>
+                <th className="px-5 py-2 text-left">{xlate("Description")}</th>
+                <th className="px-5 py-2 text-left">{xlate("Module")}</th>
+                <th className="px-5 py-2 text-right">{xlate("Debit")}</th>
+                <th className="px-5 py-2 text-right">{xlate("Credit")}</th>
+                <th className="px-5 py-2 text-left">{xlate("Posted")}</th>
               </tr>
             </thead>
             <tbody className="divide-y">
@@ -206,11 +207,11 @@ export default function CashbookPage() {
                   <td className="px-5 py-3 text-gray-500">{je.source_module || "—"}</td>
                   <td className="px-5 py-3 text-right">{je.total_debit != null ? Number(je.total_debit).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "—"}</td>
                   <td className="px-5 py-3 text-right">{je.total_credit != null ? Number(je.total_credit).toLocaleString(undefined, { minimumFractionDigits: 2 }) : "—"}</td>
-                  <td className="px-5 py-3"><Badge label={je.is_posted ? "Posted" : "Draft"} variant={je.is_posted ? "green" : "yellow"} /></td>
+                  <td className="px-5 py-3"><Badge label={je.is_posted ? xlate("Posted") : xlate("Draft")} variant={je.is_posted ? "green" : "yellow"} /></td>
                 </tr>
               ))}
               {journals.length === 0 && (
-                <tr><td colSpan={7} className="px-5 py-8 text-center text-gray-400">No journal entries</td></tr>
+                <tr><td colSpan={7} className="px-5 py-8 text-center text-gray-400">{xlate("No journal entries")}</td></tr>
               )}
             </tbody>
           </table>
@@ -246,44 +247,44 @@ function NewAccountModal({ onClose, onSubmit, loading }: { onClose: () => void; 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
-        <h2 className="font-semibold text-lg">New Cash Account</h2>
+        <h2 className="font-semibold text-lg">{xlate("New Cash Account")}</h2>
         <div className="space-y-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Name</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{xlate("Name")}</label>
             <input className="w-full border rounded px-3 py-2 text-sm" value={form.name} onChange={(e) => set("name", e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Type</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{xlate("Type")}</label>
             <select className="w-full border rounded px-3 py-2 text-sm" value={form.account_type} onChange={(e) => set("account_type", e.target.value)}>
-              <option value="CASH">Cash</option>
-              <option value="BANK">Bank</option>
-              <option value="MPESA">M-Pesa</option>
+              <option value="CASH">{xlate("Cash")}</option>
+              <option value="BANK">{xlate("Bank")}</option>
+              <option value="MPESA">{xlate("M-Pesa")}</option>
             </select>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Bank Name</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{xlate("Bank Name")}</label>
               <input className="w-full border rounded px-3 py-2 text-sm" value={form.bank_name} onChange={(e) => set("bank_name", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Account No.</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{xlate("Account No.")}</label>
               <input className="w-full border rounded px-3 py-2 text-sm" value={form.account_number} onChange={(e) => set("account_number", e.target.value)} />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Currency</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{xlate("Currency")}</label>
               <input className="w-full border rounded px-3 py-2 text-sm" value={form.currency} onChange={(e) => set("currency", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Opening Balance</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{xlate("Opening Balance")}</label>
               <input className="w-full border rounded px-3 py-2 text-sm" type="number" value={form.opening_balance} onChange={(e) => set("opening_balance", e.target.value)} />
             </div>
           </div>
         </div>
         <div className="flex gap-2 justify-end pt-2">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button loading={loading} onClick={() => onSubmit({ ...form, opening_balance: parseFloat(form.opening_balance) || 0 })}>Create</Button>
+          <Button variant="secondary" onClick={onClose}>{xlate("Cancel")}</Button>
+          <Button loading={loading} onClick={() => onSubmit({ ...form, opening_balance: parseFloat(form.opening_balance) || 0 })}>{xlate("Create")}</Button>
         </div>
       </div>
     </div>
@@ -299,58 +300,58 @@ function NewTransactionModal({ account, onClose, onSubmit, loading }: { account:
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
-        <h2 className="font-semibold text-lg">Add Transaction — {account.name}</h2>
+        <h2 className="font-semibold text-lg">{xlate("Add Transaction —")} {account.name}</h2>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Date</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{xlate("Date")}</label>
               <input className="w-full border rounded px-3 py-2 text-sm" type="date" value={form.transaction_date} onChange={(e) => set("transaction_date", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Direction</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{xlate("Direction")}</label>
               <select className="w-full border rounded px-3 py-2 text-sm" value={form.direction} onChange={(e) => set("direction", e.target.value)}>
-                <option value="RECEIPT">Receipt (in)</option>
-                <option value="PAYMENT">Payment (out)</option>
+                <option value="RECEIPT">{xlate("Receipt (in)")}</option>
+                <option value="PAYMENT">{xlate("Payment (out)")}</option>
               </select>
             </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Amount (KES)</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{xlate("Amount (KES)")}</label>
             <input className="w-full border rounded px-3 py-2 text-sm" type="number" value={form.amount} onChange={(e) => set("amount", e.target.value)} />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">{xlate("Description")}</label>
             <input className="w-full border rounded px-3 py-2 text-sm" value={form.description} onChange={(e) => set("description", e.target.value)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Reference</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{xlate("Reference")}</label>
               <input className="w-full border rounded px-3 py-2 text-sm" value={form.reference} onChange={(e) => set("reference", e.target.value)} />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">{xlate("Status")}</label>
               <select className="w-full border rounded px-3 py-2 text-sm" value={form.status} onChange={(e) => set("status", e.target.value)}>
-                <option value="CLEARED">Cleared</option>
-                <option value="PENDING">Pending</option>
+                <option value="CLEARED">{xlate("Cleared")}</option>
+                <option value="PENDING">{xlate("Pending")}</option>
               </select>
             </div>
           </div>
           {isMpesa && (
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">M-Pesa Phone</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{xlate("M-Pesa Phone")}</label>
                 <input className="w-full border rounded px-3 py-2 text-sm" value={form.mpesa_phone} onChange={(e) => set("mpesa_phone", e.target.value)} />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-600 mb-1">M-Pesa Receipt</label>
+                <label className="block text-xs font-medium text-gray-600 mb-1">{xlate("M-Pesa Receipt")}</label>
                 <input className="w-full border rounded px-3 py-2 text-sm" value={form.mpesa_receipt} onChange={(e) => set("mpesa_receipt", e.target.value)} />
               </div>
             </div>
           )}
         </div>
         <div className="flex gap-2 justify-end pt-2">
-          <Button variant="secondary" onClick={onClose}>Cancel</Button>
-          <Button loading={loading} onClick={() => onSubmit({ ...form, amount: parseFloat(form.amount) || 0 })}>Add</Button>
+          <Button variant="secondary" onClick={onClose}>{xlate("Cancel")}</Button>
+          <Button loading={loading} onClick={() => onSubmit({ ...form, amount: parseFloat(form.amount) || 0 })}>{xlate("Add")}</Button>
         </div>
       </div>
     </div>

@@ -273,7 +273,7 @@ export default function IntegrationsDashboardPage() {
   return (
     <ModuleWorkspace
       title={tx("Integrations")}
-      description="M-Pesa, sync, marketplace, barcode, webhooks, developer tools"
+      description={tx("M-Pesa, sync, marketplace, barcode, webhooks, developer tools")}
       permission="integrations.view"
       tabs={tabs}
       defaultTab="overview"

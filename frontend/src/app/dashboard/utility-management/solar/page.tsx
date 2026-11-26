@@ -36,6 +36,7 @@ import {
 } from "@/lib/solar";
 import { SOURCE_METHOD_LABELS, DATA_QUALITY_LABELS } from "@/lib/utilityTransactions";
 import type { SourceMethod, DataQuality } from "@/lib/utilityTransactions";
+import { tx as xlate, lx } from "@/lib/i18n/core";
 
 // ── Palette ────────────────────────────────────────────────────────────────────
 const AMBER  = "#f59e0b";
@@ -153,15 +154,15 @@ function TxForm({ initial, tariffs, onSubmit, isPending, error, label = "Save" }
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(f); }} className="flex flex-col gap-5">
       <div>
-        <Section>Generation</Section>
+        <Section>{xlate("Generation")}</Section>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="flex flex-col gap-1">
-            <label className={lbl}>Date *</label>
+            <label className={lbl}>{xlate("Date *")}</label>
             <input required type="date" value={f.transaction_date}
               onChange={(e) => s("transaction_date", e.target.value)} className={inp} />
           </div>
           <div className="flex flex-col gap-1">
-            <label className={lbl}>kWh Generated *</label>
+            <label className={lbl}>{xlate("kWh Generated *")}</label>
             <input required type="number" step="any" min="0" value={f.quantity as string}
               onChange={(e) => s("quantity", e.target.value)} className={inp} />
           </div>
@@ -170,7 +171,7 @@ function TxForm({ initial, tariffs, onSubmit, isPending, error, label = "Save" }
             <input type="text" value={f.uom} onChange={(e) => s("uom", e.target.value)} className={inp} />
           </div>
           <div className="flex flex-col gap-1">
-            <label className={lbl}>Source</label>
+            <label className={lbl}>{xlate("Source")}</label>
             <select value={f.source_method} onChange={(e) => s("source_method", e.target.value as SourceMethod)} className={inp}>
               {Object.entries(SOURCE_METHOD_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
@@ -179,13 +180,13 @@ function TxForm({ initial, tariffs, onSubmit, isPending, error, label = "Save" }
       </div>
 
       <div>
-        <Section>Allocation</Section>
+        <Section>{xlate("Allocation")}</Section>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {(
             [
               ["Department",      "department"],
-              ["Building / Area", "building_area"],
-              ["Production Line", "line_id"],
+              [xlate("Building / Area"), "building_area"],
+              [xlate("Production Line"), "line_id"],
               ["Machine",         "machine_id"],
               ["Shift",           "shift_id"],
               ["Batch",           "batch_id"],
@@ -203,34 +204,34 @@ function TxForm({ initial, tariffs, onSubmit, isPending, error, label = "Save" }
       </div>
 
       <div>
-        <Section>Cost / Savings</Section>
+        <Section>{xlate("Cost / Savings")}</Section>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="flex flex-col gap-1">
-            <label className={lbl}>Tariff (feed-in / avoided cost)</label>
+            <label className={lbl}>{xlate("Tariff (feed-in / avoided cost)")}</label>
             <select value={f.tariff_id ?? ""} onChange={(e) => s("tariff_id", e.target.value || null)} className={inp}>
-              <option value="">— No tariff —</option>
+              <option value="">{xlate("— No tariff —")}</option>
               {tariffs.map((t) => (
                 <option key={t.id} value={t.id}>{t.tariff_code} — {t.name}</option>
               ))}
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className={lbl}>Rate (/kWh)</label>
+            <label className={lbl}>{xlate("Rate (/kWh)")}</label>
             <input type="number" step="any" min="0" value={f.cost_rate as string ?? ""}
               onChange={(e) => s("cost_rate", e.target.value || null)} className={inp} />
           </div>
           <div className="flex flex-col gap-1">
-            <label className={lbl}>Total Cost Offset</label>
+            <label className={lbl}>{xlate("Total Cost Offset")}</label>
             <input type="number" step="any" min="0" value={f.total_cost as string ?? ""}
               onChange={(e) => s("total_cost", e.target.value || null)} className={inp} />
           </div>
           <div className="flex flex-col gap-1">
-            <label className={lbl}>Currency</label>
+            <label className={lbl}>{xlate("Currency")}</label>
             <input type="text" maxLength={3} value={f.currency_code ?? "USD"}
               onChange={(e) => s("currency_code", e.target.value.toUpperCase())} className={inp + " uppercase"} />
           </div>
           <div className="flex flex-col gap-1">
-            <label className={lbl}>Variance from Expected</label>
+            <label className={lbl}>{xlate("Variance from Expected")}</label>
             <input type="number" step="any" value={f.variance_from_standard as string ?? ""}
               onChange={(e) => s("variance_from_standard", e.target.value || null)} className={inp} />
           </div>
@@ -238,10 +239,10 @@ function TxForm({ initial, tariffs, onSubmit, isPending, error, label = "Save" }
       </div>
 
       <div>
-        <Section>Quality & Flags</Section>
+        <Section>{xlate("Quality & Flags")}</Section>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div className="flex flex-col gap-1">
-            <label className={lbl}>Data Quality</label>
+            <label className={lbl}>{xlate("Data Quality")}</label>
             <select value={f.quality} onChange={(e) => s("quality", e.target.value as DataQuality)} className={inp}>
               {Object.entries(DATA_QUALITY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
@@ -250,17 +251,17 @@ function TxForm({ initial, tariffs, onSubmit, isPending, error, label = "Save" }
             <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
               <input type="checkbox" checked={f.estimated_or_actual}
                 onChange={(e) => s("estimated_or_actual", e.target.checked)} className="accent-amber-500" />
-              Estimated
+              {xlate("Estimated")}
             </label>
             <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
               <input type="checkbox" checked={f.anomaly_flag}
                 onChange={(e) => s("anomaly_flag", e.target.checked)} className="accent-red-500" />
-              Anomaly
+              {xlate("Anomaly")}
             </label>
           </div>
           {f.anomaly_flag && (
             <div className="flex flex-col gap-1">
-              <label className={lbl}>Anomaly Note</label>
+              <label className={lbl}>{xlate("Anomaly Note")}</label>
               <input type="text" value={f.anomaly_note ?? ""}
                 onChange={(e) => s("anomaly_note", e.target.value || null)} className={inp} />
             </div>
@@ -269,7 +270,7 @@ function TxForm({ initial, tariffs, onSubmit, isPending, error, label = "Save" }
       </div>
 
       <div className="flex flex-col gap-1">
-        <label className={lbl}>Notes</label>
+        <label className={lbl}>{xlate("Notes")}</label>
         <textarea rows={2} value={f.notes ?? ""}
           onChange={(e) => s("notes", e.target.value || null)}
           className={inp + " resize-none"} />
@@ -279,7 +280,7 @@ function TxForm({ initial, tariffs, onSubmit, isPending, error, label = "Save" }
       <div className="flex justify-end">
         <button type="submit" disabled={isPending}
           className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-sm rounded font-medium transition-colors">
-          {isPending ? "Saving…" : label}
+          {isPending ? xlate("Saving…") : label}
         </button>
       </div>
     </form>
@@ -312,14 +313,14 @@ function SolarRecordForm({
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(f); }} className="flex flex-col gap-5">
       <div>
-        <Section>Identification</Section>
+        <Section>{xlate("Identification")}</Section>
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
-            <label className={lbl}>Asset (solar panel / inverter) *</label>
-            <EntityPicker kind="utility_asset" label="Solar asset" required value={f.asset_id} onChange={(id) => s("asset_id", id)} />
+            <label className={lbl}>{xlate("Asset (solar panel / inverter) *")}</label>
+            <EntityPicker kind="utility_asset" label={xlate("Solar asset")} required value={f.asset_id} onChange={(id) => s("asset_id", id)} />
           </div>
           <div className="flex flex-col gap-1">
-            <label className={lbl}>Record Datetime *</label>
+            <label className={lbl}>{xlate("Record Datetime *")}</label>
             <input required type="datetime-local" value={f.record_datetime}
               onChange={(e) => s("record_datetime", e.target.value)} className={inp} />
           </div>
@@ -327,12 +328,12 @@ function SolarRecordForm({
       </div>
 
       <div>
-        <Section>Environmental</Section>
+        <Section>{xlate("Environmental")}</Section>
         <div className="grid grid-cols-3 gap-3">
           {([
-            ["Irradiance (W/m²)", "irradiance_wm2"],
-            ["Panel Temp (°C)",   "panel_temp_c"],
-            ["Ambient Temp (°C)", "ambient_temp_c"],
+            [xlate("Irradiance (W/m²)"), "irradiance_wm2"],
+            [xlate("Panel Temp (°C)"),   "panel_temp_c"],
+            [xlate("Ambient Temp (°C)"), "ambient_temp_c"],
           ] as [string, keyof SolarRecordCreate][]).map(([fl, fk]) => (
             <div key={fk} className="flex flex-col gap-1">
               <label className={lbl}>{fl}</label>
@@ -346,16 +347,16 @@ function SolarRecordForm({
       </div>
 
       <div>
-        <Section>DC / AC Output</Section>
+        <Section>{xlate("DC / AC Output")}</Section>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {([
-            ["DC Voltage (V)",     "dc_voltage_v"],
-            ["DC Current (A)",     "dc_current_a"],
-            ["DC Power (kW)",      "dc_power_kw"],
-            ["AC Power (kW)",      "ac_power_kw"],
-            ["Generated (kWh)",    "energy_generated_kwh"],
-            ["Grid Export (kWh)",  "grid_export_kwh"],
-            ["Self-Consumed (kWh)","self_consumption_kwh"],
+            [xlate("DC Voltage (V)"),     "dc_voltage_v"],
+            [xlate("DC Current (A)"),     "dc_current_a"],
+            [xlate("DC Power (kW)"),      "dc_power_kw"],
+            [xlate("AC Power (kW)"),      "ac_power_kw"],
+            [xlate("Generated (kWh)"),    "energy_generated_kwh"],
+            [xlate("Grid Export (kWh)"),  "grid_export_kwh"],
+            [xlate("Self-Consumed (kWh)"),"self_consumption_kwh"],
           ] as [string, keyof SolarRecordCreate][]).map(([fl, fk]) => (
             <div key={fk} className="flex flex-col gap-1">
               <label className={lbl}>{fl}</label>
@@ -369,13 +370,13 @@ function SolarRecordForm({
       </div>
 
       <div>
-        <Section>Performance</Section>
+        <Section>{xlate("Performance")}</Section>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {([
-            ["Inverter Efficiency (%)", "inverter_efficiency_pct"],
-            ["PR Ratio",                "pr_ratio"],
+            [xlate("Inverter Efficiency (%)"), "inverter_efficiency_pct"],
+            [xlate("PR Ratio"),                "pr_ratio"],
             ["Availability (%)",        "availability_pct"],
-            ["Capacity Factor (%)",     "capacity_factor_pct"],
+            [xlate("Capacity Factor (%)"),     "capacity_factor_pct"],
           ] as [string, keyof SolarRecordCreate][]).map(([fl, fk]) => (
             <div key={fk} className="flex flex-col gap-1">
               <label className={lbl}>{fl}</label>
@@ -392,10 +393,10 @@ function SolarRecordForm({
         <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
           <input type="checkbox" checked={f.is_anomaly ?? false}
             onChange={(e) => s("is_anomaly", e.target.checked)} className="accent-red-500" />
-          Anomaly / Fault
+          {xlate("Anomaly / Fault")}
         </label>
         {f.is_anomaly && (
-          <input type="text" placeholder="Anomaly note…" value={f.anomaly_note ?? ""}
+          <input type="text" placeholder={xlate("Anomaly note…")} value={f.anomaly_note ?? ""}
             onChange={(e) => s("anomaly_note", e.target.value || null)}
             className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-red-500 flex-1" />
         )}
@@ -405,7 +406,7 @@ function SolarRecordForm({
       <div className="flex justify-end">
         <button type="submit" disabled={isPending}
           className="px-4 py-2 bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-sm rounded font-medium transition-colors">
-          {isPending ? "Saving…" : "Log Record"}
+          {isPending ? xlate("Saving…") : xlate("Log Record")}
         </button>
       </div>
     </form>
@@ -425,13 +426,13 @@ type ModalState =
 
 type BreakdownDim = "department" | "line" | "machine" | "building_area" | "shift";
 
-const DIM_LABELS: Record<BreakdownDim, string> = {
-  department:    "Department",
-  line:          "Production Line",
-  machine:       "Machine",
-  building_area: "Building / Area",
-  shift:         "Shift",
-};
+const DIM_LABELS: Record<BreakdownDim, string> = lx(() => ({
+  department:    xlate("Department"),
+  line:          xlate("Production Line"),
+  machine:       xlate("Machine"),
+  building_area: xlate("Building / Area"),
+  shift:         xlate("Shift"),
+}));
 
 export default function SolarPage() {
   const qc = useQueryClient();
@@ -496,14 +497,14 @@ export default function SolarPage() {
   const createMut = useMutation({
     mutationFn: solarApi.createTransaction,
     onSuccess: () => { inv(); setModal({ type: "none" }); setFormError(null); },
-    onError: (e: unknown) => setFormError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Failed to save."),
+    onError: (e: unknown) => setFormError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? xlate("Failed to save.")),
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UtilityTransactionUpdate }) =>
       solarApi.updateTransaction(id, data),
     onSuccess: () => { inv(); setModal({ type: "none" }); setFormError(null); },
-    onError: (e: unknown) => setFormError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Failed to save."),
+    onError: (e: unknown) => setFormError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? xlate("Failed to save.")),
   });
 
   const deleteMut = useMutation({
@@ -514,7 +515,7 @@ export default function SolarPage() {
   const addRecordMut = useMutation({
     mutationFn: solarApi.createRecord,
     onSuccess: () => { inv(); setModal({ type: "none" }); setFormError(null); },
-    onError: (e: unknown) => setFormError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Failed to save."),
+    onError: (e: unknown) => setFormError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? xlate("Failed to save.")),
   });
 
   const deleteRecordMut = useMutation({
@@ -568,31 +569,31 @@ export default function SolarPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75}
                 d="M12 3v1m0 16v1m8.66-9h-1M4.34 12h-1m15.07-5.66l-.71.71M6.34 17.66l-.71.71m12.73 0l-.71-.71M6.34 6.34l-.71-.71M12 7a5 5 0 100 10A5 5 0 0012 7z" />
             </svg>
-            <h1 className="text-lg font-semibold text-slate-200">Solar Energy Management</h1>
+            <h1 className="text-lg font-semibold text-slate-200">{xlate("Solar Energy Management")}</h1>
           </div>
           <p className="text-xs text-slate-500 mt-0.5 ml-7">
-            Generation · self-consumption · grid export · PR ratio · inverter performance
+            {xlate("Generation · self-consumption · grid export · PR ratio · inverter performance")}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button onClick={handleExport}
             className="px-3 py-2 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors">
-            Export CSV
+            {xlate("Export CSV")}
           </button>
           <button onClick={() => { setFormError(null); setModal({ type: "addRecord" }); }}
             className="px-3 py-2 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors">
-            + Operational Record
+            {xlate("+ Operational Record")}
           </button>
           <button onClick={() => { setFormError(null); setModal({ type: "create" }); }}
             className="flex items-center gap-1.5 px-3 py-2 bg-amber-600 hover:bg-amber-500 text-white text-sm rounded font-medium transition-colors">
-            <span className="text-base leading-none">+</span> Generation Record
+            <span className="text-base leading-none">+</span> {xlate("Generation Record")}
           </button>
         </div>
       </div>
 
       {/* ── Scope filter bar ─────────────────────────────────────────────────── */}
       <div className="flex flex-wrap gap-2 items-center bg-slate-800/40 border border-slate-700/40 rounded-lg p-3">
-        <span className="text-[10px] text-slate-500 uppercase tracking-wider mr-1">Scope:</span>
+        <span className="text-[10px] text-slate-500 uppercase tracking-wider mr-1">{xlate("Scope:")}</span>
         <input type="date" value={scope.date_from ?? ""} onChange={(e) => setS("date_from", e.target.value || undefined)}
           className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500" />
         <span className="text-slate-600 text-xs">–</span>
@@ -611,36 +612,36 @@ export default function SolarPage() {
         ))}
         <button onClick={() => { setScope({}); setTxFilters({ limit: 200 }); }}
           className="ml-auto text-xs text-slate-500 hover:text-slate-300 transition-colors">
-          Clear
+          {xlate("Clear")}
         </button>
       </div>
 
       {/* ── KPI cards ────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-        <KPICard label="Total Generated"   value={`${n(kpis?.total_generated_kwh)} kWh`}   sub={`${kpis?.tx_count ?? 0} records`} accent="text-amber-400" />
-        <KPICard label="Avg kWh/Day"       value={`${n(kpis?.avg_generated_kwh_per_day)} kWh`} />
-        <KPICard label="Peak Generation"   value={`${n(kpis?.peak_generation_kwh)} kWh`}   sub="max single record" accent="text-gold-400" />
-        <KPICard label="Self-Consumed"     value={`${n(kpis?.total_self_consumption_kwh)} kWh`}
-          sub={kpis?.self_consumption_ratio ? `Self-ratio: ${pct(kpis.self_consumption_ratio)}` : undefined}
+        <KPICard label={xlate("Total Generated")}   value={`${n(kpis?.total_generated_kwh)} kWh`}   sub={`${kpis?.tx_count ?? 0} records`} accent="text-amber-400" />
+        <KPICard label={xlate("Avg kWh/Day")}       value={`${n(kpis?.avg_generated_kwh_per_day)} kWh`} />
+        <KPICard label={xlate("Peak Generation")}   value={`${n(kpis?.peak_generation_kwh)} kWh`}   sub="max single record" accent="text-gold-400" />
+        <KPICard label={xlate("Self-Consumed")}     value={`${n(kpis?.total_self_consumption_kwh)} kWh`}
+          sub={kpis?.self_consumption_ratio ? xlate("Self-ratio: {pct}", { pct: pct(kpis.self_consumption_ratio) }) : undefined}
           accent="text-green-400" />
-        <KPICard label="Grid Export"       value={`${n(kpis?.total_grid_export_kwh)} kWh`} accent="text-teal-400" />
-        <KPICard label="Avg PR Ratio"      value={kpis?.avg_pr_ratio ? n(kpis.avg_pr_ratio, 3) : "—"}
-          sub={kpis?.avg_inverter_efficiency_pct ? `Inverter: ${pct(kpis.avg_inverter_efficiency_pct)}` : undefined}
+        <KPICard label={xlate("Grid Export")}       value={`${n(kpis?.total_grid_export_kwh)} kWh`} accent="text-teal-400" />
+        <KPICard label={xlate("Avg PR Ratio")}      value={kpis?.avg_pr_ratio ? n(kpis.avg_pr_ratio, 3) : "—"}
+          sub={kpis?.avg_inverter_efficiency_pct ? xlate("Inverter: {pct}", { pct: pct(kpis.avg_inverter_efficiency_pct) }) : undefined}
           accent="text-amber-300" />
-        <KPICard label="Cost Savings"      value={currency(kpis?.total_cost_offset)}
+        <KPICard label={xlate("Cost Savings")}      value={currency(kpis?.total_cost_offset)}
           sub={kpis?.avg_cost_per_kwh ? `${n(kpis.avg_cost_per_kwh, 4)}/kWh` : undefined}
           accent="text-emerald-400" />
-        <KPICard label="Anomalies"         value={kpis?.anomaly_count ?? 0}
+        <KPICard label={xlate("Anomalies")}         value={kpis?.anomaly_count ?? 0}
           accent={kpis?.anomaly_count ? "text-red-400" : "text-slate-200"}
           alert={!!kpis?.anomaly_count} />
       </div>
 
       {/* ── Generation trend chart ────────────────────────────────────────────── */}
       <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4">
-        <div className="text-xs font-semibold text-slate-300 mb-4">Daily Generation Trend</div>
+        <div className="text-xs font-semibold text-slate-300 mb-4">{xlate("Daily Generation Trend")}</div>
         {trendData.length === 0 ? (
           <div className="h-48 flex items-center justify-center text-xs text-slate-500">
-            No data for selected scope.
+            {xlate("No data for selected scope.")}
           </div>
         ) : (
           <div className="h-56">
@@ -681,10 +682,10 @@ export default function SolarPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* PR Ratio trend */}
         <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 flex flex-col gap-3">
-          <span className="text-xs font-semibold text-slate-300">Performance Ratio (PR) Trend</span>
+          <span className="text-xs font-semibold text-slate-300">{xlate("Performance Ratio (PR) Trend")}</span>
           {prTrendData.length === 0 ? (
             <div className="h-48 flex items-center justify-center text-xs text-slate-500">
-              No PR ratio data. Add solar operational records.
+              {xlate("No PR ratio data. Add solar operational records.")}
             </div>
           ) : (
             <div className="h-52">
@@ -696,7 +697,7 @@ export default function SolarPage() {
                     tickFormatter={(v) => v.toFixed(2)} />
                   <Tooltip
                     contentStyle={{ background: "#0f172a", border: "1px solid #334155", borderRadius: 8, fontSize: 11 }}
-                    formatter={(v: unknown) => [Number(v).toFixed(3), "PR Ratio"]}
+                    formatter={(v: unknown) => [Number(v).toFixed(3), xlate("PR Ratio")]}
                   />
                   <Line type="monotone" dataKey="pr" name="PR Ratio"
                     stroke={GOLD} strokeWidth={2} dot={{ r: 2, fill: GOLD }} />
@@ -709,7 +710,7 @@ export default function SolarPage() {
         {/* Breakdown by dimension */}
         <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-300">Generation Breakdown</span>
+            <span className="text-xs font-semibold text-slate-300">{xlate("Generation Breakdown")}</span>
             <div className="flex gap-1 ml-auto flex-wrap">
               {(Object.keys(DIM_LABELS) as BreakdownDim[]).map((d) => (
                 <button key={d} onClick={() => setBreakdownDim(d)}
@@ -721,7 +722,7 @@ export default function SolarPage() {
           </div>
 
           {breakdownData.length === 0 ? (
-            <div className="h-48 flex items-center justify-center text-xs text-slate-500">No data.</div>
+            <div className="h-48 flex items-center justify-center text-xs text-slate-500">{xlate("No data.")}</div>
           ) : (
             <>
               <div className="h-52">
@@ -749,7 +750,7 @@ export default function SolarPage() {
                     <span className="text-slate-500 tabular-nums">{n(r.total_generated_kwh)} kWh</span>
                     <span className="text-slate-600 tabular-nums">{r.pct_of_total ? n(r.pct_of_total, 1) : "—"}%</span>
                     {r.anomaly_count > 0 && (
-                      <span className="text-red-400 text-[10px]">{r.anomaly_count} anom.</span>
+                      <span className="text-red-400 text-[10px]">{r.anomaly_count} {xlate("anom.")}</span>
                     )}
                   </div>
                 ))}
@@ -764,7 +765,7 @@ export default function SolarPage() {
         {(["transactions", "records"] as const).map((tab) => (
           <button key={tab} onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 text-xs font-medium transition-colors border-b-2 -mb-px ${activeTab === tab ? "border-amber-500 text-amber-400" : "border-transparent text-slate-500 hover:text-slate-300"}`}>
-            {tab === "transactions" ? "Generation Records" : "Operational Logs (Inverter)"}
+            {tab === "transactions" ? xlate("Generation Records") : xlate("Operational Logs (Inverter)")}
           </button>
         ))}
       </div>
@@ -773,19 +774,19 @@ export default function SolarPage() {
       {activeTab === "transactions" && (
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-300">Generation Records</span>
+            <span className="text-xs font-semibold text-slate-300">{xlate("Generation Records")}</span>
             <div className="flex items-center gap-2">
               <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
                 <input type="checkbox" checked={txFilters.is_anomaly === true}
                   onChange={(e) => setTxFilters((p) => ({ ...p, is_anomaly: e.target.checked ? true : undefined }))}
                   className="accent-red-500" />
-                Anomalies only
+                {xlate("Anomalies only")}
               </label>
-              <input type="text" placeholder="Search…"
+              <input type="text" placeholder={xlate("Search…")}
                 value={txFilters.search ?? ""}
                 onChange={(e) => setTxFilters((p) => ({ ...p, search: e.target.value || undefined }))}
                 className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-amber-500 w-32" />
-              <span className="text-xs text-slate-600">{txRows.length} rows</span>
+              <span className="text-xs text-slate-600">{txRows.length} {xlate("rows")}</span>
             </div>
           </div>
 
@@ -793,17 +794,17 @@ export default function SolarPage() {
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-slate-700/60 bg-slate-800/60">
-                  {["Tx No.", "Date", "Generated kWh", "Cost Offset", "Dept / Line", "Shift", "Source", "Quality", "Actions"].map((h) => (
+                  {[xlate("Tx No."), xlate("Date"), xlate("Generated kWh"), xlate("Cost Offset"), xlate("Dept / Line"), xlate("Shift"), xlate("Source"), xlate("Quality"), xlate("Actions")].map((h) => (
                     <th key={h} className="px-3 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/30">
                 {txLoading && (
-                  <tr><td colSpan={9} className="px-4 py-8 text-center text-xs text-slate-500">Loading…</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-8 text-center text-xs text-slate-500">{xlate("Loading…")}</td></tr>
                 )}
                 {!txLoading && txRows.length === 0 && (
-                  <tr><td colSpan={9} className="px-4 py-8 text-center text-xs text-slate-500">No records found.</td></tr>
+                  <tr><td colSpan={9} className="px-4 py-8 text-center text-xs text-slate-500">{xlate("No records found.")}</td></tr>
                 )}
                 {txRows.map((tx) => (
                   <tr key={tx.id} className={`hover:bg-slate-800/40 transition-colors ${tx.anomaly_flag ? "border-l-2 border-l-red-500/60" : ""}`}>
@@ -839,9 +840,9 @@ export default function SolarPage() {
                     <td className="px-3 py-2 text-xs whitespace-nowrap"><QBadge q={tx.quality} /></td>
                     <td className="px-3 py-2 text-xs whitespace-nowrap">
                       <div className="flex items-center gap-2">
-                        <button onClick={() => setModal({ type: "view", tx })} className="text-slate-400 hover:text-slate-200 transition-colors text-[11px]">View</button>
-                        <button onClick={() => { setFormError(null); setModal({ type: "edit", tx }); }} className="text-amber-400 hover:text-amber-300 transition-colors text-[11px]">Edit</button>
-                        <button onClick={() => setModal({ type: "delete", tx })} className="text-red-400 hover:text-red-300 transition-colors text-[11px]">Del</button>
+                        <button onClick={() => setModal({ type: "view", tx })} className="text-slate-400 hover:text-slate-200 transition-colors text-[11px]">{xlate("View")}</button>
+                        <button onClick={() => { setFormError(null); setModal({ type: "edit", tx }); }} className="text-amber-400 hover:text-amber-300 transition-colors text-[11px]">{xlate("Edit")}</button>
+                        <button onClick={() => setModal({ type: "delete", tx })} className="text-red-400 hover:text-red-300 transition-colors text-[11px]">{xlate("Del")}</button>
                       </div>
                     </td>
                   </tr>
@@ -856,24 +857,24 @@ export default function SolarPage() {
       {activeTab === "records" && (
         <div className="flex flex-col gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-300">Inverter / Panel Operational Logs</span>
-            <span className="text-xs text-slate-600">{solarRecords.length} rows</span>
+            <span className="text-xs font-semibold text-slate-300">{xlate("Inverter / Panel Operational Logs")}</span>
+            <span className="text-xs text-slate-600">{solarRecords.length} {xlate("rows")}</span>
           </div>
           <div className="overflow-x-auto rounded-lg border border-slate-700/50">
             <table className="w-full text-left">
               <thead>
                 <tr className="border-b border-slate-700/60 bg-slate-800/60">
-                  {["Record No.", "Asset", "Datetime", "Generated kWh", "Self-Consumed", "Grid Export", "PR Ratio", "Inv. Eff.", "Irradiance", "Anomaly", "Actions"].map((h) => (
+                  {[xlate("Record No."), xlate("Asset"), xlate("Datetime"), xlate("Generated kWh"), xlate("Self-Consumed"), xlate("Grid Export"), xlate("PR Ratio"), xlate("Inv. Eff."), xlate("Irradiance"), xlate("Anomaly"), xlate("Actions")].map((h) => (
                     <th key={h} className="px-3 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/30">
                 {recLoading && (
-                  <tr><td colSpan={11} className="px-4 py-8 text-center text-xs text-slate-500">Loading…</td></tr>
+                  <tr><td colSpan={11} className="px-4 py-8 text-center text-xs text-slate-500">{xlate("Loading…")}</td></tr>
                 )}
                 {!recLoading && solarRecords.length === 0 && (
-                  <tr><td colSpan={11} className="px-4 py-8 text-center text-xs text-slate-500">No operational records. Use &quot;+ Operational Record&quot; to log inverter data.</td></tr>
+                  <tr><td colSpan={11} className="px-4 py-8 text-center text-xs text-slate-500">{xlate("No operational records. Use \"+ Operational Record\" to log inverter data.")}</td></tr>
                 )}
                 {solarRecords.map((rec) => (
                   <tr key={rec.id} className={`hover:bg-slate-800/40 transition-colors ${rec.is_anomaly ? "border-l-2 border-l-red-500/60" : ""}`}>
@@ -892,7 +893,7 @@ export default function SolarPage() {
                         : <span className="text-slate-600">—</span>}
                     </td>
                     <td className="px-3 py-2 text-xs whitespace-nowrap">
-                      <button onClick={() => setModal({ type: "deleteRecord", rec })} className="text-red-400 hover:text-red-300 transition-colors text-[11px]">Del</button>
+                      <button onClick={() => setModal({ type: "deleteRecord", rec })} className="text-red-400 hover:text-red-300 transition-colors text-[11px]">{xlate("Del")}</button>
                     </td>
                   </tr>
                 ))}
@@ -908,7 +909,7 @@ export default function SolarPage() {
           <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
               <h2 className="text-sm font-semibold text-slate-200">
-                {modal.type === "create" ? "Record Solar Generation" : "Edit Generation Record"}
+                {modal.type === "create" ? xlate("Record Solar Generation") : xlate("Edit Generation Record")}
               </h2>
               <button onClick={() => setModal({ type: "none" })} className="text-slate-500 hover:text-slate-300 text-lg leading-none">×</button>
             </div>
@@ -921,7 +922,7 @@ export default function SolarPage() {
                   : updateMut.mutate({ id: (modal as { tx: UtilityTransaction }).tx.id, data })}
                 isPending={createMut.isPending || updateMut.isPending}
                 error={formError}
-                label={modal.type === "create" ? "Record Generation" : "Save Changes"}
+                label={modal.type === "create" ? xlate("Record Generation") : xlate("Save Changes")}
               />
             </div>
           </div>
@@ -934,27 +935,27 @@ export default function SolarPage() {
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
               <div>
                 <h2 className="text-sm font-semibold text-slate-200 font-mono">{modal.tx.transaction_no}</h2>
-                <p className="text-xs text-slate-500 mt-0.5">{modal.tx.transaction_date} · Solar Generation</p>
+                <p className="text-xs text-slate-500 mt-0.5">{modal.tx.transaction_date} {xlate("· Solar Generation")}</p>
               </div>
               <button onClick={() => setModal({ type: "none" })} className="text-slate-500 hover:text-slate-300 text-lg leading-none">×</button>
             </div>
             <div className="overflow-y-auto flex-1 px-5 py-4">
               <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-xs">
                 {[
-                  ["Generated", `${Number(modal.tx.quantity).toLocaleString()} ${modal.tx.uom}`],
-                  ["Cost Offset", currency(modal.tx.total_cost, modal.tx.currency_code ?? "USD")],
-                  ["Rate", modal.tx.cost_rate ? `${modal.tx.currency_code} ${parseFloat(modal.tx.cost_rate).toFixed(4)}/kWh` : "—"],
-                  ["Variance", modal.tx.variance_from_standard ? `${parseFloat(modal.tx.variance_from_standard).toFixed(2)} kWh` : "—"],
-                  ["Department", modal.tx.department ?? "—"],
-                  ["Building / Area", modal.tx.building_area ?? "—"],
-                  ["Production Line", modal.tx.line_id ?? "—"],
-                  ["Machine", modal.tx.machine_id ?? "—"],
-                  ["Shift", modal.tx.shift_id ?? "—"],
-                  ["Batch", modal.tx.batch_id ?? "—"],
-                  ["Asset", modal.tx.asset_no ?? "—"],
-                  ["Source Method", SOURCE_METHOD_LABELS[modal.tx.source_method]],
-                  ["Tariff", modal.tx.tariff_code ?? "—"],
-                  ["Anomaly?", modal.tx.anomaly_flag ? `Yes — ${modal.tx.anomaly_note ?? ""}` : "No"],
+                  [xlate("Generated"), `${Number(modal.tx.quantity).toLocaleString()} ${modal.tx.uom}`],
+                  [xlate("Cost Offset"), currency(modal.tx.total_cost, modal.tx.currency_code ?? "USD")],
+                  [xlate("Rate"), modal.tx.cost_rate ? `${modal.tx.currency_code} ${parseFloat(modal.tx.cost_rate).toFixed(4)}/kWh` : "—"],
+                  [xlate("Variance"), modal.tx.variance_from_standard ? `${parseFloat(modal.tx.variance_from_standard).toFixed(2)} kWh` : "—"],
+                  [xlate("Department"), modal.tx.department ?? "—"],
+                  [xlate("Building / Area"), modal.tx.building_area ?? "—"],
+                  [xlate("Production Line"), modal.tx.line_id ?? "—"],
+                  [xlate("Machine"), modal.tx.machine_id ?? "—"],
+                  [xlate("Shift"), modal.tx.shift_id ?? "—"],
+                  [xlate("Batch"), modal.tx.batch_id ?? "—"],
+                  [xlate("Asset"), modal.tx.asset_no ?? "—"],
+                  [xlate("Source Method"), SOURCE_METHOD_LABELS[modal.tx.source_method]],
+                  [xlate("Tariff"), modal.tx.tariff_code ?? "—"],
+                  [xlate("Anomaly?"), modal.tx.anomaly_flag ? xlate("Yes — {anomaly_note}", { anomaly_note: modal.tx.anomaly_note ?? "" }) : "No"],
                 ].map(([l, v]) => (
                   <div key={l} className="flex flex-col gap-0.5">
                     <span className="text-[10px] text-slate-500 uppercase tracking-wider">{l}</span>
@@ -963,7 +964,7 @@ export default function SolarPage() {
                 ))}
                 {modal.tx.notes && (
                   <div className="col-span-2 flex flex-col gap-0.5">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider">Notes</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider">{xlate("Notes")}</span>
                     <span className="text-slate-300 whitespace-pre-wrap">{modal.tx.notes}</span>
                   </div>
                 )}
@@ -976,16 +977,16 @@ export default function SolarPage() {
       {modal.type === "delete" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-sm p-5 flex flex-col gap-4">
-            <h2 className="text-sm font-semibold text-slate-200">Delete Record</h2>
-            <p className="text-xs text-slate-400">Delete <span className="font-mono text-slate-200">{modal.tx.transaction_no}</span>? This cannot be undone.</p>
+            <h2 className="text-sm font-semibold text-slate-200">{xlate("Delete Record")}</h2>
+            <p className="text-xs text-slate-400">{xlate("Delete")} <span className="font-mono text-slate-200">{modal.tx.transaction_no}</span>{xlate("? This cannot be undone.")}</p>
             <div className="flex justify-end gap-2">
               <button onClick={() => setModal({ type: "none" })}
                 className="px-3 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors">
-                Cancel
+                {xlate("Cancel")}
               </button>
               <button onClick={() => deleteMut.mutate(modal.tx.id)} disabled={deleteMut.isPending}
                 className="px-3 py-1.5 text-xs bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white rounded transition-colors">
-                {deleteMut.isPending ? "Deleting…" : "Delete"}
+                {deleteMut.isPending ? xlate("Deleting…") : xlate("Delete")}
               </button>
             </div>
           </div>
@@ -996,7 +997,7 @@ export default function SolarPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
-              <h2 className="text-sm font-semibold text-slate-200">Log Inverter / Panel Operational Record</h2>
+              <h2 className="text-sm font-semibold text-slate-200">{xlate("Log Inverter / Panel Operational Record")}</h2>
               <button onClick={() => setModal({ type: "none" })} className="text-slate-500 hover:text-slate-300 text-lg leading-none">×</button>
             </div>
             <div className="overflow-y-auto flex-1 px-5 py-4">
@@ -1013,16 +1014,16 @@ export default function SolarPage() {
       {modal.type === "deleteRecord" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-sm p-5 flex flex-col gap-4">
-            <h2 className="text-sm font-semibold text-slate-200">Delete Operational Record</h2>
-            <p className="text-xs text-slate-400">Delete <span className="font-mono text-slate-200">{modal.rec.record_no}</span>? This cannot be undone.</p>
+            <h2 className="text-sm font-semibold text-slate-200">{xlate("Delete Operational Record")}</h2>
+            <p className="text-xs text-slate-400">{xlate("Delete")} <span className="font-mono text-slate-200">{modal.rec.record_no}</span>{xlate("? This cannot be undone.")}</p>
             <div className="flex justify-end gap-2">
               <button onClick={() => setModal({ type: "none" })}
                 className="px-3 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors">
-                Cancel
+                {xlate("Cancel")}
               </button>
               <button onClick={() => deleteRecordMut.mutate(modal.rec.id)} disabled={deleteRecordMut.isPending}
                 className="px-3 py-1.5 text-xs bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white rounded transition-colors">
-                {deleteRecordMut.isPending ? "Deleting…" : "Delete"}
+                {deleteRecordMut.isPending ? xlate("Deleting…") : xlate("Delete")}
               </button>
             </div>
           </div>

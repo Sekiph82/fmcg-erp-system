@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 type Cond = { ref: string; op: string; value?: string | number; agg?: string };
 type Step = {
@@ -29,9 +29,9 @@ type Usage = {
   dead_letter: Job[]; usage: { source: string; outcome: string; calls: number; tokens: number; cost: string }[];
 };
 
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 const GOV = ["company_cost_per_day", "user_cost_per_day", "reserve_tokens", "user_manual_runs_per_day"] as const;
-const STEP_FIELDS: Record<Step["type"], string> = { tool: "Call a tool", llm: "Write with the model", condition: "If / else", loop: "Repeat (max 10)", delegate: "Hand to another agent", approval: "Ask a person" };
+const STEP_FIELDS: Record<Step["type"], string> = lx(() => ({ tool: tx("Call a tool"), llm: tx("Write with the model"), condition: tx("If / else"), loop: tx("Repeat (max 10)"), delegate: tx("Hand to another agent"), approval: tx("Ask a person") }));
 
 export default function AgentsPage() {
   const [cat, setCat] = useState<Catalog | null>(null);
@@ -55,7 +55,7 @@ export default function AgentsPage() {
   // live validation: the server is the single source of truth for what a valid definition is
   useEffect(() => {
     if (!def) { setErrors([]); return; }
-    const t = setTimeout(() => apiClient.post("/api/v1/ai-agents/validate", { definition: def }).then((r) => setErrors(r.data.errors)).catch(() => setErrors(["Could not validate."])), 350);
+    const t = setTimeout(() => apiClient.post("/api/v1/ai-agents/validate", { definition: def }).then((r) => setErrors(r.data.errors)).catch(() => setErrors([tx("Could not validate.")])), 350);
     return () => clearTimeout(t);
   }, [def]);
   const open = (id: string) => apiClient.get(`/api/v1/ai-agents/${id}`).then((r) => { setCur(r.data); setDef(r.data.versions[0]?.definition ?? null); }).catch((e) => setMsg(err(e)));
@@ -66,7 +66,7 @@ export default function AgentsPage() {
   const stepIds = def?.steps.map((s) => s.id) ?? [];
   const run = (simulate: boolean) => {
     let parsed: unknown; try { parsed = JSON.parse(input || "{}"); } catch { return setMsg(tx("Input must be JSON.")); }
-    act(apiClient.post(`/api/v1/ai-agents/${cur!.id}/run`, { simulate, version: simulate ? latest?.version : undefined, input: parsed }), simulate ? "Simulated (nothing was written)." : "Run finished or waiting for approval.");
+    act(apiClient.post(`/api/v1/ai-agents/${cur!.id}/run`, { simulate, version: simulate ? latest?.version : undefined, input: parsed }), simulate ? tx("Simulated (nothing was written).") : tx("Run finished or waiting for approval."));
   };
   const jsonField = (label: string, value: unknown, on: (v: unknown) => void) =>
     <label className="block">{label}<textarea aria-label={label} className="border rounded w-full font-mono" rows={2} defaultValue={value ? JSON.stringify(value) : ""}
@@ -88,7 +88,7 @@ export default function AgentsPage() {
         <div className="flex items-center gap-3">
           <Link className="text-xs underline" href="/dashboard/ai/evals">{tx("AI evaluation")}</Link>
           <label className={`flex items-center gap-2 text-xs px-2 py-1 rounded border ${gov.kill_switch ? "bg-red-50 border-red-300" : ""}`}>
-            <input type="checkbox" checked={!!gov.kill_switch} onChange={(e) => act(apiClient.put("/api/v1/ai-agents/settings/governance", { kill_switch: e.target.checked }), e.target.checked ? "All agents stopped." : "Agents may run again.")} />
+            <input type="checkbox" checked={!!gov.kill_switch} onChange={(e) => act(apiClient.put("/api/v1/ai-agents/settings/governance", { kill_switch: e.target.checked }), e.target.checked ? tx("All agents stopped.") : tx("Agents may run again."))} />
             {tx("Emergency stop (all agents)")}</label>
         </div>
       </div>
@@ -102,23 +102,23 @@ export default function AgentsPage() {
       {gates.length > 0 && <section className="border rounded p-2 bg-amber-50 space-y-1" aria-label={tx("Waiting for approval")}>
         <h3 className="font-semibold text-xs">{tx("Waiting for a person (")}{gates.length})</h3>
         {gates.map((g) => <div key={g.id} className="flex flex-wrap gap-2 items-center text-xs"><span>{g.message}</span><span className="text-gray-500">{tx("(step")} {g.step}{tx(", agent owner")} {g.requested_by})</span>
-          <button className="underline" onClick={() => act(apiClient.post(`/api/v1/ai-agents/gates/${g.id}/decide`, { approve: true }), "Approved: the run continues on the next tick.")}>{tx("Approve")}</button>
-          <button className="underline" onClick={() => act(apiClient.post(`/api/v1/ai-agents/gates/${g.id}/decide`, { approve: false }), "Denied: the run takes its denial path.")}>{tx("Deny")}</button></div>)}
+          <button className="underline" onClick={() => act(apiClient.post(`/api/v1/ai-agents/gates/${g.id}/decide`, { approve: true }), tx("Approved: the run continues on the next tick."))}>{tx("Approve")}</button>
+          <button className="underline" onClick={() => act(apiClient.post(`/api/v1/ai-agents/gates/${g.id}/decide`, { approve: false }), tx("Denied: the run takes its denial path."))}>{tx("Deny")}</button></div>)}
       </section>}
 
       <details className="border rounded p-2 bg-white" open={!!usage?.reservations.some((r) => r.stuck) || !!usage?.dead_letter.length}>
         <summary className="cursor-pointer text-xs font-semibold">{tx("Budgets, reservations and recovery")}</summary>
         <div className="space-y-2 text-xs mt-2">
           <div className="flex flex-wrap gap-2 items-end">{GOV.map((k) => <label key={k}>{k.replaceAll("_", " ")}<input aria-label={k} type="number" min={0} step="any" className="border rounded px-1 block w-28" defaultValue={Number(gov[k] ?? 0)}
-            onBlur={(e) => act(apiClient.put("/api/v1/ai-agents/settings/governance", { [k]: +e.target.value }), "Governance setting saved.")} /></label>)}
-            <button className="border rounded px-2 py-1" onClick={() => act(apiClient.post("/api/v1/ai-agents/budget/recover"), "Recovery ran: expired reservations settled, stuck jobs queued or dead-lettered.")}>{tx("Recover stuck runs")}</button></div>
+            onBlur={(e) => act(apiClient.put("/api/v1/ai-agents/settings/governance", { [k]: +e.target.value }), tx("Governance setting saved."))} /></label>)}
+            <button className="border rounded px-2 py-1" onClick={() => act(apiClient.post("/api/v1/ai-agents/budget/recover"), tx("Recovery ran: expired reservations settled, stuck jobs queued or dead-lettered."))}>{tx("Recover stuck runs")}</button></div>
           <table className="w-full border"><thead><tr className="bg-gray-50 text-left"><th className="p-1">{tx("Scope")}</th><th>{tx("Cap / day")}</th><th>{tx("Reserved")}</th><th>{tx("Spent")}</th><th>{tx("Tokens spent")}</th></tr></thead>
             <tbody>{(usage?.counters ?? []).map((c) => <tr key={c.scope + c.id} className="border-t"><td className="p-1">{c.scope}{c.scope === "COMPANY" ? "" : ` ${c.id.slice(0, 8)}`}</td><td>{c.cap_cost}</td><td>{c.reserved_cost}</td><td>{c.spent_cost}</td><td>{c.spent_tokens}</td></tr>)}
               {!usage?.counters.length && <tr><td className="p-1 text-gray-500" colSpan={5}>{tx("No AI spend reserved today.")}</td></tr>}</tbody></table>
           {usage && usage.usage.length > 0 && <p>{tx("Measured usage:")} {usage.usage.map((u) => `${u.source}/${u.outcome}: ${u.calls} calls, ${u.tokens} tokens, ${u.cost}`).join(" · ")}</p>}
           {usage?.reservations.filter((r) => r.stuck).map((r) => <p key={r.id} className="text-red-700">{tx("Stuck reservation")} {r.id.slice(0, 8)} {tx("(worker")} {r.worker}{tx(") expired")} {new Date(r.expires_at).toLocaleString()}{tx(": use Recover.")}</p>)}
           {usage?.dead_letter.map((j) => <p key={j.id} className="flex gap-2"><span>{tx("Dead-lettered run")} {j.id.slice(0, 8)}: {j.error}</span>
-            <button className="underline" onClick={() => act(apiClient.post(`/api/v1/ai-agents/jobs/${j.id}/requeue`), "Requeued with fresh attempts.")}>{tx("Requeue")}</button></p>)}
+            <button className="underline" onClick={() => act(apiClient.post(`/api/v1/ai-agents/jobs/${j.id}/requeue`), tx("Requeued with fresh attempts."))}>{tx("Requeue")}</button></p>)}
         </div>
       </details>
 
@@ -128,19 +128,19 @@ export default function AgentsPage() {
         {cur && def && <section className="space-y-3">
           <div className="flex flex-wrap gap-2 items-center">
             <b>{cur.name}</b>
-            <select aria-label={tx("Agent status")} className="border rounded px-1 text-xs" value={cur.status} onChange={(e) => act(apiClient.patch(`/api/v1/ai-agents/${cur.id}`, { status: e.target.value }), "Status changed.")}>
+            <select aria-label={tx("Agent status")} className="border rounded px-1 text-xs" value={cur.status} onChange={(e) => act(apiClient.patch(`/api/v1/ai-agents/${cur.id}`, { status: e.target.value }), tx("Status changed."))}>
               {["DRAFT", "ACTIVE", "PAUSED"].map((s) => <option key={s}>{s}</option>)}</select>
-            <button className="text-xs border rounded px-2" onClick={() => act(apiClient.patch(`/api/v1/ai-agents/${cur.id}`, { stopped: !cur.stopped }), cur.stopped ? "Agent restarted." : "Agent stopped.")}>{cur.stopped ? tx("Restart agent") : tx("Stop agent")}</button>
+            <button className="text-xs border rounded px-2" onClick={() => act(apiClient.patch(`/api/v1/ai-agents/${cur.id}`, { stopped: !cur.stopped }), cur.stopped ? tx("Agent restarted.") : tx("Agent stopped."))}>{cur.stopped ? tx("Restart agent") : tx("Stop agent")}</button>
             <span className="text-xs text-gray-500">{tx("next run")} {cur.next_run_at ? new Date(cur.next_run_at).toLocaleString() : "—"}</span>
           </div>
           <div className="flex flex-wrap gap-2 text-xs items-end">
-            <label>{tx("Run daily at")}<input aria-label={tx("Daily at")} className="border rounded px-1 block w-20" placeholder="07:30" defaultValue={String(cur.schedule?.daily_at ?? "")} onBlur={(e) => e.target.value && act(apiClient.patch(`/api/v1/ai-agents/${cur.id}`, { schedule: { daily_at: e.target.value, time_zone: "Africa/Nairobi" } }), "Schedule saved (Africa/Nairobi).")} /></label>
+            <label>{tx("Run daily at")}<input aria-label={tx("Daily at")} className="border rounded px-1 block w-20" placeholder="07:30" defaultValue={String(cur.schedule?.daily_at ?? "")} onBlur={(e) => e.target.value && act(apiClient.patch(`/api/v1/ai-agents/${cur.id}`, { schedule: { daily_at: e.target.value, time_zone: "Africa/Nairobi" } }), tx("Schedule saved (Africa/Nairobi)."))} /></label>
             {(["max_runs_per_day", "max_tokens_per_run", "max_cost_per_day"] as const).map((k) => <label key={k}>{k.replaceAll("_", " ")}<input aria-label={k} type="number" min={0} className="border rounded px-1 block w-24" defaultValue={cur.budgets[k]}
-              onBlur={(e) => act(apiClient.patch(`/api/v1/ai-agents/${cur.id}`, { budgets: { ...cur.budgets, [k]: +e.target.value } }), "Budget saved.")} /></label>)}
+              onBlur={(e) => act(apiClient.patch(`/api/v1/ai-agents/${cur.id}`, { budgets: { ...cur.budgets, [k]: +e.target.value } }), tx("Budget saved."))} /></label>)}
           </div>
           <div className="border rounded p-2 bg-white space-y-2">
             <div className="flex flex-wrap gap-3 items-end text-xs">
-              <label>{tx("Trigger")} <select aria-label={tx("Trigger")} className="border rounded" value={def.trigger.type} onChange={(e) => setDef({ ...def, trigger: { ...def.trigger, type: e.target.value } })}>{[tx("manual"), tx("schedule"), "event"].map((t) => <option key={t}>{t}</option>)}</select></label>
+              <label>{tx("Trigger")} <select aria-label={tx("Trigger")} className="border rounded" value={def.trigger.type} onChange={(e) => setDef({ ...def, trigger: { ...def.trigger, type: e.target.value } })}>{[["manual", tx("manual")], ["schedule", tx("schedule")], ["event", "event"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>
               {def.trigger.type === "event" && <label>{tx("Event name")} <input aria-label={tx("Event name")} className="border rounded w-40" value={def.trigger.event ?? ""} onChange={(e) => setDef({ ...def, trigger: { ...def.trigger, event: e.target.value } })} /></label>}
               <span>{tx("Hands work to:")} {others.length ? others.map((a) => <label key={a.id} className="inline-flex items-center gap-1 mr-2"><input type="checkbox" checked={!!def.delegates?.includes(a.id)}
                 onChange={(e) => setDef({ ...def, delegates: e.target.checked ? [...(def.delegates ?? []), a.id] : (def.delegates ?? []).filter((x) => x !== a.id) })} />{a.name}</label>) : <i>{tx("no other published agent")}</i>}</span>
@@ -164,22 +164,22 @@ export default function AgentsPage() {
               {s.type === "loop" && <div className="space-y-1"><div className="flex flex-wrap gap-2 items-center">
                 <label>{tx("Repeat at most")} <input aria-label={tx("Max iterations")} type="number" min={1} max={cat?.limits.max_loop_iterations ?? 10} className="border rounded w-14" value={s.max_iterations ?? ""} onChange={(e) => setStep(i, { max_iterations: e.target.value ? +e.target.value : undefined })} /> {tx("times")}</label>
                 <label>{tx("body steps")} <input aria-label={tx("Loop body")} className="border rounded w-28" placeholder={tx("s2,s3")} value={(s.body ?? []).join(",")} onChange={(e) => setStep(i, { body: e.target.value.split(",").map((x) => x.trim()).filter(Boolean) })} /></label></div>
-                {condEditor("Stop when", s.until, (c) => setStep(i, { until: c && c.ref ? c : undefined }))}</div>}
+                {condEditor(tx("Stop when"), s.until, (c) => setStep(i, { until: c && c.ref ? c : undefined }))}</div>}
               {s.type === "delegate" && <div className="space-y-1"><label>{tx("Agent")} <select aria-label={tx("Delegate agent")} className="border rounded" value={s.agent ?? ""} onChange={(e) => setStep(i, { agent: e.target.value })}><option value="">{tx("(choose)")}</option>{(def.delegates ?? []).map((id) => <option key={id} value={id}>{list.find((a) => a.id === id)?.name ?? id}</option>)}</select></label>
-                {jsonField("Input handed over (JSON)", s.input, (v) => setStep(i, { input: v as Record<string, unknown> }))}</div>}
+                {jsonField(tx("Input handed over (JSON)"), s.input, (v) => setStep(i, { input: v as Record<string, unknown> }))}</div>}
               {s.type === "approval" && <div className="flex flex-wrap gap-2 items-center"><input aria-label={tx("Approval message")} className="border rounded flex-1 min-w-48" placeholder={tx("What the approver is asked")} value={s.message ?? ""} onChange={(e) => setStep(i, { message: e.target.value })} />{pick("if denied go to", s.on_deny, (v) => setStep(i, { on_deny: v }))}</div>}
             </div>)}
             <div className="grid sm:grid-cols-2 gap-2 text-xs">
-              {jsonField("Input schema (JSON Schema)", def.input_schema, (v) => setDef({ ...def, input_schema: v }))}
-              {jsonField("Output schema (JSON Schema)", def.output_schema, (v) => setDef({ ...def, output_schema: v }))}
+              {jsonField(tx("Input schema (JSON Schema)"), def.input_schema, (v) => setDef({ ...def, input_schema: v }))}
+              {jsonField(tx("Output schema (JSON Schema)"), def.output_schema, (v) => setDef({ ...def, output_schema: v }))}
             </div>
             {errors.length > 0 ? <ul role="alert" aria-label={tx("Validation errors")} className="text-xs text-red-700 border border-red-300 bg-red-50 rounded p-2 list-disc pl-5">{errors.map((e, i) => <li key={i}>{e}</li>)}</ul>
               : <p className="text-xs text-green-700">{tx("Definition is valid (loops capped at")} {cat?.limits.max_loop_iterations}, {cat?.limits.max_step_executions} {tx("step executions per run).")}</p>}
             <div className="flex flex-wrap gap-2">
               <button className="border rounded px-2 py-1 text-xs" onClick={() => setDef({ ...def, steps: [...def.steps, { id: `s${def.steps.length + 1}`, type: "llm", prompt: "", template: "" }] })}>{tx("+ Step")}</button>
-              <button className="bg-indigo-600 text-white rounded px-3 py-1 text-xs disabled:opacity-50" disabled={errors.length > 0} title={errors[0]} onClick={() => act(apiClient.post(`/api/v1/ai-agents/${cur.id}/versions`, { definition: def }), "Saved as a new draft version.")}>{tx("Save as new version")}</button>
+              <button className="bg-indigo-600 text-white rounded px-3 py-1 text-xs disabled:opacity-50" disabled={errors.length > 0} title={errors[0]} onClick={() => act(apiClient.post(`/api/v1/ai-agents/${cur.id}/versions`, { definition: def }), tx("Saved as a new draft version."))}>{tx("Save as new version")}</button>
               <input aria-label={tx("Template name")} className="border rounded px-1 text-xs" placeholder={tx("Template name")} value={tplName} onChange={(e) => setTplName(e.target.value)} />
-              <button className="border rounded px-2 py-1 text-xs disabled:opacity-50" disabled={errors.length > 0 || tplName.length < 3} onClick={() => act(apiClient.post("/api/v1/ai-agents/templates", { name: tplName, definition: def }).then(loadCat), "Saved as a reusable template.")}>{tx("Save as template")}</button>
+              <button className="border rounded px-2 py-1 text-xs disabled:opacity-50" disabled={errors.length > 0 || tplName.length < 3} onClick={() => act(apiClient.post("/api/v1/ai-agents/templates", { name: tplName, definition: def }).then(loadCat), tx("Saved as a reusable template."))}>{tx("Save as template")}</button>
             </div>
           </div>
           <div className="flex flex-wrap gap-2 items-end text-xs">
@@ -189,13 +189,13 @@ export default function AgentsPage() {
           </div>
           <table className="text-xs w-full bg-white border"><thead><tr className="bg-gray-50 text-left"><th className="p-1">{tx("Version")}</th><th>{tx("Status")}</th><th>{tx("By")}</th><th></th></tr></thead>
             <tbody>{cur.versions.map((v) => <tr key={v.version} className="border-t"><td className="p-1">{tx("v")}{v.version}{cur.current_version === v.version ? tx(" (running)") : ""}</td><td>{v.status.toLowerCase()}</td><td>{v.created_by}{v.approved_by ? tx(" / approved {approved_by}", { approved_by: v.approved_by }) : ""}</td>
-              <td className="space-x-2">{["DRAFT", "REJECTED"].includes(v.status) && <button className="underline" onClick={() => act(apiClient.post(`/api/v1/ai-agents/${cur.id}/versions/${v.version}/request`), "Sent for approval.")}>{tx("Request publish")}</button>}
+              <td className="space-x-2">{["DRAFT", "REJECTED"].includes(v.status) && <button className="underline" onClick={() => act(apiClient.post(`/api/v1/ai-agents/${cur.id}/versions/${v.version}/request`), tx("Sent for approval."))}>{tx("Request publish")}</button>}
                 {v.status === "PENDING" && <><button className="underline" onClick={() => act(apiClient.post(`/api/v1/ai-agents/${cur.id}/versions/${v.version}/approve`), "Published.")}>{tx("Approve")}</button><button className="underline" onClick={() => act(apiClient.post(`/api/v1/ai-agents/${cur.id}/versions/${v.version}/reject`), "Rejected.")}>{tx("Reject")}</button></>}
-                {v.status === "PUBLISHED" && cur.current_version !== v.version && <button className="underline" onClick={() => act(apiClient.post(`/api/v1/ai-agents/${cur.id}/versions/${v.version}/rollback`), "Rolled back.")}>{tx("Roll back to this")}</button>}
+                {v.status === "PUBLISHED" && cur.current_version !== v.version && <button className="underline" onClick={() => act(apiClient.post(`/api/v1/ai-agents/${cur.id}/versions/${v.version}/rollback`), tx("Rolled back."))}>{tx("Roll back to this")}</button>}
                 <button className="underline" onClick={() => setDef(v.definition)}>{tx("Edit from here")}</button></td></tr>)}</tbody></table>
           <h3 className="font-semibold text-xs">{tx("Runs")}</h3>
           <ul className="text-xs space-y-1">{cur.jobs.map((j) => <li key={j.id} className="border rounded p-1 bg-white"><b>{j.trigger.toLowerCase()}</b> {tx("v")}{j.version} · {j.status.toLowerCase()} {tx("· attempt")} {j.attempts} · {j.tokens} {tx("tokens · cost")} {j.cost}{j.error ? ` · ${j.error}` : ""} · {new Date(j.created_at).toLocaleString()}
-            {["QUEUED", "WAITING"].includes(j.status) && <button className="underline ml-2" onClick={() => act(apiClient.post(`/api/v1/ai-agents/jobs/${j.id}/cancel`), "Run cancelled.")}>{tx("Cancel")}</button>}
+            {["QUEUED", "WAITING"].includes(j.status) && <button className="underline ml-2" onClick={() => act(apiClient.post(`/api/v1/ai-agents/jobs/${j.id}/cancel`), tx("Run cancelled."))}>{tx("Cancel")}</button>}
             {["DEAD", "FAILED"].includes(j.status) && <button className="underline ml-2" onClick={() => act(apiClient.post(`/api/v1/ai-agents/jobs/${j.id}/requeue`), "Requeued.")}>{tx("Retry")}</button>}
             {j.trace && <details><summary className="cursor-pointer">{tx("trace")}</summary><ul>{j.trace.map((t, i) => <li key={i} className="break-all">{t.step} ({t.tool ?? t.type}, {t.items}): {t.output}</li>)}</ul></details>}</li>)}</ul>
         </section>}

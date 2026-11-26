@@ -92,7 +92,7 @@ export default function ProductionCostingPage() {
       qc.invalidateQueries({ queryKey: ["cost-trend"] });
       setFinalizeOpen(false);
       setFinalizeId("");
-      toast("success", tx("Cost finalized"), `Order ${data.order_no} — ${fmtKES(data.total_cost)}`);
+      toast("success", tx("Cost finalized"), tx("Order {order_no} — {fmtKES}", { order_no: data.order_no, fmtKES: fmtKES(data.total_cost) }));
     },
     onError: (err) => toast("error", tx("Failed"), extractApiError(err)),
   });

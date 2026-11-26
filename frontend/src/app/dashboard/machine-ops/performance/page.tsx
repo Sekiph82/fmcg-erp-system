@@ -222,7 +222,7 @@ export default function PerformancePage() {
               <XAxis dataKey="date" tick={{ fontSize: 10 }} />
               <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} unit="%" />
               <Tooltip formatter={((v: number) => `${v}%`) as never} />
-              <ReferenceLine y={85} stroke="#22c55e" strokeDasharray="4 4" label={{ value: "World Class 85%", fill: "#22c55e", fontSize: 10 }} />
+              <ReferenceLine y={85} stroke="#22c55e" strokeDasharray="4 4" label={{ value: tx("World Class 85%"), fill: "#22c55e", fontSize: 10 }} />
               <ReferenceLine y={65} stroke="#f59e0b" strokeDasharray="4 4" />
               <Bar dataKey="oee" name="OEE" fill="#6366f1" radius={[3, 3, 0, 0]} />
               <Bar dataKey="availability" name="Availability" fill="#22c55e" radius={[3, 3, 0, 0]} />

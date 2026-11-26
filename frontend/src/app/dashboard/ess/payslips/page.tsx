@@ -29,7 +29,7 @@ export default function MyPayslips() {
             </button>
             {open === p.id && (
               <table className="w-full text-sm mt-3"><tbody>
-                {([["Gross pay", p.gross], ["PAYE", -p.paye], ["SHIF / NHIF", -p.nhif], ["NSSF", -p.nssf], ["Housing levy", -p.housing_levy], ["Net pay", p.net]] as [string, number][]).map(([k, v]) => (
+                {([[tx("Gross pay"), p.gross], ["PAYE", -p.paye], [tx("SHIF / NHIF"), -p.nhif], ["NSSF", -p.nssf], [tx("Housing levy"), -p.housing_levy], [tx("Net pay"), p.net]] as [string, number][]).map(([k, v]) => (
                   <tr key={k} className="border-t border-white/[0.06]"><td className="py-1.5 text-slate-400">{k}</td><td className={`py-1.5 text-right ${v < 0 ? "text-red-300" : "text-white"}`}>{kes(v)}</td></tr>))}
               </tbody></table>)}
             {open === p.id && <button onClick={() => window.print()} className="mt-2 text-xs underline text-slate-400">{tx("Print")}</button>}

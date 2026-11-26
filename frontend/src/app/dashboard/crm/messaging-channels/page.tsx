@@ -5,7 +5,7 @@ import { apiClient } from "@/lib/api";
 import { tx } from "@/lib/i18n/core";
 
 interface Custom { id: string; key: string; name: string; active: boolean; created_by: string; token?: string }
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Request failed."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Request failed."); };
 
 export default function MessagingChannelsPage() {
   const [st, setSt] = useState<{ meta: string; slack: string } | null>(null);

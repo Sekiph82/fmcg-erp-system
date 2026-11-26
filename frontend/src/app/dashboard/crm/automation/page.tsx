@@ -2,22 +2,22 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { crmApi, type AutomationMeta, type AutomationRun } from "@/lib/crm_pipeline";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 function errorText(e: unknown) {
   const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
   if (typeof detail === "string") return detail;
   if (Array.isArray(detail)) return detail.map((d) => (d as { msg?: string }).msg).join("; ");
   if (detail && typeof detail === "object" && "detail" in detail) return String((detail as { detail: unknown }).detail);
-  return "Request failed.";
+  return tx("Request failed.");
 }
 
-const TRIGGER_LABELS: Record<string, string> = {
-  created: "Record created", stage_changed: "Stage changed", won: "Deal won", lost: "Deal lost", status_changed: "Status changed",
-};
-const ACTION_LABELS: Record<string, string> = {
-  create_task: "Create follow-up task", assign_owner: "Assign owner (round robin)", set_field: "Set a field", notify: "Notify users",
-};
+const TRIGGER_LABELS: Record<string, string> = lx(() => ({
+  created: tx("Record created"), stage_changed: tx("Stage changed"), won: tx("Deal won"), lost: tx("Deal lost"), status_changed: tx("Status changed"),
+}));
+const ACTION_LABELS: Record<string, string> = lx(() => ({
+  create_task: tx("Create follow-up task"), assign_owner: tx("Assign owner (round robin)"), set_field: tx("Set a field"), notify: tx("Notify users"),
+}));
 
 type Draft = { rule_name: string; trigger_event: string; condition_field: string; condition_value: string; action_type: string;
   subject: string; due_in_days: number; rep_ids: string; field: string; value: string; usernames: string; title: string };
@@ -61,7 +61,7 @@ export default function CRMAutomationPage() {
           <p className="text-sm text-gray-500">{tx("Rules run once per event (created, stage change, won, lost) — retried on failure, logged below. Rules never change stage or status.")}</p>
         </div>
         <button className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg"
-          onClick={() => act(async () => { const r = await crmApi.processAutomation(); setInfo(`Queued ${r.queued}, done ${r.done}, retrying ${r.retry}, failed ${r.failed}.`); })}>
+          onClick={() => act(async () => { const r = await crmApi.processAutomation(); setInfo(tx("Queued {queued}, done {done}, retrying {retry}, failed {failed}.", { queued: r.queued, done: r.done, retry: r.retry, failed: r.failed })); })}>
           {tx("Run now")}
         </button>
       </div>
@@ -94,7 +94,7 @@ export default function CRMAutomationPage() {
               condition_field: draft.condition_field || null, condition_operator: draft.condition_field ? "eq" : null,
               condition_value: draft.condition_field ? draft.condition_value : null,
               action_type: draft.action_type, action_payload: payloadFor(draft),
-            }), "Rule created.");
+            }), tx("Rule created."));
             setDraft(EMPTY);
           }}>
           <input aria-label={tx("Rule name")} required placeholder={tx("Rule name")} value={draft.rule_name} onChange={(e) => setDraft({ ...draft, rule_name: e.target.value })} className={input} />
@@ -140,7 +140,7 @@ export default function CRMAutomationPage() {
                   <td><Link className="underline" href={`/dashboard/crm/records/${r.crm_record_id}`}>{r.company_name}</Link></td>
                   <td>{r.status}{r.attempts > 1 ? ` (${r.attempts})` : ""}</td>
                   <td className="text-xs">{r.error ?? r.result ?? "—"}</td>
-                  <td>{r.status === "FAILED" && <button className="text-xs underline" onClick={() => act(() => crmApi.retryAutomationRun(r.id), "Run queued again.")}>{tx("Retry")}</button>}</td>
+                  <td>{r.status === "FAILED" && <button className="text-xs underline" onClick={() => act(() => crmApi.retryAutomationRun(r.id), tx("Run queued again."))}>{tx("Retry")}</button>}</td>
                 </tr>
               ))}
             </tbody>

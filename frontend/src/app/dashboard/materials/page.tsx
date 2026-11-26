@@ -359,7 +359,7 @@ export default function MaterialsPage() {
   return (
     <ModuleWorkspace
       title={tx("Materials")}
-      description="Raw materials, packaging, Bill of Materials inputs"
+      description={tx("Raw materials, packaging, Bill of Materials inputs")}
       permission="materials.view"
       tabs={tabs}
       defaultTab="materials"

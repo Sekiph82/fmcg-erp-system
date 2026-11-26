@@ -117,7 +117,7 @@ export default function MarketIntelligencePage() {
 
       {/* Tabs */}
       <div className="flex gap-1 border-b flex-wrap">
-        {([["shelf","Shelf Share Analytics"],["obs","Field Observations"],["share","Market Share"],["log","Log Observation"],["logshare","Log Market Share"]] as const).map(([t,label]) => (
+        {([["shelf",tx("Shelf Share Analytics")],["obs",tx("Field Observations")],["share",tx("Market Share")],["log",tx("Log Observation")],["logshare",tx("Log Market Share")]] as const).map(([t,label]) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${tab===t?"border-blue-600 text-blue-600":"border-transparent text-gray-500 hover:text-gray-700"}`}>
             {label}
@@ -253,7 +253,7 @@ export default function MarketIntelligencePage() {
         <div className="bg-white border rounded-lg p-5 shadow-sm space-y-4 max-w-2xl">
           <h2 className="text-sm font-semibold text-gray-700">{tx("Log Field Observation")}</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {([["Outlet Name *","outlet_name","e.g. Naivas Karen"],["Category *","category","e.g. Liquid detergents"],["Our Brand","our_brand","e.g. POVU"],["Observer","observer_name","e.g. Field Rep"],["Location","location","e.g. Nairobi, Karen"],["Our Facings","our_facings","e.g. 6"],["Total Facings","total_facings","e.g. 20"],["Notes","notes","Optional"]] as const).map(([label,key,ph]) => (
+            {([[tx("Outlet Name *"),"outlet_name","e.g. Naivas Karen"],["Category *","category","e.g. Liquid detergents"],[tx("Our Brand"),"our_brand","e.g. POVU"],["Observer","observer_name","e.g. Field Rep"],["Location","location","e.g. Nairobi, Karen"],[tx("Our Facings"),"our_facings","e.g. 6"],[tx("Total Facings"),"total_facings","e.g. 20"],["Notes","notes","Optional"]] as const).map(([label,key,ph]) => (
               <div key={key}>
                 <label className="text-xs text-gray-500 block mb-1">{label}</label>
                 <input type="text" placeholder={ph} value={(obsForm as unknown as Record<string,string>)[key]}
@@ -276,7 +276,7 @@ export default function MarketIntelligencePage() {
             </div>
           </div>
           <div className="flex flex-wrap gap-4">
-            {([ ["our_promo_active","Our Promo Active"], ["competitor_promo_active","Competitor Promo Active"], ["our_oos_flag","We Are Out of Stock"] ] as const).map(([key,label]) => (
+            {([ ["our_promo_active",tx("Our Promo Active")], ["competitor_promo_active",tx("Competitor Promo Active")], ["our_oos_flag",tx("We Are Out of Stock")] ] as const).map(([key,label]) => (
               <label key={key} className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
                 <input type="checkbox" checked={(obsForm as unknown as Record<string,boolean>)[key]}
                   onChange={(e) => setObsForm((p) => ({ ...p, [key]: e.target.checked }))} className="h-4 w-4" />
@@ -294,7 +294,7 @@ export default function MarketIntelligencePage() {
         <div className="bg-white border rounded-lg p-5 shadow-sm space-y-3 max-w-lg">
           <h2 className="text-sm font-semibold text-gray-700">{tx("Log Market Share Estimate")}</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {([["Category *","category","e.g. Liquid detergents"],["Our Brand","our_brand","e.g. POVU"],["Our Share %","our_share_pct","e.g. 18.5"],["Market Value (KES)","total_market_value_kes","e.g. 50000000"],["Source","source","field | nielsen | IRI | manual"],["Notes","notes","Optional"]] as const).map(([label,key,ph]) => (
+            {([["Category *","category","e.g. Liquid detergents"],[tx("Our Brand"),"our_brand","e.g. POVU"],[tx("Our Share %"),"our_share_pct","e.g. 18.5"],[tx("Market Value (KES)"),"total_market_value_kes","e.g. 50000000"],["Source","source","field | nielsen | IRI | manual"],["Notes","notes","Optional"]] as const).map(([label,key,ph]) => (
               <div key={key}>
                 <label className="text-xs text-gray-500 block mb-1">{label}</label>
                 <input type="text" placeholder={ph} value={(shareForm as unknown as Record<string,string>)[key]}

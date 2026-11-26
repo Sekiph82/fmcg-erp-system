@@ -186,7 +186,7 @@ export default function OperatorTerminal() {
     onSuccess: (session) => {
       setActiveSession(session);
       try { window.sessionStorage.setItem(ACTIVE_SESSION_STORAGE_KEY, session.id); } catch { /* retain context in memory for this page lifetime */ }
-      reportSuccess(`Operator session ${session.session_code} started.`);
+      reportSuccess(tx("Operator session {session_code} started.", { session_code: session.session_code }));
       invalidate();
     },
     onError: reportError,
@@ -198,7 +198,7 @@ export default function OperatorTerminal() {
       setActiveSession(null);
       try { window.sessionStorage.removeItem(ACTIVE_SESSION_STORAGE_KEY); } catch { /* storage may be unavailable */ }
       setSelectedWOId(null);
-      reportSuccess("Operator session ended.");
+      reportSuccess(tx("Operator session ended."));
       invalidate();
     },
     onError: reportError,
@@ -213,7 +213,7 @@ export default function OperatorTerminal() {
     }),
     onSuccess: (entry) => {
       setActiveSession((session) => session ? { ...session, current_work_order_id: entry.work_order_id } : session);
-      reportSuccess("Work order started.");
+      reportSuccess(tx("Work order started."));
       invalidate();
     },
     onError: reportError,
@@ -221,13 +221,13 @@ export default function OperatorTerminal() {
 
   const pauseMut = useMutation({
     mutationFn: (woId: string) => sfApi.pauseWO(woId, { session_id: activeSession?.id, operator_name: activeSession?.operator_name }),
-    onSuccess: () => { reportSuccess("Work order paused."); invalidate(); },
+    onSuccess: () => { reportSuccess(tx("Work order paused.")); invalidate(); },
     onError: reportError,
   });
 
   const resumeMut = useMutation({
     mutationFn: (woId: string) => sfApi.resumeWO(woId, { session_id: activeSession?.id, operator_name: activeSession?.operator_name }),
-    onSuccess: () => { reportSuccess("Work order resumed."); invalidate(); },
+    onSuccess: () => { reportSuccess(tx("Work order resumed.")); invalidate(); },
     onError: reportError,
   });
 
@@ -241,7 +241,7 @@ export default function OperatorTerminal() {
       session_id: activeSession?.id,
       operator_name: activeSession?.operator_name,
     }),
-    onSuccess: () => { setQtyGood(""); reportSuccess("Production quantities updated."); invalidate(); },
+    onSuccess: () => { setQtyGood(""); reportSuccess(tx("Production quantities updated.")); invalidate(); },
     onError: reportError,
   });
 
@@ -263,7 +263,7 @@ export default function OperatorTerminal() {
       setRunTimeActual("");
       setScrapCategory("");
       setScrapReason("");
-      reportSuccess("Work order completed.");
+      reportSuccess(tx("Work order completed."));
       invalidate();
     },
     onError: reportError,
@@ -278,25 +278,25 @@ export default function OperatorTerminal() {
         session_id: activeSession?.id,
         operator_name: activeSession?.operator_name,
       }),
-    onSuccess: () => { setQtyScrap("0"); setScrapCategory(""); setScrapReason(""); reportSuccess("Scrap / waste recorded."); invalidate(); },
+    onSuccess: () => { setQtyScrap("0"); setScrapCategory(""); setScrapReason(""); reportSuccess(tx("Scrap / waste recorded.")); invalidate(); },
     onError: reportError,
   });
 
   const helpMut = useMutation({
-    mutationFn: (woId: string) => sfApi.requestHelp(woId, remarkText || "Operator needs help", activeSession?.operator_name, activeSession?.id),
-    onSuccess: () => { setRemarkText(""); reportSuccess("Help request sent."); invalidate(); },
+    mutationFn: (woId: string) => sfApi.requestHelp(woId, remarkText || tx("Operator needs help"), activeSession?.operator_name, activeSession?.id),
+    onSuccess: () => { setRemarkText(""); reportSuccess(tx("Help request sent.")); invalidate(); },
     onError: reportError,
   });
 
   const qcMut = useMutation({
     mutationFn: (woId: string) => sfApi.triggerQC(woId, { session_id: activeSession?.id, operator_name: activeSession?.operator_name }),
-    onSuccess: () => { reportSuccess("Quality check requested."); invalidate(); },
+    onSuccess: () => { reportSuccess(tx("Quality check requested.")); invalidate(); },
     onError: reportError,
   });
 
   const noteMut = useMutation({
     mutationFn: (woId: string) => sfApi.addNote(woId, remarkText, activeSession?.operator_name, activeSession?.id),
-    onSuccess: () => { setRemarkText(""); reportSuccess("Note added."); invalidate(); },
+    onSuccess: () => { setRemarkText(""); reportSuccess(tx("Note added.")); invalidate(); },
     onError: reportError,
   });
 
@@ -314,7 +314,7 @@ export default function OperatorTerminal() {
       root_reason: dtReason,
       impact_level: "MEDIUM",
     }),
-    onSuccess: () => { setShowDowntime(false); setDtReason(""); reportSuccess("Downtime recorded."); invalidate(); },
+    onSuccess: () => { setShowDowntime(false); setDtReason(""); reportSuccess(tx("Downtime recorded.")); invalidate(); },
     onError: reportError,
   });
 
@@ -327,7 +327,7 @@ export default function OperatorTerminal() {
       }),
     onSuccess: (_material, variables) => {
       setMaterialQtyById((quantities) => ({ ...quantities, [variables.materialId]: "" }));
-      reportSuccess("Material consumption recorded for this operation.");
+      reportSuccess(tx("Material consumption recorded for this operation."));
       qc.invalidateQueries({ queryKey: ["sf-work-order-materials", variables.woId] });
       qc.invalidateQueries({ queryKey: ["sf-activity", variables.woId] });
       invalidate();
@@ -350,7 +350,7 @@ export default function OperatorTerminal() {
       setQCMeasuredValue("");
       setQCUnit("");
       setQCNotes("");
-      reportSuccess("In-process QC checkpoint recorded.");
+      reportSuccess(tx("In-process QC checkpoint recorded."));
       qc.invalidateQueries({ queryKey: ["sf-work-order-qc-checkpoints", selectedWO?.work_order_id] });
       invalidate();
     },
@@ -820,7 +820,7 @@ export default function OperatorTerminal() {
                           return (
                             <article key={event.id} className="rounded-lg border border-gray-200 p-3 text-sm">
                               <div className="flex flex-wrap justify-between gap-2">
-                                <strong>{String(checkpoint.checkpoint_name || "QC checkpoint")}</strong>
+                                <strong>{String(checkpoint.checkpoint_name || tx("QC checkpoint"))}</strong>
                                 <span className={checkpoint.result === "PASS" ? "font-semibold text-green-700" : "font-semibold text-red-700"}>
                                   {String(checkpoint.result || "UNKNOWN")}
                                 </span>

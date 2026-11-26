@@ -30,7 +30,7 @@ function SalesDashboardTab() {
   const overdueItems = outstanding.filter((r) => r.days_overdue && r.days_overdue > 0);
 
   const tiles = [
-    { label: tx("Total Orders"), value: summary?.total_orders ?? "—", sub: `${summary?.confirmed_orders ?? 0} active`, color: "text-gray-900", href: "/dashboard/sales/orders" },
+    { label: tx("Total Orders"), value: summary?.total_orders ?? "—", sub: tx("{confirmed_orders} active", { confirmed_orders: summary?.confirmed_orders ?? 0 }), color: "text-gray-900", href: "/dashboard/sales/orders" },
     { label: tx("Order Value"), value: summary ? `KES ${Number(summary.total_order_value).toLocaleString(undefined, { minimumFractionDigits: 0 })}` : "—", sub: "confirmed orders", color: "text-blue-700", href: "/dashboard/sales/orders" },
     { label: tx("Total Invoiced"), value: summary ? `KES ${Number(summary.total_invoiced).toLocaleString(undefined, { minimumFractionDigits: 0 })}` : "—", sub: "all invoices", color: "text-gray-900", href: "/dashboard/sales/invoices" },
     { label: tx("Collected"), value: summary ? `KES ${Number(summary.total_collected).toLocaleString(undefined, { minimumFractionDigits: 0 })}` : "—", sub: "payments received", color: "text-green-700", href: "/dashboard/sales/invoices" },
@@ -192,7 +192,7 @@ export default function SalesPage() {
   return (
     <ModuleWorkspace
       title={tx("Sales")}
-      description="Orders, invoices, customers, pricing, collections, van sales"
+      description={tx("Orders, invoices, customers, pricing, collections, van sales")}
       permission="sales.view"
       tabs={tabs}
       defaultTab="overview"

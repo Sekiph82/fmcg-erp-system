@@ -46,7 +46,7 @@ export function BusinessCardPanel({ employeeId }: { employeeId?: string }) {
           <p className="text-gray-600">{card.title_en || card.role}</p>
           <p>
             <span className={`inline-block px-2 py-0.5 rounded text-xs ${card.live ? "bg-emerald-100 text-emerald-800" : "bg-red-100 text-red-700"}`}>
-              {card.live ? tx("Live") : card.status === "REVOKED" ? `Closed${card.revoked_reason ? ` — ${card.revoked_reason}` : ""}` : tx("Closed (employee not active)")}
+              {card.live ? tx("Live") : card.status === "REVOKED" ? tx("Closed") + (card.revoked_reason ? ` — ${card.revoked_reason}` : "") : tx("Closed (employee not active)")}
             </span>
           </p>
           <p className="break-all text-xs text-gray-500">{card.url}</p>
@@ -66,7 +66,7 @@ export function BusinessCardPanel({ employeeId }: { employeeId?: string }) {
         <>
           <fieldset className="border rounded-lg p-3 space-y-2">
             <legend className="px-1 font-medium">{tx("Shown on the card")}</legend>
-            {([["show_phone", "Work phone"], ["show_whatsapp", "WhatsApp"], ["show_email", "Work e-mail"]] as const).map(([k, label]) => (
+            {([["show_phone", tx("Work phone")], ["show_whatsapp", "WhatsApp"], ["show_email", tx("Work e-mail")]] as const).map(([k, label]) => (
               <label key={k} className="flex items-center gap-2">
                 <input type="checkbox" checked={card[k]} disabled={run.isPending} onChange={(e) => run.mutate(() => cardsApi.update(employeeId!, { [k]: e.target.checked }))} />
                 {label}

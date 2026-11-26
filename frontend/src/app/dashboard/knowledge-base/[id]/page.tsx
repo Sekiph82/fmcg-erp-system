@@ -138,7 +138,7 @@ function apiError(e: unknown) {
   const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
   if (typeof detail === "string") return detail;
   if (detail && typeof detail === "object" && "detail" in detail) return String((detail as { detail: unknown }).detail);
-  return "Request failed.";
+  return tx("Request failed.");
 }
 
 /** M36.S04.T005: review → publish workflow, public visibility and feedback. Publishing and making an

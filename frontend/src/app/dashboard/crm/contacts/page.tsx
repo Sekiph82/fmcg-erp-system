@@ -40,7 +40,7 @@ export default function CRMContactsPage() {
         <form className="grid grid-cols-2 gap-1 text-xs border rounded p-2 bg-white" onSubmit={async (e) => {
           e.preventDefault();
           try { const r = await apiClient.post("/api/v1/crm-contacts", { ...form, email: form.email || null, language: form.language || null }); setForm({ full_name: "", email: "", phone: "", job_title: "", language: "" }); load(); show(r.data.id); setMsg(null); }
-          catch (x) { setMsg(err(x, "Could not add the contact.")); }
+          catch (x) { setMsg(err(x, tx("Could not add the contact."))); }
         }}>
           <input required className="border rounded px-2 py-1" placeholder={tx("Full name")} value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
           <input type="email" className="border rounded px-2 py-1" placeholder={tx("E-mail")} value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
@@ -69,7 +69,7 @@ export default function CRMContactsPage() {
               const back = STAGES.indexOf(stage) < STAGES.indexOf(open.lifecycle_stage ?? "SUBSCRIBER");
               const reason = back ? prompt(tx("Why move this contact back?")) : null;
               if (back && !reason) return;
-              try { await apiClient.put(`/api/v1/crm-contacts/${open.id}/lifecycle`, { stage, reason }); show(open.id); load(); } catch (x) { setMsg(err(x, "Not allowed.")); }
+              try { await apiClient.put(`/api/v1/crm-contacts/${open.id}/lifecycle`, { stage, reason }); show(open.id); load(); } catch (x) { setMsg(err(x, tx("Not allowed."))); }
             }}>{STAGES.map((s) => <option key={s}>{s}</option>)}</select></label>
           <div>
             <div className="text-xs font-semibold mb-1">{tx("Linked to")}</div>
@@ -79,12 +79,12 @@ export default function CRMContactsPage() {
             ))}
             <div className="flex flex-wrap gap-1 mt-2 text-xs items-end">
               <select className="border rounded px-1 py-1" value={assoc.object_type} onChange={(e) => setAssoc({ ...assoc, object_type: e.target.value, object_id: "" })}>
-                {[tx("customer"), "crm_record", "sales_order"].map((t) => <option key={t}>{t}</option>)}</select>
+                {[["customer", tx("customer")], ["crm_record", "crm_record"], ["sales_order", "sales_order"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
               <div className="min-w-[12rem] flex-1"><EntityPicker kind={assoc.object_type as "customer"} value={assoc.object_id} onChange={(id) => setAssoc({ ...assoc, object_id: id })} /></div>
               <select className="border rounded px-1 py-1" value={assoc.label} onChange={(e) => setAssoc({ ...assoc, label: e.target.value })}>
                 {LABELS.map((l) => <option key={l}>{l}</option>)}</select>
               <button className="border rounded px-2 py-1" disabled={!assoc.object_id} onClick={async () => {
-                try { await apiClient.post(`/api/v1/crm-contacts/${open.id}/associations`, assoc); show(open.id); } catch (x) { setMsg(err(x, "Could not link.")); }
+                try { await apiClient.post(`/api/v1/crm-contacts/${open.id}/associations`, assoc); show(open.id); } catch (x) { setMsg(err(x, tx("Could not link."))); }
               }}>{tx("Link")}</button>
             </div>
           </div>

@@ -8,7 +8,7 @@ import { tx } from "@/lib/i18n/core";
 type Field = { path: string; label: string; type: string };
 type Dataset = { id: string; name: string; columns: Field[]; row_count: number; join: { source: string; local: string; remote: string } | null; source_key: string };
 type Catalog = Record<string, { label: string; fields: Field[] }>;
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 
 export default function DatasetsPage() {
   const [list, setList] = useState<Dataset[]>([]);
@@ -41,7 +41,7 @@ export default function DatasetsPage() {
           <button className="bg-indigo-600 text-white rounded px-3 py-1" onClick={create} disabled={!f.name || !f.csv}>{tx("Create dataset")}</button></div>
       </section>
       <ul className="divide-y border rounded">{list.length === 0 ? <li className="p-2 text-xs text-gray-500">{tx("No datasets yet.")}</li> : list.map((d) =>
-        <li key={d.id} className="p-2 text-xs flex flex-wrap justify-between gap-2"><span><b>{d.name}</b> · {d.row_count} {tx("rows ·")} {d.columns.length} {tx("columns")}{d.join ? ` · blended with ${cat[d.join.source]?.label ?? d.join.source} on ${d.join.local} = ${d.join.remote}` : ""}</span>
+        <li key={d.id} className="p-2 text-xs flex flex-wrap justify-between gap-2"><span><b>{d.name}</b> · {d.row_count} {tx("rows ·")} {d.columns.length} {tx("columns")}{d.join ? tx(" · blended with {cat} on {local} = {remote}", { cat: cat[d.join.source]?.label ?? d.join.source, local: d.join.local, remote: d.join.remote }) : ""}</span>
           <span className="flex gap-2"><button className="underline" onClick={() => apiClient.get(`/api/v1/report-datasets/${d.id}/preview`).then((r) => setPreview(r.data)).catch((e) => setMsg(err(e)))}>{tx("Preview")}</button>
             <button className="text-red-600" onClick={() => apiClient.delete(`/api/v1/report-datasets/${d.id}`).then(load).catch((e) => setMsg(err(e)))}>{tx("Delete")}</button></span></li>)}</ul>
       {preview && <div className="overflow-x-auto"><p className="text-xs">{preview.total} {tx("rows (first 50)")}</p><table className="text-xs border min-w-full"><thead><tr>{preview.columns.map((c) => <th key={c.path} className="p-1 border-b text-left">{c.path}</th>)}</tr></thead>

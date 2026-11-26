@@ -126,7 +126,7 @@ export default function PODetailPage() {
     try { hit = ((await apiClient.get("/api/v1/lookup/material", { params: { search: code, exact: true, limit: 5 } })).data as { id: string }[])[0]; }
     catch { hit = undefined; }
     const idx = hit ? grnLines.findIndex((l) => l.material_id === hit!.id) : -1;
-    if (idx < 0) { setScanMsg({ ok: false, text: hit ? "That item is not on this purchase order." : `Unknown item code ${code}.` }); return; }
+    if (idx < 0) { setScanMsg({ ok: false, text: hit ? tx("That item is not on this purchase order.") : `Unknown item code ${code}.` }); return; }
     lastLine.current = idx;
     setGrnLines((ls) => ls.map((r, i) => {
       if (i !== idx) return r;
@@ -139,7 +139,7 @@ export default function PODetailPage() {
     if (lastLine.current === null) { setScanMsg({ ok: false, text: tx("Scan an item first, then its lot label.") }); return; }
     const li = lastLine.current;
     setGrnLines((ls) => ls.map((r, i) => (i === li ? { ...r, lot_number: code } : r)));
-    setScanMsg({ ok: true, text: `Lot ${code} set for ${grnLines[li].material_name}` });
+    setScanMsg({ ok: true, text: tx("Lot {code} set for {grnLines}", { code, grnLines: grnLines[li].material_name }) });
   };
 
   const createGRN = useMutation({
@@ -280,7 +280,7 @@ export default function PODetailPage() {
               {tx("Order date:")} {new Date(po.order_date).toLocaleDateString()} {tx("· Expected delivery:")} <span className={(po.days_until_delivery ?? 0) < 0 ? "text-red-600 font-semibold" : ""}>{new Date(po.expected_delivery_date).toLocaleDateString()}</span>
               {po.days_until_delivery != null && (
                 <span className="ml-1">
-                  {po.days_until_delivery < 0 ? `(${Math.abs(po.days_until_delivery)}d overdue)` : tx("(in {days_until_delivery}d)", { days_until_delivery: po.days_until_delivery })}
+                  {po.days_until_delivery < 0 ? tx("({days_until_delivery}d overdue)", { days_until_delivery: Math.abs(po.days_until_delivery) }) : tx("(in {days_until_delivery}d)", { days_until_delivery: po.days_until_delivery })}
                 </span>
               )}
             </p>
@@ -289,7 +289,7 @@ export default function PODetailPage() {
             <div className="flex items-center gap-2">
               <Badge label={po.status.replace(/_/g, " ")} variant={statusVariant(po.status)} />
               <Badge
-                label={`Payment: ${po.payment_status.replace(/_/g, " ")}`}
+                label={tx("Payment: {payment_status}", { payment_status: po.payment_status.replace(/_/g, " ") })}
                 variant={payStatusVariant(po.payment_status)}
               />
             </div>

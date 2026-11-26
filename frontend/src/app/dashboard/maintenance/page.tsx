@@ -37,7 +37,7 @@ function MaintenanceDashboardTab() {
   const lowStock = spareParts.filter((s) => s.reorder_level != null && s.current_stock <= s.reorder_level!);
 
   const tiles = [
-    { label: tx("Total Assets"), value: assets.length, sub: `${underMaintenance.length} under maintenance`, color: "text-gray-900", href: "/dashboard/maintenance?tab=assets" },
+    { label: tx("Total Assets"), value: assets.length, sub: tx("{length} under maintenance", { length: underMaintenance.length }), color: "text-gray-900", href: "/dashboard/maintenance?tab=assets" },
     { label: tx("Open Breakdowns"), value: openBreakdowns.length, sub: "active / in-repair", color: openBreakdowns.length > 0 ? "text-red-600" : "text-gray-700", href: "/dashboard/maintenance?tab=breakdowns" },
     { label: tx("Overdue PMs"), value: overduePM.length, sub: "past due date", color: overduePM.length > 0 ? "text-orange-600" : "text-gray-700", href: "/dashboard/maintenance?tab=plans" },
     { label: tx("Low Stock Spares"), value: lowStock.length, sub: "at or below reorder level", color: lowStock.length > 0 ? "text-yellow-600" : "text-gray-700", href: "/dashboard/maintenance?tab=spares" },
@@ -184,7 +184,7 @@ export default function MaintenancePage() {
   return (
     <ModuleWorkspace
       title={tx("Maintenance")}
-      description="Assets, breakdowns, planned maintenance, predictive, spares"
+      description={tx("Assets, breakdowns, planned maintenance, predictive, spares")}
       permission="maintenance.view"
       tabs={tabs}
       defaultTab="overview"

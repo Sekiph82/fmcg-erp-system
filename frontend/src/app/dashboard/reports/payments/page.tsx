@@ -20,7 +20,7 @@ function PaymentsDashboard() {
   return (
     <DashboardShell
       title={tx("M-Pesa Payments Analytics")}
-      subtitle="Collections, success rates, and failure analysis"
+      subtitle={tx("Collections, success rates, and failure analysis")}
       days={days}
       onDaysChange={setDays}
       backHref="/dashboard/reports"

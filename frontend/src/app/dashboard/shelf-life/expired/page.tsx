@@ -66,7 +66,7 @@ export default function ExpiredStockPage() {
                 <td className="px-4 py-3 font-mono text-xs text-red-700">{l.lot_id.slice(0,12)}…</td>
                 <td className="px-4 py-3 font-medium text-red-700">{l.expiry_date || "—"}</td>
                 <td className="px-4 py-3 font-bold text-red-800">
-                  {l.remaining_shelf_life_days !== null ? `${Math.abs(l.remaining_shelf_life_days)}d ago` : "—"}
+                  {l.remaining_shelf_life_days !== null ? tx("{remaining_shelf_life_days}d ago", { remaining_shelf_life_days: Math.abs(l.remaining_shelf_life_days) }) : "—"}
                 </td>
                 <td className="px-4 py-3">
                   {l.pct_remaining && parseFloat(l.pct_remaining) > 100 ? (

@@ -408,11 +408,11 @@ export default function ConversionProfilePage() {
               <p className="text-xs font-medium text-gray-500 pt-1">{tx("Loss Percentages")}</p>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  ["startup_loss_pct", "Startup Loss %"],
-                  ["shutdown_loss_pct", "Shutdown Loss %"],
-                  ["packaging_reject_pct", "Packaging Reject %"],
-                  ["residual_bulk_pct", "Residual Bulk %"],
-                  ["line_purge_loss_pct", "Line Purge %"],
+                  ["startup_loss_pct", tx("Startup Loss %")],
+                  ["shutdown_loss_pct", tx("Shutdown Loss %")],
+                  ["packaging_reject_pct", tx("Packaging Reject %")],
+                  ["residual_bulk_pct", tx("Residual Bulk %")],
+                  ["line_purge_loss_pct", tx("Line Purge %")],
                 ].map(([field, label]) => (
                   <div key={field}>
                     <label className="text-xs text-gray-500 mb-1 block">{label}</label>

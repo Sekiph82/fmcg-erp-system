@@ -17,7 +17,7 @@ const WEB_OPS: Record<string, Record<string, string>> = { visited_path: { prefix
   web_event: { occurred: "sent the event" }, intent_score: { gte: "≥", lte: "≤" } };
 const opsFor = (f: string) => WEB_OPS[f] ?? OPS;
 const isWeb = (f: string) => f === "visited_path" || f === "web_event";
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Request failed."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Request failed."); };
 const toApi = (c: Cond) => isWeb(c.field) ? { field: c.field, op: c.op, value: c.value, days: c.days ?? 30 }
   : ({ field: c.field, op: c.op, value: c.op === "in" || c.op === "not_in" ? c.value.split(",").map((x) => x.trim()).filter(Boolean) : c.value });
 
@@ -55,7 +55,7 @@ export default function AudiencesPage() {
   // M47.S01.T010 hashed customer-list / conversion uploads (NOT_CONFIGURED until an ad account is connected)
   const push = async (path: string) => {
     const d = (await apiClient.post(path)).data as { status: string; message?: string; sent?: number; uploaded?: number };
-    setMsg(d.status === "NOT_CONFIGURED" ? `Not configured: ${d.message ?? ""}` : `${d.status}: ${d.sent ?? d.uploaded ?? 0} hashed record(s) sent.`);
+    setMsg(d.status === "NOT_CONFIGURED" ? tx("Not configured: {message}", { message: d.message ?? "" }) : tx("{status}: {sent} hashed record(s) sent.", { status: d.status, sent: d.sent ?? d.uploaded ?? 0 }));
   };
   const download = async (a: Audience) => {
     const r = await apiClient.get(`/api/v1/audiences/${a.id}/export.csv`, { responseType: "blob" });
@@ -68,7 +68,7 @@ export default function AudiencesPage() {
         <a href="/dashboard/crm/audiences/sync" className="text-xs underline">{tx("Ad platform sync (Meta, Google, LinkedIn, TikTok)")}</a></div>
       <p className="text-xs text-gray-500">{tx("Rule-based lists recomputed from customer, CRM and order data. Only addresses with marketing consent become members; others are counted as blocked and never exported. Website conditions use only visits linked to a customer's e-mail with consent; intent_score is the customer-intelligence buying-intent score.")}</p>
       {msg && <p role="status" className="text-xs border rounded p-2 bg-gray-50">{msg}</p>}
-      <form className="border rounded p-3 bg-white space-y-2" onSubmit={(e) => { e.preventDefault(); run(() => apiClient.post("/api/v1/audiences", body()), "Audience saved and computed."); }}>
+      <form className="border rounded p-3 bg-white space-y-2" onSubmit={(e) => { e.preventDefault(); run(() => apiClient.post("/api/v1/audiences", body()), tx("Audience saved and computed.")); }}>
         <input aria-label={tx("Audience name")} required placeholder={tx("Audience name")} className="border rounded px-2 py-1 w-full" value={name} onChange={(e) => setName(e.target.value)} />
         <Rows label={tx("Include customers where ALL of these hold")} rows={all} set={setAll} />
         <Rows label={tx("Exclude customers where ANY of these hold")} rows={exclude} set={setExclude} />

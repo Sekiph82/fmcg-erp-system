@@ -77,7 +77,7 @@ export function MaterialScanPanel({
           <p className="font-semibold text-gray-900">{d.material_name ?? tx("Unknown material")} <span className="text-gray-500 font-normal">{d.material_code}</span></p>
           <p className="text-sm text-gray-700">
             {tx("Lot")} {d.lot_number ?? "—"}{d.expiry_date ? tx(" · expires {expiry_date}", { expiry_date: d.expiry_date }) : ""}
-            {isPrepared && labelQty ? ` · label ${labelQty} ${d.uom ?? ""}` : ""}
+            {isPrepared && labelQty ? tx(" · label {labelQty} {uom}", { labelQty, uom: d.uom ?? "" }) : ""}
           </p>
           {!line && <p className="text-sm text-red-700" role="alert">{tx("Not in this operation's recipe. Confirming will be refused and logged.")}</p>}
           {(d.is_quarantine || d.is_expired || d.consumed) && (

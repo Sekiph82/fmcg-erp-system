@@ -29,6 +29,7 @@ import {
 import type { UtilityTransaction, UtilityTransactionCreate } from "@/lib/utilityTransactions";
 import { importApi } from "@/lib/importApi";
 import type { ImportResult } from "@/lib/importApi";
+import { tx as xlate, lx } from "@/lib/i18n/core";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -61,10 +62,10 @@ function Section({ title }: { title: string }) {
 }
 
 type BreakdownDim = "department" | "line" | "machine" | "building_area" | "shift";
-const DIM_LABELS: Record<BreakdownDim, string> = {
-  department: "Department", line: "Production Line",
-  machine: "Machine", building_area: "Building/Area", shift: "Shift",
-};
+const DIM_LABELS: Record<BreakdownDim, string> = lx(() => ({
+  department: xlate("Department"), line: xlate("Production Line"),
+  machine: xlate("Machine"), building_area: xlate("Building/Area"), shift: xlate("Shift"),
+}));
 
 const BAR_COLORS = ["#38bdf8", "#34d399", "#a78bfa", "#fb923c", "#f472b6", "#facc15"];
 
@@ -100,7 +101,7 @@ function TxForm({
       {/* Type + Date */}
       <div className="grid grid-cols-2 gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Water Type *</span>
+          <span className="text-xs text-gray-400">{xlate("Water Type *")}</span>
           <select
             required
             className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
@@ -113,7 +114,7 @@ function TxForm({
           </select>
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Date *</span>
+          <span className="text-xs text-gray-400">{xlate("Date *")}</span>
           <input required type="date" className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={f.transaction_date} onChange={e => set("transaction_date", e.target.value)} />
         </label>
@@ -122,13 +123,13 @@ function TxForm({
       {/* Volume + UoM */}
       <div className="grid grid-cols-2 gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Volume (m³) *</span>
+          <span className="text-xs text-gray-400">{xlate("Volume (m³) *")}</span>
           <input required type="number" step="0.001" min="0"
             className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={f.quantity} onChange={e => set("quantity", parseFloat(e.target.value))} />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Unit</span>
+          <span className="text-xs text-gray-400">{xlate("Unit")}</span>
           <input className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={f.uom} onChange={e => set("uom", e.target.value)} />
         </label>
@@ -157,19 +158,19 @@ function TxForm({
       {/* Cost */}
       <div className="grid grid-cols-3 gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Cost Rate</span>
+          <span className="text-xs text-gray-400">{xlate("Cost Rate")}</span>
           <input type="number" step="0.0001" className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={(f.cost_rate as number) ?? ""}
             onChange={e => set("cost_rate", e.target.value ? parseFloat(e.target.value) : null)} />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Total Cost</span>
+          <span className="text-xs text-gray-400">{xlate("Total Cost")}</span>
           <input type="number" step="0.01" className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={(f.total_cost as number) ?? ""}
             onChange={e => set("total_cost", e.target.value ? parseFloat(e.target.value) : null)} />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Currency</span>
+          <span className="text-xs text-gray-400">{xlate("Currency")}</span>
           <input className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={f.currency_code ?? "USD"}
             onChange={e => set("currency_code", e.target.value)} />
@@ -179,7 +180,7 @@ function TxForm({
       {/* Quality flags */}
       <div className="grid grid-cols-3 gap-3">
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Source Method</span>
+          <span className="text-xs text-gray-400">{xlate("Source Method")}</span>
           <select className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={f.source_method} onChange={e => set("source_method", e.target.value as UtilityTransactionCreate["source_method"])}>
             {["MANUAL", "IMPORTED", "IOT", "API", "CALCULATED", "ESTIMATED"].map(m => (
@@ -188,7 +189,7 @@ function TxForm({
           </select>
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Quality</span>
+          <span className="text-xs text-gray-400">{xlate("Quality")}</span>
           <select className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={f.quality} onChange={e => set("quality", e.target.value as UtilityTransactionCreate["quality"])}>
             {["GOOD", "ESTIMATED", "SUSPECT", "MISSING"].map(q => (
@@ -199,18 +200,18 @@ function TxForm({
         <div className="flex flex-col gap-2 pt-4">
           <label className="flex items-center gap-2 text-xs text-gray-400">
             <input type="checkbox" checked={!!f.estimated_or_actual} onChange={e => set("estimated_or_actual", e.target.checked)} />
-            Estimated
+            {xlate("Estimated")}
           </label>
           <label className="flex items-center gap-2 text-xs text-gray-400">
             <input type="checkbox" checked={!!f.anomaly_flag} onChange={e => set("anomaly_flag", e.target.checked)} />
-            Anomaly
+            {xlate("Anomaly")}
           </label>
         </div>
       </div>
 
       {f.anomaly_flag && (
         <label className="flex flex-col gap-1">
-          <span className="text-xs text-gray-400">Anomaly Note</span>
+          <span className="text-xs text-gray-400">{xlate("Anomaly Note")}</span>
           <input className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white"
             value={f.anomaly_note ?? ""}
             onChange={e => set("anomaly_note", e.target.value || null)} />
@@ -218,7 +219,7 @@ function TxForm({
       )}
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs text-gray-400">Notes</span>
+        <span className="text-xs text-gray-400">{xlate("Notes")}</span>
         <textarea rows={2} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-sm text-white resize-none"
           value={f.notes ?? ""}
           onChange={e => set("notes", e.target.value || null)} />
@@ -227,11 +228,11 @@ function TxForm({
       <div className="flex gap-2 justify-end pt-2">
         <button type="button" onClick={onCancel}
           className="px-3 py-1.5 rounded text-sm text-gray-400 border border-white/10 hover:bg-white/5">
-          Cancel
+          {xlate("Cancel")}
         </button>
         <button type="submit" disabled={loading}
           className="px-4 py-1.5 rounded text-sm bg-sky-600 hover:bg-sky-500 text-white disabled:opacity-50">
-          {loading ? "Saving…" : "Save"}
+          {loading ? xlate("Saving…") : xlate("Save")}
         </button>
       </div>
     </form>
@@ -256,7 +257,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
       setResult(r);
       if (doImport && r.imported) onDone();
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Import failed");
+      setError(e instanceof Error ? e.message : xlate("Import failed"));
     } finally {
       setLoading(false);
     }
@@ -266,14 +267,14 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
       <div className="bg-[#1a1f2e] border border-white/10 rounded-xl p-6 w-full max-w-md space-y-4">
         <div className="flex justify-between items-center">
-          <h3 className="text-white font-semibold">Import Water Transactions</h3>
+          <h3 className="text-white font-semibold">{xlate("Import Water Transactions")}</h3>
           <button onClick={onClose} className="text-gray-400 hover:text-white">✕</button>
         </div>
 
         <div>
           <button onClick={() => importApi.downloadTemplate("water_transactions")}
             className="text-xs text-sky-400 hover:underline">
-            Download template CSV
+            {xlate("Download template CSV")}
           </button>
         </div>
 
@@ -283,12 +284,12 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
 
         {result && (
           <div className={`p-3 rounded text-sm border ${result.imported ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-blue-500/10 border-blue-500/20 text-blue-400"}`}>
-            <p>{result.imported ? "Import complete" : "Validation result"}</p>
+            <p>{result.imported ? xlate("Import complete") : xlate("Validation result")}</p>
             <p className="text-xs mt-1">
-              {result.valid_rows} valid / {result.failed_rows} failed / {result.total_rows} total
+              {result.valid_rows} {xlate("valid /")} {result.failed_rows} {xlate("failed /")} {result.total_rows} {xlate("total")}
             </p>
             {result.errors.slice(0, 5).map((e, i) => (
-              <p key={i} className="text-xs text-red-400 mt-0.5">Row {e.row}: {e.message}</p>
+              <p key={i} className="text-xs text-red-400 mt-0.5">{xlate("Row")} {e.row}: {e.message}</p>
             ))}
           </div>
         )}
@@ -297,11 +298,11 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
         <div className="flex gap-2 justify-end">
           <button onClick={() => run(false)} disabled={!file || loading}
             className="px-3 py-1.5 text-xs rounded border border-white/10 text-gray-300 hover:bg-white/5 disabled:opacity-40">
-            Validate
+            {xlate("Validate")}
           </button>
           <button onClick={() => run(true)} disabled={!file || loading}
             className="px-3 py-1.5 text-xs rounded bg-sky-600 hover:bg-sky-500 text-white disabled:opacity-40">
-            {loading ? "Running…" : "Import"}
+            {loading ? xlate("Running…") : xlate("Import")}
           </button>
         </div>
       </div>
@@ -386,9 +387,9 @@ export default function WaterPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Water Management</h1>
+          <h1 className="text-2xl font-bold text-white">{xlate("Water Management")}</h1>
           <p className="text-sm text-gray-400 mt-1">
-            Raw intake · Process consumption · Wastewater · Water balance
+            {xlate("Raw intake · Process consumption · Wastewater · Water balance")}
           </p>
         </div>
         <div className="flex gap-2">
@@ -396,15 +397,15 @@ export default function WaterPage() {
             onClick={() => downloadWaterCsv({ utility_type: txType, ...scope }, `water-${txType.toLowerCase()}-${new Date().toISOString().slice(0,10)}.csv`)}
             className="px-3 py-1.5 text-xs rounded border border-white/10 text-gray-300 hover:bg-white/5"
           >
-            Export CSV
+            {xlate("Export CSV")}
           </button>
           <button onClick={() => setModal({ type: "import" })}
             className="px-3 py-1.5 text-xs rounded border border-sky-500/30 text-sky-400 hover:bg-sky-500/10">
-            Import
+            {xlate("Import")}
           </button>
           <button onClick={() => setModal({ type: "create" })}
             className="px-3 py-1.5 text-xs rounded bg-sky-600 hover:bg-sky-500 text-white">
-            + Add Record
+            {xlate("+ Add Record")}
           </button>
         </div>
       </div>
@@ -432,35 +433,35 @@ export default function WaterPage() {
       </div>
 
       {/* KPI Cards */}
-      <Section title="Water Balance KPIs" />
+      <Section title={xlate("Water Balance KPIs")} />
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KPICard label="Raw Water In" value={`${fmt(kpis?.water_in_m3)} m³`} />
-        <KPICard label="Process Water" value={`${fmt(kpis?.process_m3)} m³`} />
-        <KPICard label="Wastewater" value={`${fmt(kpis?.wastewater_m3)} m³`} />
-        <KPICard label="Balance" value={`${fmt(kpis?.balance_m3)} m³`}
+        <KPICard label={xlate("Raw Water In")} value={`${fmt(kpis?.water_in_m3)} m³`} />
+        <KPICard label={xlate("Process Water")} value={`${fmt(kpis?.process_m3)} m³`} />
+        <KPICard label={xlate("Wastewater")} value={`${fmt(kpis?.wastewater_m3)} m³`} />
+        <KPICard label={xlate("Balance")} value={`${fmt(kpis?.balance_m3)} m³`}
           sub="In − Waste" />
         <KPICard
-          label="Water Loss"
+          label={xlate("Water Loss")}
           value={kpis?.loss_pct ? `${fmt(kpis.loss_pct, 1)}%` : "—"}
           sub={kpis?.loss_m3 ? `${fmt(kpis.loss_m3)} m³` : undefined}
           alert={parseFloat(kpis?.loss_pct ?? "0") > 10}
         />
         <KPICard
-          label="Recovery Rate"
+          label={xlate("Recovery Rate")}
           value={kpis?.recovery_pct ? `${fmt(kpis.recovery_pct, 1)}%` : "—"}
           sub="Process / In"
         />
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KPICard label="Avg m³/Day" value={`${fmt(kpis?.avg_m3_per_day)} m³`} />
-        <KPICard label="Total Cost" value={kpis?.total_cost ? `$${fmt(kpis.total_cost)}` : "—"} />
-        <KPICard label="Anomalies" value={String(kpis?.anomaly_count ?? 0)}
+        <KPICard label={xlate("Avg m³/Day")} value={`${fmt(kpis?.avg_m3_per_day)} m³`} />
+        <KPICard label={xlate("Total Cost")} value={kpis?.total_cost ? `$${fmt(kpis.total_cost)}` : "—"} />
+        <KPICard label={xlate("Anomalies")} value={String(kpis?.anomaly_count ?? 0)}
           alert={(kpis?.anomaly_count ?? 0) > 0} />
-        <KPICard label="Records" value={String(kpis?.tx_count ?? 0)} />
+        <KPICard label={xlate("Records")} value={String(kpis?.tx_count ?? 0)} />
       </div>
 
       {/* Daily Trend Chart */}
-      <Section title="Daily Water Trend" />
+      <Section title={xlate("Daily Water Trend")} />
       <div className="bg-white/5 border border-white/10 rounded-xl p-4" style={{ height: 280 }}>
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={trendData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
@@ -481,7 +482,7 @@ export default function WaterPage() {
       </div>
 
       {/* Breakdown */}
-      <Section title="Consumption Breakdown" />
+      <Section title={xlate("Consumption Breakdown")} />
       <div className="flex gap-3 flex-wrap mb-2">
         <select
           value={txType}
@@ -526,9 +527,9 @@ export default function WaterPage() {
             <thead>
               <tr className="border-b border-white/10">
                 <th className="text-left px-3 py-2 text-gray-400">{DIM_LABELS[breakdownDim]}</th>
-                <th className="text-right px-3 py-2 text-gray-400">m³</th>
+                <th className="text-right px-3 py-2 text-gray-400">{xlate("m³")}</th>
                 <th className="text-right px-3 py-2 text-gray-400">%</th>
-                <th className="text-right px-3 py-2 text-gray-400">Cost</th>
+                <th className="text-right px-3 py-2 text-gray-400">{xlate("Cost")}</th>
               </tr>
             </thead>
             <tbody>
@@ -546,7 +547,7 @@ export default function WaterPage() {
       </div>
 
       {/* Transaction list */}
-      <Section title="Transactions" />
+      <Section title={xlate("Transactions")} />
       <div className="flex gap-2 mb-2">
         {(["WATER", "PROCESS_WATER", "WASTEWATER"] as WaterUtilityType[]).map(t => (
           <button
@@ -566,8 +567,8 @@ export default function WaterPage() {
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-white/10">
-              {["Tx No", "Date", "Quantity", "Department", "Line", "Machine", "Shift",
-                "Cost", "Source", "Quality", "Flags", ""].map(h => (
+              {[xlate("Tx No"), xlate("Date"), xlate("Quantity"), xlate("Department"), xlate("Line"), xlate("Machine"), xlate("Shift"),
+                xlate("Cost"), xlate("Source"), xlate("Quality"), xlate("Flags"), ""].map(h => (
                 <th key={h} className="text-left px-3 py-2 text-gray-400 whitespace-nowrap">{h}</th>
               ))}
             </tr>
@@ -595,9 +596,9 @@ export default function WaterPage() {
                 <td className="px-3 py-2">
                   <div className="flex gap-2">
                     <button onClick={() => setModal({ type: "edit", tx })}
-                      className="text-sky-400 hover:text-sky-300 text-xs">Edit</button>
+                      className="text-sky-400 hover:text-sky-300 text-xs">{xlate("Edit")}</button>
                     <button onClick={() => setModal({ type: "delete", tx })}
-                      className="text-red-400 hover:text-red-300 text-xs">Del</button>
+                      className="text-red-400 hover:text-red-300 text-xs">{xlate("Del")}</button>
                   </div>
                 </td>
               </tr>
@@ -605,7 +606,7 @@ export default function WaterPage() {
             {txList.length === 0 && (
               <tr>
                 <td colSpan={12} className="px-3 py-8 text-center text-gray-500">
-                  No {WATER_TYPE_LABELS[txType]} records found for the selected scope.
+                  {xlate("No")} {WATER_TYPE_LABELS[txType]} {xlate("records found for the selected scope.")}
                 </td>
               </tr>
             )}
@@ -617,7 +618,7 @@ export default function WaterPage() {
       {modal.type === "create" && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-auto">
           <div className="bg-[#1a1f2e] border border-white/10 rounded-xl p-6 w-full max-w-2xl">
-            <h3 className="text-white font-semibold mb-4">Add Water Record</h3>
+            <h3 className="text-white font-semibold mb-4">{xlate("Add Water Record")}</h3>
             <TxForm
               onSubmit={d => createMut.mutate(d)}
               onCancel={() => setModal({ type: "none" })}
@@ -630,7 +631,7 @@ export default function WaterPage() {
       {modal.type === "edit" && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 overflow-auto">
           <div className="bg-[#1a1f2e] border border-white/10 rounded-xl p-6 w-full max-w-2xl">
-            <h3 className="text-white font-semibold mb-4">Edit Water Record</h3>
+            <h3 className="text-white font-semibold mb-4">{xlate("Edit Water Record")}</h3>
             <TxForm
               initial={modal.tx as unknown as Partial<UtilityTransactionCreate>}
               onSubmit={d => updateMut.mutate({ id: modal.tx.id, d })}
@@ -644,15 +645,15 @@ export default function WaterPage() {
       {modal.type === "delete" && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="bg-[#1a1f2e] border border-white/10 rounded-xl p-6 w-full max-w-sm text-center">
-            <p className="text-white mb-2">Delete this record?</p>
+            <p className="text-white mb-2">{xlate("Delete this record?")}</p>
             <p className="text-gray-400 text-sm mb-4">{modal.tx.transaction_no}</p>
             <div className="flex gap-2 justify-center">
               <button onClick={() => setModal({ type: "none" })}
-                className="px-4 py-1.5 rounded border border-white/10 text-gray-300 text-sm hover:bg-white/5">Cancel</button>
+                className="px-4 py-1.5 rounded border border-white/10 text-gray-300 text-sm hover:bg-white/5">{xlate("Cancel")}</button>
               <button onClick={() => deleteMut.mutate(modal.tx.id)}
                 disabled={deleteMut.isPending}
                 className="px-4 py-1.5 rounded bg-red-600 hover:bg-red-500 text-white text-sm disabled:opacity-50">
-                {deleteMut.isPending ? "Deleting…" : "Delete"}
+                {deleteMut.isPending ? xlate("Deleting…") : xlate("Delete")}
               </button>
             </div>
           </div>

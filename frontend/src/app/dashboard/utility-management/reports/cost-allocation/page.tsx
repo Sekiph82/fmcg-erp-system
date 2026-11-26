@@ -82,7 +82,7 @@ export default function CostAllocationPage() {
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" tick={{ fontSize: 10 }} />
               <YAxis type="category" dataKey="dimension" tick={{ fontSize: 10 }} width={75} />
-              <Tooltip formatter={((v: number) => [`$${v.toFixed(2)}`, "Allocated Cost"]) as never} />
+              <Tooltip formatter={((v: number) => [`$${v.toFixed(2)}`, tx("Allocated Cost")]) as never} />
               <Bar dataKey="allocated_cost" name="Cost ($)" fill="#f43f5e" radius={[0, 2, 2, 0]} />
             </BarChart>
           </ResponsiveContainer>
@@ -111,7 +111,7 @@ export default function CostAllocationPage() {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-500">
               <tr>
-                {[GROUP_BY_OPTIONS.find(o => o.value === groupBy)?.label ?? "Dimension", "Utility", "Allocated Cost", "Quantity", "Unit", "Cost/Unit", "Cost/Ton", "Prod Vol (kg)", "Alloc #", "% of Total"].map(h => (
+                {[GROUP_BY_OPTIONS.find(o => o.value === groupBy)?.label ?? "Dimension", "Utility", tx("Allocated Cost"), "Quantity", "Unit", "Cost/Unit", "Cost/Ton", tx("Prod Vol (kg)"), "Alloc #", "% of Total"].map(h => (
                   <th key={h} className="px-4 py-3 text-left font-medium whitespace-nowrap">{h}</th>
                 ))}
               </tr>

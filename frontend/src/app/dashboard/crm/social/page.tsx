@@ -21,14 +21,14 @@ interface Item { id: string; network: string; kind: string; author: string | nul
   ops: Record<"reply" | "hide" | "delete", { available: boolean; reason: string }> }
 
 const NETS = ["facebook", "instagram", "linkedin", "tiktok", "x", "youtube"];
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Request failed."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Request failed."); };
 const newKey = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 const IN_FLIGHT = ["SUBMITTING", "SUBMITTED", "PROCESSING", "UNKNOWN"];
 const STATE_TEXT: Record<string, string> = { EXPORTED: "exported / delivered as a draft — not published", SUBMITTING: "submitting…", SUBMITTED: "submitted — not live yet", PROCESSING: "processing at the network — not live yet",
   UNKNOWN: "outcome unknown — reconciling", PUBLISHED: "published (confirmed by the network)", FAILED: "failed / rejected" };
 const STATE_CLS: Record<string, string> = { PUBLISHED: "bg-emerald-100 text-emerald-800", FAILED: "bg-red-100 text-red-800", UNKNOWN: "bg-amber-100 text-amber-800",
   SUBMITTED: "bg-sky-100 text-sky-800", PROCESSING: "bg-sky-100 text-sky-800", SUBMITTING: "bg-sky-100 text-sky-800" };
-const PRIVACY: Record<string, string> = { PUBLIC_TO_EVERYONE: "Everyone", MUTUAL_FOLLOW_FRIENDS: "Friends", FOLLOWER_OF_CREATOR: "Followers", SELF_ONLY: "Only me (private)" };
+const PRIVACY: Record<string, string> = lx(() => ({ PUBLIC_TO_EVERYONE: tx("Everyone"), MUTUAL_FOLLOW_FRIENDS: tx("Friends"), FOLLOWER_OF_CREATOR: tx("Followers"), SELF_ONLY: tx("Only me (private)") }));
 
 function TikTokOptions({ post, run }: { post: Post; run: (fn: () => Promise<unknown>, ok: string) => Promise<void> }) {
   const [info, setInfo] = useState<CreatorInfo | null>(null);
@@ -41,9 +41,9 @@ function TikTokOptions({ post, run }: { post: Post; run: (fn: () => Promise<unkn
     .then((r) => { const d: CreatorInfo = r.data; setInfo(d); setO((x) => ({ ...x, disable_comment: x.disable_comment || d.comment_disabled,
       disable_duet: x.disable_duet || d.duet_disabled, disable_stitch: x.disable_stitch || d.stitch_disabled })); })
     .catch((e) => setLoadErr(err(e))); };
-  const why = !info ? "Load the creator's options first." : !o.privacy_level ? "Choose who can see the post." : !o.consent ? "Tick the consent box." : null;
+  const why = !info ? tx("Load the creator's options first.") : !o.privacy_level ? tx("Choose who can see the post.") : !o.consent ? tx("Tick the consent box.") : null;
   return (
-    <details className="border rounded p-2 bg-gray-50"><summary className="cursor-pointer">{tx("TikTok options")} {cur ? `· ${PRIVACY[cur.privacy_level] ?? cur.privacy_level} · consent by ${cur.consent_by ?? "?"}` : tx("· not set (required)")}</summary>
+    <details className="border rounded p-2 bg-gray-50"><summary className="cursor-pointer">{tx("TikTok options")} {cur ? tx("· {PRIVACY} · consent by {consent_by}", { PRIVACY: PRIVACY[cur.privacy_level] ?? cur.privacy_level, consent_by: cur.consent_by ?? "?" }) : tx("· not set (required)")}</summary>
       <div className="space-y-1 mt-1">
         <button type="button" className="underline" onClick={load}>{tx("Load creator options from TikTok")}</button>
         {loadErr && <p className="text-red-600">{loadErr}</p>}
@@ -64,7 +64,7 @@ function TikTokOptions({ post, run }: { post: Post; run: (fn: () => Promise<unkn
           <label className="flex gap-1 items-start"><input type="checkbox" aria-label={tx("TikTok consent")} checked={o.consent} onChange={(e) => setO({ ...o, consent: e.target.checked })} />
             <span>{tx("I consent to this video being posted to the TikTok account above with these settings, and agree to TikTok's Music Usage Confirmation.")}</span></label>
           <button type="button" disabled={!!why} title={why ?? ""} className="border rounded px-2 py-0.5 disabled:opacity-50"
-            onClick={() => run(() => apiClient.put(`/api/v1/social/posts/${post.id}/tiktok-options`, o), "TikTok options saved.")}>{tx("Save TikTok options")}</button>
+            onClick={() => run(() => apiClient.put(`/api/v1/social/posts/${post.id}/tiktok-options`, o), tx("TikTok options saved."))}>{tx("Save TikTok options")}</button>
           {why && <span className="ml-2 text-gray-500">{why}</span>}
         </>}
       </div>
@@ -147,7 +147,7 @@ function CapabilityTable({ caps }: { caps: Cap[] }) {
           <p className="text-gray-600">{tx("Scheduling:")} {c.scheduling}{tx(". Metrics:")} {c.insights.note}.</p>
           <table className="w-full"><tbody>{c.formats.map((f) => (
             <tr key={f.key} className="border-t align-top"><td className="pr-2 w-44">{f.available ? "✓" : "✗"} {f.label}</td>
-              <td className={f.available ? "text-gray-600" : "text-red-700"}>{f.available ? [f.note, f.media_max ? `${f.media_min === f.media_max ? f.media_max : `${f.media_min}-${f.media_max}`} media` : "no media", f.alt_text ? "alt text" : null, !f.verified ? "UNVERIFIED in the matrix" : null].filter(Boolean).join(" · ") : f.reason}</td></tr>))}</tbody></table>
+              <td className={f.available ? "text-gray-600" : "text-red-700"}>{f.available ? [f.note, f.media_max ? `${f.media_min === f.media_max ? f.media_max : `${f.media_min}-${f.media_max}`} media` : "no media", f.alt_text ? "alt text" : null, !f.verified ? tx("UNVERIFIED in the matrix") : null].filter(Boolean).join(" · ") : f.reason}</td></tr>))}</tbody></table>
           <p className="text-gray-600">{tx("Comments:")} {Object.entries(c.moderation).map(([op, v]) => `${op} ${v.available ? "yes" : "NO"}`).join(" · ")}</p>
           {Object.entries(c.moderation).filter(([, v]) => !v.available).map(([op, v]) => <p key={op} className="text-red-700">{op}: {v.note}</p>)}
         </div>))}
@@ -180,14 +180,14 @@ export default function SocialPage() {
   const tz = ch?.time_zone ?? "Africa/Nairobi";
   const cap = caps.find((c) => c.network === ch?.network);
   const fmt = cap?.formats.find((f) => f.key === draft.format);
-  const why = !ch ? "Choose a channel." : !fmt ? "Choose a format." : !fmt.available ? fmt.reason : null;
+  const why = !ch ? tx("Choose a channel.") : !fmt ? tx("Choose a format.") : !fmt.available ? fmt.reason : null;
   const payload = () => ({ channel_id: draft.channel_id, idempotency_key: draft.key, text: draft.text, link: draft.link || null, format: draft.format || null,
     format_options: buildFopts(ch?.network ?? "", draft.format, draft.fopts), campaign_tag: draft.campaign_tag || null,
     media: draft.media.filter((m) => m.url).map((m) => ({ url: m.url, kind: m.kind, ...(m.alt_text ? { alt_text: m.alt_text } : {}), ...(m.thumbnail_url ? { thumbnail_url: m.thumbnail_url } : {}) })),
     scheduled_at: draft.when || null, time_zone: tz });
   const byDay = useMemo(() => {
     const g: Record<string, Post[]> = {};
-    for (const p of posts) { const k = p.scheduled_at ? new Date(p.scheduled_at).toLocaleDateString() : "Not scheduled"; (g[k] ||= []).push(p); }
+    for (const p of posts) { const k = p.scheduled_at ? new Date(p.scheduled_at).toLocaleDateString() : tx("Not scheduled"); (g[k] ||= []).push(p); }
     return Object.entries(g);
   }, [posts]);
   const input = "border rounded px-2 py-1 text-xs";
@@ -206,7 +206,7 @@ export default function SocialPage() {
 
       {tab === "channels" && <section className="border rounded p-3 bg-white space-y-2">
         <p className="text-xs text-gray-500">{tx("Publishing runs by API on Facebook, Instagram, LinkedIn, TikTok, YouTube and X only when the owner has enabled it and the token is set; everything else is exported and posted by hand. Listening stores comments only for channels you opt in, read through each network's official API (no scraping).")}</p>
-        <form className="flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); run(() => apiClient.post("/api/v1/social/channels", nc), "Channel added."); }}>
+        <form className="flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); run(() => apiClient.post("/api/v1/social/channels", nc), tx("Channel added.")); }}>
           <select aria-label={tx("Network")} className={input} value={nc.network} onChange={(e) => setNc({ ...nc, network: e.target.value })}>{NETS.map((n) => <option key={n}>{n}</option>)}</select>
           <input aria-label={tx("Channel id")} required placeholder={tx("Page / account id")} className={input} value={nc.external_id} onChange={(e) => setNc({ ...nc, external_id: e.target.value })} />
           <input aria-label={tx("Channel name")} required placeholder={tx("Name")} className={input} value={nc.name} onChange={(e) => setNc({ ...nc, name: e.target.value })} />
@@ -214,11 +214,11 @@ export default function SocialPage() {
           <button className="border rounded px-3 py-1 text-xs">{tx("Add")}</button></form>
         <ul className="text-xs space-y-1">{channels.map((c) => { const rd = caps.find((x) => x.network === c.network)?.moderation.read; return (
           <li key={c.id} className="flex flex-wrap gap-2 items-center border-t pt-1"><b>{c.name}</b><span>{c.network} · {c.time_zone} · {c.publishing === "API" ? tx("publishes by API") : tx("manual export")}</span>
-            <label className="flex items-center gap-1"><input type="checkbox" checked={c.listen_enabled} onChange={(e) => run(() => apiClient.patch(`/api/v1/social/channels/${c.id}/listening`, null, { params: { enabled: e.target.checked } }), "Listening updated.")} /> {tx("listen")}</label>
+            <label className="flex items-center gap-1"><input type="checkbox" checked={c.listen_enabled} onChange={(e) => run(() => apiClient.patch(`/api/v1/social/channels/${c.id}/listening`, null, { params: { enabled: e.target.checked } }), tx("Listening updated."))} /> {tx("listen")}</label>
             <button className="underline disabled:opacity-50 disabled:no-underline" disabled={!c.listen_enabled || !rd?.available} title={!c.listen_enabled ? tx("Turn listening on first (opt-in).") : rd?.available ? "" : rd?.note}
               onClick={() => run(async () => { const r = await apiClient.post(`/api/v1/social/channels/${c.id}/poll`); setMsg(r.data.reason ?? tx("Read {stored} new item(s).", { stored: r.data.stored })); }, "Polled.")}>{tx("Poll now")}</button>
             {rd && !rd.available && <span className="text-red-700">{rd.note}</span>}
-            {c.network === "x" && <select aria-label={tx("X tier")} className={input} value={String(c.options.x_tier ?? "")} onChange={(e) => e.target.value && run(() => apiClient.patch(`/api/v1/social/channels/${c.id}/options`, { x_tier: e.target.value }), "Saved.")}><option value="">{tx("X access tier…")}</option>{["pay_per_use", tx("basic"), tx("pro"), tx("enterprise")].map((t) => <option key={t}>{t}</option>)}</select>}
+            {c.network === "x" && <select aria-label={tx("X tier")} className={input} value={String(c.options.x_tier ?? "")} onChange={(e) => e.target.value && run(() => apiClient.patch(`/api/v1/social/channels/${c.id}/options`, { x_tier: e.target.value }), "Saved.")}><option value="">{tx("X access tier…")}</option>{[["pay_per_use", "pay_per_use"], ["basic", tx("basic")], ["pro", tx("pro")], ["enterprise", tx("enterprise")]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>}
             {c.network === "instagram" && <select aria-label={tx("Instagram login path")} className={input} value={String(c.options.ig_login ?? "instagram")} onChange={(e) => run(() => apiClient.patch(`/api/v1/social/channels/${c.id}/options`, { ig_login: e.target.value }), "Saved.")}><option value="instagram">{tx("Instagram Login")}</option><option value="facebook">{tx("Facebook Login (resumable upload)")}</option></select>}
             {c.network === "youtube" && <label className="flex items-center gap-1"><input type="checkbox" checked={!!c.options.youtube_project_verified} onChange={(e) => run(() => apiClient.patch(`/api/v1/social/channels/${c.id}/options`, { youtube_project_verified: e.target.checked }), "Saved.")} /> {tx("API project verified by Google")}</label>}
           </li>); })}</ul>
@@ -226,7 +226,7 @@ export default function SocialPage() {
 
       {tab === "calendar" && <>
         <form className="border rounded p-3 bg-white space-y-2" onSubmit={(e) => { e.preventDefault();
-          run(() => (editing ? apiClient.put(`/api/v1/social/posts/${editing}`, payload()) : apiClient.post("/api/v1/social/posts", payload())).then(() => { setDraft({ ...EMPTY, key: newKey() }); setEditing(null); }), editing ? "Post updated." : "Draft saved."); }}>
+          run(() => (editing ? apiClient.put(`/api/v1/social/posts/${editing}`, payload()) : apiClient.post("/api/v1/social/posts", payload())).then(() => { setDraft({ ...EMPTY, key: newKey() }); setEditing(null); }), editing ? tx("Post updated.") : tx("Draft saved.")); }}>
           <h3 className="font-semibold">{editing ? tx("Edit post") : tx("New post")}</h3>
           <div className="flex flex-wrap gap-2">
             <select aria-label={tx("Post channel")} required className={input} value={draft.channel_id} onChange={(e) => { const n = channels.find((c) => c.id === e.target.value)?.network; const first = caps.find((c) => c.network === n)?.formats.find((f) => f.available);
@@ -240,15 +240,15 @@ export default function SocialPage() {
           </div>
           {cap && <ul className="text-xs space-y-0.5">{cap.formats.filter((f) => !f.available).map((f) => <li key={f.key} className="text-red-700">✗ {f.label}: {f.reason}</li>)}
             {cap.notes.map((n, i) => <li key={i} className="text-amber-700">⚠ {n}</li>)}<li className="text-gray-500">{tx("Scheduling:")} {cap.scheduling}.</li></ul>}
-          {fmt?.available && <p className="text-xs text-gray-600">{fmt.note ?? ""} {fmt.media_max ? `Media: ${fmt.media_min === fmt.media_max ? fmt.media_max : `${fmt.media_min}-${fmt.media_max}`} (${fmt.kinds.join("/")}).` : tx("This format takes no media.")} {tx("Text up to")} {fmt.max_text}.{!fmt.verified ? tx(" UNVERIFIED in the capability matrix.") : ""}</p>}
+          {fmt?.available && <p className="text-xs text-gray-600">{fmt.note ?? ""} {fmt.media_max ? tx("Media: {media_min} ({kinds}).", { media_min: fmt.media_min === fmt.media_max ? fmt.media_max : `${fmt.media_min}-${fmt.media_max}`, kinds: fmt.kinds.join("/") }) : tx("This format takes no media.")} {tx("Text up to")} {fmt.max_text}.{!fmt.verified ? tx(" UNVERIFIED in the capability matrix.") : ""}</p>}
           <textarea aria-label={tx("Post text")} required rows={3} className={`${input} w-full`} value={draft.text} onChange={(e) => setDraft({ ...draft, text: e.target.value })} />
           {fmt?.available && fmt.media_max > 0 && <div className="space-y-1">
             {draft.media.map((m, i) => (
               <div key={i} className="flex flex-wrap gap-2">
-                <input aria-label={`Media ${i + 1} URL`} placeholder={tx("https://… public media URL")} className={`${input} flex-1 min-w-0`} value={m.url} onChange={(e) => setMedia(i, { url: e.target.value })} />
-                <select aria-label={`Media ${i + 1} kind`} className={input} value={m.kind} onChange={(e) => setMedia(i, { kind: e.target.value })}>{fmt.kinds.map((k) => <option key={k}>{k}</option>)}</select>
-                {fmt.alt_text && <input aria-label={`Media ${i + 1} alt text`} placeholder={tx("Alt text (max 1000)")} maxLength={1000} className={`${input} flex-1 min-w-0`} value={m.alt_text} onChange={(e) => setMedia(i, { alt_text: e.target.value })} />}
-                {ch?.network === "linkedin" && m.kind === "video" && <input aria-label={`Media ${i + 1} thumbnail URL`} placeholder={tx("Thumbnail URL")} className={`${input} flex-1 min-w-0`} value={m.thumbnail_url} onChange={(e) => setMedia(i, { thumbnail_url: e.target.value })} />}
+                <input aria-label={tx("Media {i} URL", { i: i + 1 })} placeholder={tx("https://… public media URL")} className={`${input} flex-1 min-w-0`} value={m.url} onChange={(e) => setMedia(i, { url: e.target.value })} />
+                <select aria-label={tx("Media {i} kind", { i: i + 1 })} className={input} value={m.kind} onChange={(e) => setMedia(i, { kind: e.target.value })}>{fmt.kinds.map((k) => <option key={k}>{k}</option>)}</select>
+                {fmt.alt_text && <input aria-label={tx("Media {i} alt text", { i: i + 1 })} placeholder={tx("Alt text (max 1000)")} maxLength={1000} className={`${input} flex-1 min-w-0`} value={m.alt_text} onChange={(e) => setMedia(i, { alt_text: e.target.value })} />}
+                {ch?.network === "linkedin" && m.kind === "video" && <input aria-label={tx("Media {i} thumbnail URL", { i: i + 1 })} placeholder={tx("Thumbnail URL")} className={`${input} flex-1 min-w-0`} value={m.thumbnail_url} onChange={(e) => setMedia(i, { thumbnail_url: e.target.value })} />}
                 <button type="button" className="underline" onClick={() => setDraft({ ...draft, media: draft.media.filter((_, j) => j !== i) })}>{tx("Remove")}</button>
               </div>))}
             <button type="button" className="underline text-xs disabled:opacity-50 disabled:no-underline" disabled={draft.media.length >= fmt.media_max} title={draft.media.length >= fmt.media_max ? tx("This format takes at most {media_max}.", { media_max: fmt.media_max }) : ""}
@@ -290,17 +290,17 @@ export default function SocialPage() {
                   {["DRAFT", "PENDING", "APPROVED", "FAILED"].includes(p.status) && <button className="underline" onClick={() => { setEditing(p.id); setTab("calendar");
                     setDraft({ channel_id: p.channel_id, format: p.format ?? "", text: p.text, media: p.media.map((m) => ({ url: m.url, kind: m.kind, alt_text: m.alt_text ?? "", thumbnail_url: m.thumbnail_url ?? "" })), link: p.link ?? "", campaign_tag: p.campaign_tag ?? "",
                       when: p.scheduled_at ? new Date(p.scheduled_at).toLocaleString("sv-SE", { timeZone: p.time_zone }).slice(0, 16).replace(" ", "T") : "", key: newKey(), fopts: {} }); }}>{tx("Edit")}</button>}
-                  {p.status === "DRAFT" && <button className="underline" onClick={() => act(p, "request", "Sent for approval.")}>{tx("Request approval")}</button>}
+                  {p.status === "DRAFT" && <button className="underline" onClick={() => act(p, "request", tx("Sent for approval."))}>{tx("Request approval")}</button>}
                   {p.status === "PENDING" && <><button className="underline" onClick={() => act(p, "approve", "Approved.")}>{tx("Approve")}</button><button className="underline" onClick={() => act(p, "reject", "Rejected.")}>{tx("Reject")}</button></>}
                   {p.status === "APPROVED" && p.approved && <button className="underline disabled:opacity-50 disabled:no-underline" disabled={p.route !== "API" || p.problems.length > 0}
                     title={p.route !== "API" ? tx("Publishing by API is not enabled for this network") : p.problems.join(" ")}
-                    onClick={() => act(p, "submit", "Submitted — the network is processing it; it is not live until confirmed.")}>{tx("Submit now")}</button>}
-                  {["SUBMITTED", "PROCESSING", "UNKNOWN"].includes(p.status) && p.provider_ref && <button className="underline" onClick={() => act(p, "refresh", "Status refreshed.")}>{tx("Refresh status")}</button>}
-                  {p.status === "UNKNOWN" && (!p.provider_ref || p.provider_ref.startsWith("lookup:")) && <button className="underline" onClick={() => { if (window.confirm(tx("Did you check the channel and the post is NOT there?"))) act(p, "release", "Released: it can be submitted again."); }}>{tx("Checked: not posted")}</button>}
-                  {p.status === "FAILED" && p.approved && <button className="underline" onClick={() => act(p, "retry", "Will retry.")}>{tx("Retry")}</button>}
-                  {p.approved && p.route !== "API" && !["PUBLISHED", "EXPORTED", "CANCELLED"].includes(p.status) && <button className="underline" onClick={() => run(async () => { const r = await apiClient.post(`/api/v1/social/posts/${p.id}/export`); await navigator.clipboard?.writeText(r.data.text).catch(() => undefined); }, "Exported; text copied for manual posting.")}>{tx("Export for manual posting")}</button>}
+                    onClick={() => act(p, "submit", tx("Submitted — the network is processing it; it is not live until confirmed."))}>{tx("Submit now")}</button>}
+                  {["SUBMITTED", "PROCESSING", "UNKNOWN"].includes(p.status) && p.provider_ref && <button className="underline" onClick={() => act(p, "refresh", tx("Status refreshed."))}>{tx("Refresh status")}</button>}
+                  {p.status === "UNKNOWN" && (!p.provider_ref || p.provider_ref.startsWith("lookup:")) && <button className="underline" onClick={() => { if (window.confirm(tx("Did you check the channel and the post is NOT there?"))) act(p, "release", tx("Released: it can be submitted again.")); }}>{tx("Checked: not posted")}</button>}
+                  {p.status === "FAILED" && p.approved && <button className="underline" onClick={() => act(p, "retry", tx("Will retry."))}>{tx("Retry")}</button>}
+                  {p.approved && p.route !== "API" && !["PUBLISHED", "EXPORTED", "CANCELLED"].includes(p.status) && <button className="underline" onClick={() => run(async () => { const r = await apiClient.post(`/api/v1/social/posts/${p.id}/export`); await navigator.clipboard?.writeText(r.data.text).catch(() => undefined); }, tx("Exported; text copied for manual posting."))}>{tx("Export for manual posting")}</button>}
                   {!["PUBLISHED", "SUBMITTING", "UNKNOWN", "CANCELLED"].includes(p.status) && <button className="underline text-red-600"
-                    onClick={() => act(p, "cancel", IN_FLIGHT.includes(p.status) ? "Cancel requested at the network." : "Cancelled.")}>{tx("Cancel")}</button>}
+                    onClick={() => act(p, "cancel", IN_FLIGHT.includes(p.status) ? tx("Cancel requested at the network.") : "Cancelled.")}>{tx("Cancel")}</button>}
                 </div>
                 <details><summary className="cursor-pointer text-gray-500">{tx("History")}</summary><ul>{p.history.map((h, i) => <li key={i}>{new Date(h.at).toLocaleString()} · {h.event} {tx("· v")}{h.version} {h.detail}</li>)}</ul></details>
               </li>))}</ul></section>))}
@@ -311,7 +311,7 @@ export default function SocialPage() {
         <div className="flex flex-wrap gap-2 items-center text-xs">
           <select aria-label={tx("Filter network")} className={input} value={fNet} onChange={(e) => setFNet(e.target.value)}><option value="">{tx("All networks")}</option>{NETS.map((n) => <option key={n}>{n}</option>)}</select>
           <input aria-label={tx("Filter assignee")} placeholder={tx("Assigned to")} className={input} value={fWho} onChange={(e) => setFWho(e.target.value)} />
-          <button className="underline" onClick={() => run(async () => { const r = await apiClient.post("/api/v1/social/inbox/retention-sweep"); setMsg(tx("Erased personal content of {erased} item(s) older than {retention_days} days.", { erased: r.data.erased, retention_days: r.data.retention_days })); }, "Retention applied.")}>{tx("Apply retention now")}</button>
+          <button className="underline" onClick={() => run(async () => { const r = await apiClient.post("/api/v1/social/inbox/retention-sweep"); setMsg(tx("Erased personal content of {erased} item(s) older than {retention_days} days.", { erased: r.data.erased, retention_days: r.data.retention_days })); }, tx("Retention applied."))}>{tx("Apply retention now")}</button>
         </div>
         <details className="border rounded p-2 bg-white"><summary className="text-xs cursor-pointer">{tx("Import comments (CSV)")}</summary>
           <textarea aria-label="CSV" rows={4} className={`${input} w-full mt-1`} placeholder={tx("network,kind,external_id,author,text,url,occurred_at")} value={csv} onChange={(e) => setCsv(e.target.value)} />
@@ -324,22 +324,22 @@ export default function SocialPage() {
               {i.topics.map((t) => <span key={t} className="px-1 bg-gray-100 rounded">{t}</span>)}
               {i.provider_state && <span className="px-1 border rounded">{i.provider_state.toLowerCase()} {tx("on the network")}</span>}<span className="ml-auto">{i.status.toLowerCase()}{i.assigned_to ? ` · ${i.assigned_to}` : ""}</span></div>
             <p>{i.text ?? <i>{tx("Deleted (by the author, the network, retention or opt-out).")}</i>}</p>
-            {(i.evidence.positive?.length || i.evidence.negative?.length) ? <p className="text-gray-500">{tx("Because of the words:")} {[...(i.evidence.positive ?? []), ...(i.evidence.negative ?? [])].join(", ")}{i.evidence.source ? ` · source ${i.evidence.source.network} ${i.evidence.source.external_id} via ${i.evidence.source.via.toLowerCase()}` : ""}{tx(". Keyword tags are an aid, not a verdict.")}</p> : null}
+            {(i.evidence.positive?.length || i.evidence.negative?.length) ? <p className="text-gray-500">{tx("Because of the words:")} {[...(i.evidence.positive ?? []), ...(i.evidence.negative ?? [])].join(", ")}{i.evidence.source ? tx(" · source {network} {external_id} via {via}", { network: i.evidence.source.network, external_id: i.evidence.source.external_id, via: i.evidence.source.via.toLowerCase() }) : ""}{tx(". Keyword tags are an aid, not a verdict.")}</p> : null}
             {i.status !== "DELETED" && <>
               <div className="flex gap-2 items-center"><input aria-label={tx("Assign to")} placeholder={tx("Assign to (username)")} className={input} defaultValue={i.assigned_to ?? ""} onBlur={(e) => e.target.value !== (i.assigned_to ?? "") && run(() => apiClient.patch(`/api/v1/social/inbox/${i.id}`, { assigned_to: e.target.value || null }), "Assigned.")} />
-                <button className="underline" onClick={() => { if (window.confirm(tx("Erase this author's items on {network} and never store them again?", { network: i.network })) && i.author) run(() => apiClient.post("/api/v1/social/inbox/optout", { network: i.network, author: i.author, reason: "author opt-out" }), "Author opted out."); }}>{tx("Opt this author out")}</button></div>
+                <button className="underline" onClick={() => { if (window.confirm(tx("Erase this author's items on {network} and never store them again?", { network: i.network })) && i.author) run(() => apiClient.post("/api/v1/social/inbox/optout", { network: i.network, author: i.author, reason: "author opt-out" }), tx("Author opted out.")); }}>{tx("Opt this author out")}</button></div>
               <textarea aria-label={tx("Reply draft")} rows={2} className={`${input} w-full`} defaultValue={i.reply_draft ?? ""} disabled={!i.ops.reply.available || ["SENT", "SENDING"].includes(i.reply_status ?? "")}
-                onBlur={(e) => e.target.value !== (i.reply_draft ?? "") && run(() => apiClient.patch(`/api/v1/social/inbox/${i.id}`, { reply_draft: e.target.value }), "Draft saved.")} />
+                onBlur={(e) => e.target.value !== (i.reply_draft ?? "") && run(() => apiClient.patch(`/api/v1/social/inbox/${i.id}`, { reply_draft: e.target.value }), tx("Draft saved."))} />
               <p className="text-gray-500">{tx("Reply:")} {i.reply_status ? i.reply_status.toLowerCase() : tx("no draft")}{i.reply_requested_by ? tx(" · requested by {reply_requested_by}", { reply_requested_by: i.reply_requested_by }) : ""}{i.reply_approved_by ? tx(" · approved by {reply_approved_by}", { reply_approved_by: i.reply_approved_by }) : ""}{i.reply_external_id ? tx(" · network reply {reply_external_id}", { reply_external_id: i.reply_external_id }) : ""}</p>
               {i.reply_error && <p className="text-red-600">{i.reply_error}</p>}
               <div className="flex flex-wrap gap-2">
-                <button className="underline" onClick={() => run(async () => { const r = await apiClient.post(`/api/v1/social/inbox/${i.id}/suggest-reply`); await apiClient.patch(`/api/v1/social/inbox/${i.id}`, { reply_draft: r.data.reply_draft }); }, "Suggested a draft — edit it, then request approval.")}>{tx("Suggest reply")}</button>
-                <button className="underline disabled:opacity-50 disabled:no-underline" disabled={!i.ops.reply.available || !i.reply_draft || !["DRAFT", "FAILED"].includes(i.reply_status ?? "")} title={i.ops.reply.available ? "" : i.ops.reply.reason} onClick={() => itemAct(i, "reply/request", null, "Reply sent for approval.")}>{tx("Request reply approval")}</button>
-                {i.reply_status === "PENDING" && <><button className="underline" onClick={() => itemAct(i, "reply/approve", null, "Reply approved (a second person is required).")}>{tx("Approve reply")}</button><button className="underline" onClick={() => itemAct(i, "reply/reject", null, "Reply sent back to draft.")}>{tx("Reject reply")}</button></>}
-                {i.reply_status === "APPROVED" && <button className="underline" onClick={() => itemAct(i, "reply/send", null, "Reply sent.")}>{tx("Send approved reply")}</button>}
+                <button className="underline" onClick={() => run(async () => { const r = await apiClient.post(`/api/v1/social/inbox/${i.id}/suggest-reply`); await apiClient.patch(`/api/v1/social/inbox/${i.id}`, { reply_draft: r.data.reply_draft }); }, tx("Suggested a draft — edit it, then request approval."))}>{tx("Suggest reply")}</button>
+                <button className="underline disabled:opacity-50 disabled:no-underline" disabled={!i.ops.reply.available || !i.reply_draft || !["DRAFT", "FAILED"].includes(i.reply_status ?? "")} title={i.ops.reply.available ? "" : i.ops.reply.reason} onClick={() => itemAct(i, "reply/request", null, tx("Reply sent for approval."))}>{tx("Request reply approval")}</button>
+                {i.reply_status === "PENDING" && <><button className="underline" onClick={() => itemAct(i, "reply/approve", null, tx("Reply approved (a second person is required)."))}>{tx("Approve reply")}</button><button className="underline" onClick={() => itemAct(i, "reply/reject", null, tx("Reply sent back to draft."))}>{tx("Reject reply")}</button></>}
+                {i.reply_status === "APPROVED" && <button className="underline" onClick={() => itemAct(i, "reply/send", null, tx("Reply sent."))}>{tx("Send approved reply")}</button>}
                 {(["ASSIGNED", "REPLIED", "DONE"] as const).map((s) => <button key={s} className="underline" onClick={() => run(() => apiClient.patch(`/api/v1/social/inbox/${i.id}`, { status: s }), "Updated.")}>{s === "REPLIED" ? tx("mark replied by hand") : s.toLowerCase()}</button>)}
                 {(["hide", "delete"] as const).map((op) => <button key={op} className="underline text-red-700 disabled:opacity-50 disabled:no-underline disabled:text-gray-500" disabled={!i.ops[op].available || (op === "hide" && i.provider_state === "HIDDEN")} title={i.ops[op].available ? "" : i.ops[op].reason}
-                  onClick={() => { const reason = window.prompt(`Why ${op} this comment on ${i.network}? ${op === "delete" ? "This cannot be undone." : ""}`); if (reason && reason.length >= 3) itemAct(i, `moderate/${op}`, { confirm: true, reason }, op === "hide" ? "Hidden on the network." : "Deleted on the network."); }}>{op} {tx("on")} {i.network}</button>)}
+                  onClick={() => { const reason = window.prompt(tx("Why {op} this comment on {network}? {op2}", { op, network: i.network, op2: op === "delete" ? tx("This cannot be undone.") : "" })); if (reason && reason.length >= 3) itemAct(i, `moderate/${op}`, { confirm: true, reason }, op === "hide" ? tx("Hidden on the network.") : tx("Deleted on the network.")); }}>{op} {tx("on")} {i.network}</button>)}
               </div>
               {OPS.filter((op) => !i.ops[op].available).map((op) => <p key={op} className="text-red-700">✗ {op}: {i.ops[op].reason}</p>)}
             </>}

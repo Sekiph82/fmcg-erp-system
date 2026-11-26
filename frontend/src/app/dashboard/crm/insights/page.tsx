@@ -3,12 +3,12 @@
 // staff-handled chats; managers review with a coaching note. No made-up scores — only quoted findings.
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 interface Finding { kind: string; label: string; quote: string; offset: number }
 interface Insight { id: string; source_type: string; source_id: string; findings: Finding[]; counts: Record<string, number>; engine: string; status: string; coaching_note: string | null; analysed_at: string | null }
-const KIND: Record<string, string> = { objection: "Objection", theme: "Theme", question: "Question", next_step: "Next step" };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail; return typeof d === "string" ? d : "Request failed."; };
+const KIND: Record<string, string> = lx(() => ({ objection: tx("Objection"), theme: tx("Theme"), question: tx("Question"), next_step: tx("Next step") }));
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail; return typeof d === "string" ? d : tx("Request failed."); };
 
 export default function ConversationInsights() {
   const [items, setItems] = useState<Insight[]>([]);

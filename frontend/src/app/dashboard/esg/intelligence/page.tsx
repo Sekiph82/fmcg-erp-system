@@ -120,9 +120,9 @@ export default function ESGIntelligencePage() {
   const wastewater = dashboard?.wastewater_compliance;
   const kpis = [
     { label: tx("Supplier Scorecards"), value: fmt(dashboard?.supplier_score_count, 0), sub: `${fmt(dashboard?.average_supplier_score)} avg score` },
-    { label: tx("High Risk Suppliers"), value: fmt(dashboard?.high_risk_supplier_count, 0), sub: "High and critical risk" },
+    { label: tx("High Risk Suppliers"), value: fmt(dashboard?.high_risk_supplier_count, 0), sub: tx("High and critical risk") },
     { label: tx("Wastewater Compliance"), value: wastewater?.compliance_rate_pct != null ? `${fmt(wastewater.compliance_rate_pct)}%` : "-", sub: `${fmt(wastewater?.total_records, 0)} records` },
-    { label: tx("WWTP Energy"), value: `${fmt(wastewater?.total_power_kwh)} kWh`, sub: "Treatment power" },
+    { label: tx("WWTP Energy"), value: `${fmt(wastewater?.total_power_kwh)} kWh`, sub: tx("Treatment power") },
   ];
 
   return (
@@ -176,22 +176,22 @@ export default function ESGIntelligencePage() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             {[
-              ["emissions_score", "Emissions score"],
-              ["energy_score", "Energy score"],
-              ["water_score", "Water score"],
-              ["waste_score", "Waste score"],
-              ["compliance_score", "Compliance score"],
-              ["labor_score", "Labor score"],
+              ["emissions_score", tx("Emissions score")],
+              ["energy_score", tx("Energy score")],
+              ["water_score", tx("Water score")],
+              ["waste_score", tx("Waste score")],
+              ["compliance_score", tx("Compliance score")],
+              ["labor_score", tx("Labor score")],
               ["renewable_energy_pct", "Renewable %"],
             ].map(([key, label]) => (
               <input key={key} type="number" min="0" max={key === "renewable_energy_pct" ? "100" : undefined} value={(form as any)[key]} onChange={(e) => setForm({ ...form, [key]: e.target.value })} placeholder={label} className="border rounded-lg px-3 py-2 text-sm" />
             ))}
           </div>
           {[
-            ["has_ghg_disclosure", "GHG disclosure"],
-            ["has_science_based_target", "Science-based target"],
+            ["has_ghg_disclosure", tx("GHG disclosure")],
+            ["has_science_based_target", tx("Science-based target")],
             ["iso14001_certified", "ISO 14001"],
-            ["wastewater_policy_verified", "Wastewater policy"],
+            ["wastewater_policy_verified", tx("Wastewater policy")],
           ].map(([key, label]) => (
             <label key={key} className="flex items-center gap-2 text-sm text-gray-700">
               <input type="checkbox" checked={(form as any)[key]} onChange={(e) => setForm({ ...form, [key]: e.target.checked })} />
@@ -288,10 +288,10 @@ export default function ESGIntelligencePage() {
           </div>
           <div className="grid grid-cols-4 gap-3">
             {[
-              ["Compliant", wastewater?.compliant_records, "text-green-600"],
-              ["Borderline", wastewater?.borderline_records, "text-yellow-600"],
-              ["Non-compliant", wastewater?.non_compliant_records, "text-red-600"],
-              ["Not tested", wastewater?.not_tested_records, "text-gray-600"],
+              [tx("Compliant"), wastewater?.compliant_records, "text-green-600"],
+              [tx("Borderline"), wastewater?.borderline_records, "text-yellow-600"],
+              [tx("Non-compliant"), wastewater?.non_compliant_records, "text-red-600"],
+              [tx("Not tested"), wastewater?.not_tested_records, "text-gray-600"],
             ].map(([label, value, color]) => (
               <div key={label as string} className="border rounded-lg p-3">
                 <p className="text-xs text-gray-500">{label}</p>

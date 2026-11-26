@@ -5,7 +5,7 @@
 // recurring event with exceptions. Double bookings are refused by the server with the clashing meeting named.
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 interface Attendee { email: string; name?: string; response?: string }
 interface Series {
@@ -21,7 +21,7 @@ interface Detail extends Series { occurrences: Occurrence[]; can_change: boolean
 const BROWSER_TZ = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "Africa/Nairobi"; } catch { return "Africa/Nairobi"; } })();
 const ZONES = Array.from(new Set(["Africa/Nairobi", BROWSER_TZ, "Europe/London", "Europe/Istanbul", "America/New_York", "Asia/Dubai", "UTC"]));
 const DAYS = [["MO", "Mon"], ["TU", "Tue"], ["WE", "Wed"], ["TH", "Thu"], ["FR", "Fri"], ["SA", "Sat"], ["SU", "Sun"]] as const;
-const SCOPES = [["this", "This occurrence only"], ["following", "This and following"], ["all", "All occurrences"]] as const;
+const SCOPES = lx(() => [["this", tx("This occurrence only")], ["following", tx("This and following")], ["all", tx("All occurrences")]] as const);
 type Scope = (typeof SCOPES)[number][0];
 
 function errorText(e: unknown, fallback: string) {
@@ -30,18 +30,18 @@ function errorText(e: unknown, fallback: string) {
   if (detail && typeof detail === "object" && "detail" in detail) {
     const d = detail as { detail: string; conflicts?: { wanted_start: string; conflicts_with: string }[] };
     return d.conflicts?.length
-      ? `${d.detail} ${d.conflicts.map((c) => `${new Date(c.wanted_start).toLocaleString()} clashes with "${c.conflicts_with}"`).join("; ")}`
+      ? `${d.detail} ${d.conflicts.map((c) => tx("{date} clashes with \"{conflicts_with}\"", { date: new Date(c.wanted_start).toLocaleString(), conflicts_with: c.conflicts_with })).join("; ")}`
       : d.detail;
   }
   if (Array.isArray(detail)) return detail.map((x) => (x as { msg?: string }).msg).join("; ");
   return fallback;
 }
 
-const INVITE: Record<string, string> = {
-  SENT: "Invitation e-mailed once from your mailbox.", ALREADY_SENT: "Invitation already sent for this version.",
-  NO_MAILBOX: "Saved. Connect your mailbox (Communication > Email) so invitations can be sent.", NO_ATTENDEES: "Saved.",
-  NOT_REQUESTED: "Saved.", ALREADY_CANCELLED: "Already cancelled.",
-};
+const INVITE: Record<string, string> = lx(() => ({
+  SENT: tx("Invitation e-mailed once from your mailbox."), ALREADY_SENT: tx("Invitation already sent for this version."),
+  NO_MAILBOX: tx("Saved. Connect your mailbox (Communication > Email) so invitations can be sent."), NO_ATTENDEES: tx("Saved."),
+  NOT_REQUESTED: tx("Saved."), ALREADY_CANCELLED: tx("Already cancelled."),
+}));
 const say = (m: Record<string, string> | string | undefined) => {
   const v = typeof m === "string" ? m : Object.values(m ?? {})[0] ?? "";
   return INVITE[v] ?? v;
@@ -76,13 +76,13 @@ export function RecurringSeriesPanel() {
 
   const show = async (id: string) => {
     try { setDetail((await apiClient.get<Detail>(`/api/v1/meeting-series/${id}`)).data); setEdit(null); }
-    catch (e) { setMsg({ ok: false, text: errorText(e, "Could not open the series") }); }
+    catch (e) { setMsg({ ok: false, text: errorText(e, tx("Could not open the series")) }); }
   };
 
   const run = async (fn: () => Promise<string>, then?: () => Promise<void>) => {
     setBusy(true); setMsg(null);
     try { setMsg({ ok: true, text: await fn() }); await load(); if (then) await then(); }
-    catch (e) { setMsg({ ok: false, text: errorText(e, "Request failed") }); }
+    catch (e) { setMsg({ ok: false, text: errorText(e, tx("Request failed")) }); }
     finally { setBusy(false); }
   };
 
@@ -103,14 +103,14 @@ export function RecurringSeriesPanel() {
       const r = await apiClient.delete<{ invites: Record<string, string> | string }>(`/api/v1/meeting-series/${detail.id}`, {
         params: { scope: edit.scope, occurrence_date: q.occurrence_date },
       });
-      return `Cancelled. ${say(r.data.invites as Record<string, string>)}`;
+      return tx("Cancelled. {say}", { say: say(r.data.invites as Record<string, string>) });
     }
     const body: Record<string, unknown> = { ...q };
     if (edit.title) body.title = edit.title;
     if (edit.start) body.start = edit.start;
     if (edit.duration) body.duration_minutes = parseInt(edit.duration);
     const r = await apiClient.patch<{ invites: Record<string, string> }>(`/api/v1/meeting-series/${detail.id}`, body);
-    return `Saved. ${say(r.data.invites)}`;
+    return tx("Saved. {say}", { say: say(r.data.invites) });
   }, async () => { if (detail) await show(detail.id); });
 
   const sendRsvp = () => detail && run(async () => {
@@ -123,7 +123,7 @@ export function RecurringSeriesPanel() {
     const r = await apiClient.get<{ busy: { start: string; end: string }[]; note?: string; provider?: string }>("/api/v1/meeting-series/free-busy", {
       params: { start: from.toISOString(), end: to.toISOString() } });
     setFb(r.data.busy);
-    return `Next 14 days: ${r.data.busy.length} busy block(s)${r.data.provider ? ` (ERP + ${r.data.provider} calendar)` : " (ERP only: no calendar connected)"}.${r.data.note ? " " + r.data.note : ""}`;
+    return `Next 14 days: ${r.data.busy.length} busy block(s)${r.data.provider ? tx(" (ERP + {provider} calendar)", { provider: r.data.provider }) : " (ERP only: no calendar connected)"}.${r.data.note ? " " + r.data.note : ""}`;
   });
 
   const scopeFields = (mode: "edit" | "cancel", o: Occurrence) =>

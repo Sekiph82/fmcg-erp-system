@@ -32,6 +32,7 @@ import {
 import { SOURCE_METHOD_LABELS, DATA_QUALITY_LABELS } from "@/lib/utilityTransactions";
 import type { SourceMethod, DataQuality } from "@/lib/utilityTransactions";
 import { importApi, type ImportResult } from "@/lib/importApi";
+import { tx as xlate, lx } from "@/lib/i18n/core";
 
 // ── Palette ────────────────────────────────────────────────────────────────────
 const YELLOW = "#facc15";
@@ -146,15 +147,15 @@ function TxForm({ initial, tariffs, onSubmit, isPending, error, label = "Save" }
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(f); }} className="flex flex-col gap-5">
       <div>
-        <Section>Consumption</Section>
+        <Section>{xlate("Consumption")}</Section>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="flex flex-col gap-1">
-            <label className={lbl}>Date *</label>
+            <label className={lbl}>{xlate("Date *")}</label>
             <input required type="date" value={f.transaction_date}
               onChange={(e) => s("transaction_date", e.target.value)} className={inp} />
           </div>
           <div className="flex flex-col gap-1">
-            <label className={lbl}>kWh Consumed *</label>
+            <label className={lbl}>{xlate("kWh Consumed *")}</label>
             <input required type="number" step="any" min="0" value={f.quantity as string}
               onChange={(e) => s("quantity", e.target.value)} className={inp} />
           </div>
@@ -163,7 +164,7 @@ function TxForm({ initial, tariffs, onSubmit, isPending, error, label = "Save" }
             <input type="text" value={f.uom} onChange={(e) => s("uom", e.target.value)} className={inp} />
           </div>
           <div className="flex flex-col gap-1">
-            <label className={lbl}>Source</label>
+            <label className={lbl}>{xlate("Source")}</label>
             <select value={f.source_method} onChange={(e) => s("source_method", e.target.value as SourceMethod)} className={inp}>
               {Object.entries(SOURCE_METHOD_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
@@ -172,13 +173,13 @@ function TxForm({ initial, tariffs, onSubmit, isPending, error, label = "Save" }
       </div>
 
       <div>
-        <Section>Allocation</Section>
+        <Section>{xlate("Allocation")}</Section>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {(
             [
               ["Department",      "department"],
-              ["Building / Area", "building_area"],
-              ["Production Line", "line_id"],
+              [xlate("Building / Area"), "building_area"],
+              [xlate("Production Line"), "line_id"],
               ["Machine",         "machine_id"],
               ["Shift",           "shift_id"],
               ["Batch",           "batch_id"],
@@ -196,34 +197,34 @@ function TxForm({ initial, tariffs, onSubmit, isPending, error, label = "Save" }
       </div>
 
       <div>
-        <Section>Cost</Section>
+        <Section>{xlate("Cost")}</Section>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="flex flex-col gap-1">
-            <label className={lbl}>Tariff</label>
+            <label className={lbl}>{xlate("Tariff")}</label>
             <select value={f.tariff_id ?? ""} onChange={(e) => s("tariff_id", e.target.value || null)} className={inp}>
-              <option value="">— No tariff —</option>
+              <option value="">{xlate("— No tariff —")}</option>
               {tariffs.map((t) => (
                 <option key={t.id} value={t.id}>{t.tariff_code} — {t.name}</option>
               ))}
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className={lbl}>Cost Rate (/kWh)</label>
+            <label className={lbl}>{xlate("Cost Rate (/kWh)")}</label>
             <input type="number" step="any" min="0" value={f.cost_rate as string ?? ""}
               onChange={(e) => s("cost_rate", e.target.value || null)} className={inp} />
           </div>
           <div className="flex flex-col gap-1">
-            <label className={lbl}>Total Cost</label>
+            <label className={lbl}>{xlate("Total Cost")}</label>
             <input type="number" step="any" min="0" value={f.total_cost as string ?? ""}
               onChange={(e) => s("total_cost", e.target.value || null)} className={inp} />
           </div>
           <div className="flex flex-col gap-1">
-            <label className={lbl}>Currency</label>
+            <label className={lbl}>{xlate("Currency")}</label>
             <input type="text" maxLength={3} value={f.currency_code ?? "USD"}
               onChange={(e) => s("currency_code", e.target.value.toUpperCase())} className={inp + " uppercase"} />
           </div>
           <div className="flex flex-col gap-1">
-            <label className={lbl}>Variance from Standard</label>
+            <label className={lbl}>{xlate("Variance from Standard")}</label>
             <input type="number" step="any" value={f.variance_from_standard as string ?? ""}
               onChange={(e) => s("variance_from_standard", e.target.value || null)} className={inp} />
           </div>
@@ -231,10 +232,10 @@ function TxForm({ initial, tariffs, onSubmit, isPending, error, label = "Save" }
       </div>
 
       <div>
-        <Section>Quality & Flags</Section>
+        <Section>{xlate("Quality & Flags")}</Section>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           <div className="flex flex-col gap-1">
-            <label className={lbl}>Data Quality</label>
+            <label className={lbl}>{xlate("Data Quality")}</label>
             <select value={f.quality} onChange={(e) => s("quality", e.target.value as DataQuality)} className={inp}>
               {Object.entries(DATA_QUALITY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
             </select>
@@ -243,17 +244,17 @@ function TxForm({ initial, tariffs, onSubmit, isPending, error, label = "Save" }
             <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
               <input type="checkbox" checked={f.estimated_or_actual}
                 onChange={(e) => s("estimated_or_actual", e.target.checked)} className="accent-amber-500" />
-              Estimated
+              {xlate("Estimated")}
             </label>
             <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
               <input type="checkbox" checked={f.anomaly_flag}
                 onChange={(e) => s("anomaly_flag", e.target.checked)} className="accent-red-500" />
-              Anomaly
+              {xlate("Anomaly")}
             </label>
           </div>
           {f.anomaly_flag && (
             <div className="flex flex-col gap-1">
-              <label className={lbl}>Anomaly Note</label>
+              <label className={lbl}>{xlate("Anomaly Note")}</label>
               <input type="text" value={f.anomaly_note ?? ""}
                 onChange={(e) => s("anomaly_note", e.target.value || null)} className={inp} />
             </div>
@@ -262,7 +263,7 @@ function TxForm({ initial, tariffs, onSubmit, isPending, error, label = "Save" }
       </div>
 
       <div className="flex flex-col gap-1">
-        <label className={lbl}>Notes</label>
+        <label className={lbl}>{xlate("Notes")}</label>
         <textarea rows={2} value={f.notes ?? ""}
           onChange={(e) => s("notes", e.target.value || null)}
           className={inp + " resize-none"} />
@@ -272,7 +273,7 @@ function TxForm({ initial, tariffs, onSubmit, isPending, error, label = "Save" }
       <div className="flex justify-end">
         <button type="submit" disabled={isPending}
           className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 text-white text-sm rounded font-medium transition-colors">
-          {isPending ? "Saving…" : label}
+          {isPending ? xlate("Saving…") : label}
         </button>
       </div>
     </form>
@@ -288,7 +289,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
 
   async function handleTemplate() {
     try { await importApi.downloadTemplate("electricity_transactions"); }
-    catch { setError("Template download failed."); }
+    catch { setError(xlate("Template download failed.")); }
   }
 
   async function handleValidate() {
@@ -298,7 +299,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
       const r = await importApi.validate("electricity_transactions", file);
       setResult(r); setStep("validated");
     } catch (e: unknown) {
-      setError((e as { message?: string })?.message ?? "Validation failed.");
+      setError((e as { message?: string })?.message ?? xlate("Validation failed."));
       setStep("idle");
     }
   }
@@ -310,7 +311,7 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
       const r = await importApi.runImport("electricity_transactions", file, "import_valid_only");
       setResult(r); setStep("done"); onDone();
     } catch (e: unknown) {
-      setError((e as { message?: string })?.message ?? "Import failed.");
+      setError((e as { message?: string })?.message ?? xlate("Import failed."));
       setStep("validated");
     }
   }
@@ -319,17 +320,17 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg p-5 flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-slate-200">Import Electricity Records</h2>
+          <h2 className="text-sm font-semibold text-slate-200">{xlate("Import Electricity Records")}</h2>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-300 text-lg leading-none">×</button>
         </div>
 
         <button onClick={handleTemplate}
           className="text-xs text-yellow-400 hover:text-yellow-300 text-left transition-colors">
-          Download CSV template →
+          {xlate("Download CSV template →")}
         </button>
 
         <div>
-          <label className="text-[11px] text-slate-400 block mb-1">CSV File</label>
+          <label className="text-[11px] text-slate-400 block mb-1">{xlate("CSV File")}</label>
           <input type="file" accept=".csv"
             onChange={(e) => { setFile(e.target.files?.[0] ?? null); setStep("idle"); setResult(null); }}
             className="text-xs text-slate-300 file:mr-3 file:px-3 file:py-1.5 file:rounded file:bg-slate-700 file:border-0 file:text-slate-200 file:text-xs cursor-pointer" />
@@ -338,16 +339,16 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
         {result && (
           <div className="text-xs space-y-1">
             <div className="flex gap-4 text-slate-300">
-              <span>Valid rows: <strong className="text-emerald-400">{result.valid_rows}</strong></span>
-              <span>Failed rows: <strong className="text-red-400">{result.failed_rows}</strong></span>
-              <span>Total: <strong className="text-slate-400">{result.total_rows}</strong></span>
+              <span>{xlate("Valid rows:")} <strong className="text-emerald-400">{result.valid_rows}</strong></span>
+              <span>{xlate("Failed rows:")} <strong className="text-red-400">{result.failed_rows}</strong></span>
+              <span>{xlate("Total:")} <strong className="text-slate-400">{result.total_rows}</strong></span>
             </div>
             {result.errors.length > 0 && (
               <div className="max-h-32 overflow-y-auto text-red-400 bg-red-500/10 border border-red-500/20 rounded p-2 space-y-0.5">
                 {result.errors.slice(0, 20).map((e, i) => (
-                  <div key={i}>Row {e.row}: {e.field} — {e.message}</div>
+                  <div key={i}>{xlate("Row")} {e.row}: {e.field} — {e.message}</div>
                 ))}
-                {result.errors.length > 20 && <div>… and {result.errors.length - 20} more</div>}
+                {result.errors.length > 20 && <div>{xlate("… and")} {result.errors.length - 20} {xlate("more")}</div>}
               </div>
             )}
           </div>
@@ -358,28 +359,28 @@ function ImportModal({ onClose, onDone }: { onClose: () => void; onDone: () => v
         <div className="flex justify-end gap-2">
           <button onClick={onClose}
             className="px-3 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors">
-            Close
+            {xlate("Close")}
           </button>
           {step === "idle" && (
             <button onClick={handleValidate} disabled={!file}
               className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded transition-colors">
-              Validate
+              {xlate("Validate")}
             </button>
           )}
           {step === "validating" && (
-            <span className="text-xs text-slate-400 px-3 py-1.5">Validating…</span>
+            <span className="text-xs text-slate-400 px-3 py-1.5">{xlate("Validating…")}</span>
           )}
           {step === "validated" && (
             <button onClick={handleImport}
               className="px-3 py-1.5 text-xs bg-yellow-600 hover:bg-yellow-500 text-white rounded transition-colors">
-              Import
+              {xlate("Import")}
             </button>
           )}
           {step === "importing" && (
-            <span className="text-xs text-slate-400 px-3 py-1.5">Importing…</span>
+            <span className="text-xs text-slate-400 px-3 py-1.5">{xlate("Importing…")}</span>
           )}
           {step === "done" && (
-            <span className="text-xs text-emerald-400 px-3 py-1.5">Done ✓</span>
+            <span className="text-xs text-emerald-400 px-3 py-1.5">{xlate("Done ✓")}</span>
           )}
         </div>
       </div>
@@ -399,13 +400,13 @@ type ModalState =
 
 type BreakdownDim = "department" | "line" | "machine" | "building_area" | "shift";
 
-const DIM_LABELS: Record<BreakdownDim, string> = {
-  department:    "Department",
-  line:          "Production Line",
-  machine:       "Machine",
-  building_area: "Building / Area",
-  shift:         "Shift",
-};
+const DIM_LABELS: Record<BreakdownDim, string> = lx(() => ({
+  department:    xlate("Department"),
+  line:          xlate("Production Line"),
+  machine:       xlate("Machine"),
+  building_area: xlate("Building / Area"),
+  shift:         xlate("Shift"),
+}));
 
 export default function ElectricityPage() {
   const qc = useQueryClient();
@@ -468,14 +469,14 @@ export default function ElectricityPage() {
   const createMut = useMutation({
     mutationFn: electricityApi.createTransaction,
     onSuccess: () => { inv(); setModal({ type: "none" }); setFormError(null); },
-    onError: (e: unknown) => setFormError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Failed to save."),
+    onError: (e: unknown) => setFormError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? xlate("Failed to save.")),
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UtilityTransactionUpdate }) =>
       electricityApi.updateTransaction(id, data),
     onSuccess: () => { inv(); setModal({ type: "none" }); setFormError(null); },
-    onError: (e: unknown) => setFormError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Failed to save."),
+    onError: (e: unknown) => setFormError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? xlate("Failed to save.")),
   });
 
   const deleteMut = useMutation({
@@ -517,31 +518,31 @@ export default function ElectricityPage() {
             <svg className="h-5 w-5 text-yellow-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.75} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            <h1 className="text-lg font-semibold text-slate-200">Electricity Management</h1>
+            <h1 className="text-lg font-semibold text-slate-200">{xlate("Electricity Management")}</h1>
           </div>
           <p className="text-xs text-slate-500 mt-0.5 ml-7">
-            Plant-wide · department · line · machine · shift · solar · peak demand
+            {xlate("Plant-wide · department · line · machine · shift · solar · peak demand")}
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button onClick={() => setModal({ type: "import" })}
             className="px-3 py-2 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors">
-            Import CSV
+            {xlate("Import CSV")}
           </button>
           <button onClick={handleExport}
             className="px-3 py-2 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors">
-            Export CSV
+            {xlate("Export CSV")}
           </button>
           <button onClick={() => { setFormError(null); setModal({ type: "create" }); }}
             className="flex items-center gap-1.5 px-3 py-2 bg-yellow-600 hover:bg-yellow-500 text-white text-sm rounded font-medium transition-colors">
-            <span className="text-base leading-none">+</span> Record
+            <span className="text-base leading-none">+</span> {xlate("Record")}
           </button>
         </div>
       </div>
 
       {/* ── Scope filter bar ─────────────────────────────────────────────────── */}
       <div className="flex flex-wrap gap-2 items-center bg-slate-800/40 border border-slate-700/40 rounded-lg p-3">
-        <span className="text-[10px] text-slate-500 uppercase tracking-wider mr-1">Scope:</span>
+        <span className="text-[10px] text-slate-500 uppercase tracking-wider mr-1">{xlate("Scope:")}</span>
         <input type="date" value={scope.date_from ?? ""} onChange={(e) => setS("date_from", e.target.value || undefined)}
           className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-yellow-500" />
         <span className="text-slate-600 text-xs">–</span>
@@ -561,38 +562,37 @@ export default function ElectricityPage() {
         ))}
         <button onClick={() => { setScope({}); setTxFilters({ limit: 200 }); }}
           className="ml-auto text-xs text-slate-500 hover:text-slate-300 transition-colors">
-          Clear
+          {xlate("Clear")}
         </button>
       </div>
 
       {/* ── KPI cards ────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
-        <KPICard label="Total kWh" value={n(kpis?.total_kwh)} sub={`${kpis?.tx_count ?? 0} records`} accent="text-yellow-400" />
-        <KPICard label="Avg kWh/Day" value={n(kpis?.avg_kwh_per_day)} />
-        <KPICard label="Peak Demand" value={n(kpis?.peak_demand_kwh) + " kWh"} sub="max single record" accent="text-orange-400" />
-        <KPICard label="Base Load" value={n(kpis?.base_load_kwh) + " kWh"} sub="avg bottom 20%" />
-        <KPICard label="Idle / Non-Prod" value={n(kpis?.idle_kwh) + " kWh"} sub="no production linkage" />
-        <KPICard label="Solar Offset" value={n(kpis?.solar_offset_kwh) + " kWh"}
-          sub={kpis?.net_kwh ? `Net: ${n(kpis.net_kwh)} kWh` : undefined} accent="text-teal-400" />
-        <KPICard label="Total Cost" value={currency(kpis?.total_cost)} sub={kpis?.avg_cost_per_kwh ? `${n(kpis.avg_cost_per_kwh, 4)}/kWh` : undefined} accent="text-emerald-400" />
-        <KPICard label="Anomalies" value={kpis?.anomaly_count ?? 0} accent={kpis?.anomaly_count ? "text-red-400" : "text-slate-200"} alert={!!kpis?.anomaly_count} />
+        <KPICard label={xlate("Total kWh")} value={n(kpis?.total_kwh)} sub={`${kpis?.tx_count ?? 0} records`} accent="text-yellow-400" />
+        <KPICard label={xlate("Avg kWh/Day")} value={n(kpis?.avg_kwh_per_day)} />
+        <KPICard label={xlate("Peak Demand")} value={n(kpis?.peak_demand_kwh) + " kWh"} sub="max single record" accent="text-orange-400" />
+        <KPICard label={xlate("Base Load")} value={n(kpis?.base_load_kwh) + " kWh"} sub="avg bottom 20%" />
+        <KPICard label={xlate("Idle / Non-Prod")} value={n(kpis?.idle_kwh) + " kWh"} sub="no production linkage" />
+        <KPICard label={xlate("Solar Offset")} value={n(kpis?.solar_offset_kwh) + " kWh"}
+          sub={kpis?.net_kwh ? xlate("Net: {n} kWh", { n: n(kpis.net_kwh) }) : undefined} accent="text-teal-400" />
+        <KPICard label={xlate("Total Cost")} value={currency(kpis?.total_cost)} sub={kpis?.avg_cost_per_kwh ? `${n(kpis.avg_cost_per_kwh, 4)}/kWh` : undefined} accent="text-emerald-400" />
+        <KPICard label={xlate("Anomalies")} value={kpis?.anomaly_count ?? 0} accent={kpis?.anomaly_count ? "text-red-400" : "text-slate-200"} alert={!!kpis?.anomaly_count} />
       </div>
 
       {/* Estimated warning strip */}
       {kpis?.estimated_pct && parseFloat(kpis.estimated_pct) > 20 && (
         <div className="flex items-center gap-2 px-3 py-2 bg-amber-500/10 border border-amber-500/20 rounded text-xs text-amber-400">
-          <span className="font-medium">Estimated data:</span>
-          {kpis.estimated_pct}% of records are estimated ({kpis.estimated_count} of {kpis.tx_count}).
-          Verify meter readings or add actual measurements.
+          <span className="font-medium">{xlate("Estimated data:")}</span>
+          {kpis.estimated_pct}{xlate("% of records are estimated (")}{kpis.estimated_count} {xlate("of")} {kpis.tx_count}{xlate("). Verify meter readings or add actual measurements.")}
         </div>
       )}
 
       {/* ── Trend chart ──────────────────────────────────────────────────────── */}
       <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4">
-        <div className="text-xs font-semibold text-slate-300 mb-4">Daily Consumption Trend</div>
+        <div className="text-xs font-semibold text-slate-300 mb-4">{xlate("Daily Consumption Trend")}</div>
         {trendData.length === 0 ? (
           <div className="h-48 flex items-center justify-center text-xs text-slate-500">
-            No data for selected scope.
+            {xlate("No data for selected scope.")}
           </div>
         ) : (
           <div className="h-56">
@@ -636,7 +636,7 @@ export default function ElectricityPage() {
         {/* Breakdown */}
         <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 flex flex-col gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold text-slate-300">Consumption Breakdown</span>
+            <span className="text-xs font-semibold text-slate-300">{xlate("Consumption Breakdown")}</span>
             <div className="flex gap-1 ml-auto flex-wrap">
               {(Object.keys(DIM_LABELS) as BreakdownDim[]).map((d) => (
                 <button key={d} onClick={() => setBreakdownDim(d)}
@@ -648,7 +648,7 @@ export default function ElectricityPage() {
           </div>
 
           {breakdownData.length === 0 ? (
-            <div className="h-48 flex items-center justify-center text-xs text-slate-500">No data.</div>
+            <div className="h-48 flex items-center justify-center text-xs text-slate-500">{xlate("No data.")}</div>
           ) : (
             <>
               <div className="h-52">
@@ -676,7 +676,7 @@ export default function ElectricityPage() {
                     <span className="text-slate-500 tabular-nums">{n(r.total_kwh)} kWh</span>
                     <span className="text-slate-600 tabular-nums">{r.pct_of_total ? n(r.pct_of_total, 1) : "—"}%</span>
                     {r.anomaly_count > 0 && (
-                      <span className="text-red-400 text-[10px]">{r.anomaly_count} anom.</span>
+                      <span className="text-red-400 text-[10px]">{r.anomaly_count} {xlate("anom.")}</span>
                     )}
                   </div>
                 ))}
@@ -687,10 +687,10 @@ export default function ElectricityPage() {
 
         {/* Shift analysis */}
         <div className="bg-slate-800/40 border border-slate-700/40 rounded-xl p-4 flex flex-col gap-3">
-          <span className="text-xs font-semibold text-slate-300">Shift / Time-of-Use Analysis</span>
+          <span className="text-xs font-semibold text-slate-300">{xlate("Shift / Time-of-Use Analysis")}</span>
           {shiftData.length === 0 ? (
             <div className="h-48 flex items-center justify-center text-xs text-slate-500">
-              No shift data. Add shift references to transactions.
+              {xlate("No shift data. Add shift references to transactions.")}
             </div>
           ) : (
             <>
@@ -711,10 +711,10 @@ export default function ElectricityPage() {
                 <table className="w-full text-xs">
                   <thead>
                     <tr className="border-b border-slate-700/50">
-                      <th className="py-1.5 text-left text-[10px] text-slate-500 uppercase font-semibold tracking-wider">Shift</th>
+                      <th className="py-1.5 text-left text-[10px] text-slate-500 uppercase font-semibold tracking-wider">{xlate("Shift")}</th>
                       <th className="py-1.5 text-right text-[10px] text-slate-500 uppercase font-semibold tracking-wider">kWh</th>
-                      <th className="py-1.5 text-right text-[10px] text-slate-500 uppercase font-semibold tracking-wider">Cost</th>
-                      <th className="py-1.5 text-right text-[10px] text-slate-500 uppercase font-semibold tracking-wider">Tx</th>
+                      <th className="py-1.5 text-right text-[10px] text-slate-500 uppercase font-semibold tracking-wider">{xlate("Cost")}</th>
+                      <th className="py-1.5 text-right text-[10px] text-slate-500 uppercase font-semibold tracking-wider">{xlate("Tx")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-700/30">
@@ -737,25 +737,25 @@ export default function ElectricityPage() {
       {/* ── Transaction table ─────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <span className="text-xs font-semibold text-slate-300">Electricity Records</span>
+          <span className="text-xs font-semibold text-slate-300">{xlate("Electricity Records")}</span>
           <div className="flex items-center gap-2">
             <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
               <input type="checkbox" checked={txFilters.is_anomaly === true}
                 onChange={(e) => setTxFilters((p) => ({ ...p, is_anomaly: e.target.checked ? true : undefined }))}
                 className="accent-red-500" />
-              Anomalies only
+              {xlate("Anomalies only")}
             </label>
             <label className="flex items-center gap-1.5 text-xs text-slate-400 cursor-pointer">
               <input type="checkbox" checked={txFilters.is_estimated === true}
                 onChange={(e) => setTxFilters((p) => ({ ...p, is_estimated: e.target.checked ? true : undefined }))}
                 className="accent-amber-500" />
-              Estimated
+              {xlate("Estimated")}
             </label>
-            <input type="text" placeholder="Search…"
+            <input type="text" placeholder={xlate("Search…")}
               value={txFilters.search ?? ""}
               onChange={(e) => setTxFilters((p) => ({ ...p, search: e.target.value || undefined }))}
               className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-yellow-500 w-32" />
-            <span className="text-xs text-slate-600">{txRows.length} rows</span>
+            <span className="text-xs text-slate-600">{txRows.length} {xlate("rows")}</span>
           </div>
         </div>
 
@@ -763,17 +763,17 @@ export default function ElectricityPage() {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-slate-700/60 bg-slate-800/60">
-                {["Tx No.", "Date", "kWh", "Cost", "Dept / Line", "Machine", "Shift", "Batch", "Source", "Quality", "Actions"].map((h) => (
+                {[xlate("Tx No."), xlate("Date"), "kWh", xlate("Cost"), xlate("Dept / Line"), xlate("Machine"), xlate("Shift"), xlate("Batch"), xlate("Source"), xlate("Quality"), xlate("Actions")].map((h) => (
                   <th key={h} className="px-3 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-700/30">
               {txLoading && (
-                <tr><td colSpan={11} className="px-4 py-8 text-center text-xs text-slate-500">Loading…</td></tr>
+                <tr><td colSpan={11} className="px-4 py-8 text-center text-xs text-slate-500">{xlate("Loading…")}</td></tr>
               )}
               {!txLoading && txRows.length === 0 && (
-                <tr><td colSpan={11} className="px-4 py-8 text-center text-xs text-slate-500">No records found.</td></tr>
+                <tr><td colSpan={11} className="px-4 py-8 text-center text-xs text-slate-500">{xlate("No records found.")}</td></tr>
               )}
               {txRows.map((tx) => (
                 <tr key={tx.id} className={`hover:bg-slate-800/40 transition-colors ${tx.anomaly_flag ? "border-l-2 border-l-red-500/60" : ""}`}>
@@ -812,9 +812,9 @@ export default function ElectricityPage() {
                   <td className="px-3 py-2 text-xs whitespace-nowrap"><QBadge q={tx.quality} /></td>
                   <td className="px-3 py-2 text-xs whitespace-nowrap">
                     <div className="flex items-center gap-2">
-                      <button onClick={() => setModal({ type: "view", tx })} className="text-slate-400 hover:text-slate-200 transition-colors text-[11px]">View</button>
-                      <button onClick={() => { setFormError(null); setModal({ type: "edit", tx }); }} className="text-yellow-400 hover:text-yellow-300 transition-colors text-[11px]">Edit</button>
-                      <button onClick={() => setModal({ type: "delete", tx })} className="text-red-400 hover:text-red-300 transition-colors text-[11px]">Del</button>
+                      <button onClick={() => setModal({ type: "view", tx })} className="text-slate-400 hover:text-slate-200 transition-colors text-[11px]">{xlate("View")}</button>
+                      <button onClick={() => { setFormError(null); setModal({ type: "edit", tx }); }} className="text-yellow-400 hover:text-yellow-300 transition-colors text-[11px]">{xlate("Edit")}</button>
+                      <button onClick={() => setModal({ type: "delete", tx })} className="text-red-400 hover:text-red-300 transition-colors text-[11px]">{xlate("Del")}</button>
                     </div>
                   </td>
                 </tr>
@@ -830,7 +830,7 @@ export default function ElectricityPage() {
           <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
               <h2 className="text-sm font-semibold text-slate-200">
-                {modal.type === "create" ? "Record Electricity Consumption" : "Edit Record"}
+                {modal.type === "create" ? xlate("Record Electricity Consumption") : xlate("Edit Record")}
               </h2>
               <button onClick={() => setModal({ type: "none" })} className="text-slate-500 hover:text-slate-300 text-lg leading-none">×</button>
             </div>
@@ -843,7 +843,7 @@ export default function ElectricityPage() {
                   : updateMut.mutate({ id: (modal as { tx: UtilityTransaction }).tx.id, data })}
                 isPending={createMut.isPending || updateMut.isPending}
                 error={formError}
-                label={modal.type === "create" ? "Record Consumption" : "Save Changes"}
+                label={modal.type === "create" ? xlate("Record Consumption") : xlate("Save Changes")}
               />
             </div>
           </div>
@@ -856,7 +856,7 @@ export default function ElectricityPage() {
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
               <div>
                 <h2 className="text-sm font-semibold text-slate-200 font-mono">{modal.tx.transaction_no}</h2>
-                <p className="text-xs text-slate-500 mt-0.5">{modal.tx.transaction_date} · Electricity</p>
+                <p className="text-xs text-slate-500 mt-0.5">{modal.tx.transaction_date} {xlate("· Electricity")}</p>
               </div>
               <button onClick={() => setModal({ type: "none" })} className="text-slate-500 hover:text-slate-300 text-lg leading-none">×</button>
             </div>
@@ -864,21 +864,21 @@ export default function ElectricityPage() {
               <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-xs">
                 {[
                   ["kWh Consumed", `${Number(modal.tx.quantity).toLocaleString()} ${modal.tx.uom}`],
-                  ["Total Cost", currency(modal.tx.total_cost, modal.tx.currency_code ?? "USD")],
-                  ["Cost Rate", modal.tx.cost_rate ? `${modal.tx.currency_code} ${parseFloat(modal.tx.cost_rate).toFixed(4)}/kWh` : "—"],
-                  ["Variance", modal.tx.variance_from_standard ? `${parseFloat(modal.tx.variance_from_standard).toFixed(2)} kWh` : "—"],
-                  ["Department", modal.tx.department ?? "—"],
-                  ["Building / Area", modal.tx.building_area ?? "—"],
-                  ["Production Line", modal.tx.line_id ?? "—"],
-                  ["Machine", modal.tx.machine_id ?? "—"],
-                  ["Shift", modal.tx.shift_id ?? "—"],
-                  ["Batch", modal.tx.batch_id ?? "—"],
-                  ["Device", modal.tx.device_code ?? "—"],
-                  ["Asset", modal.tx.asset_no ?? "—"],
-                  ["Source Method", SOURCE_METHOD_LABELS[modal.tx.source_method]],
-                  ["Tariff", modal.tx.tariff_code ?? "—"],
-                  ["Estimated?", modal.tx.estimated_or_actual ? "Yes" : "No"],
-                  ["Anomaly?", modal.tx.anomaly_flag ? `Yes — ${modal.tx.anomaly_note ?? ""}` : "No"],
+                  [xlate("Total Cost"), currency(modal.tx.total_cost, modal.tx.currency_code ?? "USD")],
+                  [xlate("Cost Rate"), modal.tx.cost_rate ? `${modal.tx.currency_code} ${parseFloat(modal.tx.cost_rate).toFixed(4)}/kWh` : "—"],
+                  [xlate("Variance"), modal.tx.variance_from_standard ? `${parseFloat(modal.tx.variance_from_standard).toFixed(2)} kWh` : "—"],
+                  [xlate("Department"), modal.tx.department ?? "—"],
+                  [xlate("Building / Area"), modal.tx.building_area ?? "—"],
+                  [xlate("Production Line"), modal.tx.line_id ?? "—"],
+                  [xlate("Machine"), modal.tx.machine_id ?? "—"],
+                  [xlate("Shift"), modal.tx.shift_id ?? "—"],
+                  [xlate("Batch"), modal.tx.batch_id ?? "—"],
+                  [xlate("Device"), modal.tx.device_code ?? "—"],
+                  [xlate("Asset"), modal.tx.asset_no ?? "—"],
+                  [xlate("Source Method"), SOURCE_METHOD_LABELS[modal.tx.source_method]],
+                  [xlate("Tariff"), modal.tx.tariff_code ?? "—"],
+                  [xlate("Estimated?"), modal.tx.estimated_or_actual ? "Yes" : "No"],
+                  [xlate("Anomaly?"), modal.tx.anomaly_flag ? xlate("Yes — {anomaly_note}", { anomaly_note: modal.tx.anomaly_note ?? "" }) : "No"],
                 ].map(([l, v]) => (
                   <div key={l} className="flex flex-col gap-0.5">
                     <span className="text-[10px] text-slate-500 uppercase tracking-wider">{l}</span>
@@ -887,7 +887,7 @@ export default function ElectricityPage() {
                 ))}
                 {modal.tx.notes && (
                   <div className="col-span-2 flex flex-col gap-0.5">
-                    <span className="text-[10px] text-slate-500 uppercase tracking-wider">Notes</span>
+                    <span className="text-[10px] text-slate-500 uppercase tracking-wider">{xlate("Notes")}</span>
                     <span className="text-slate-300 whitespace-pre-wrap">{modal.tx.notes}</span>
                   </div>
                 )}
@@ -900,16 +900,16 @@ export default function ElectricityPage() {
       {modal.type === "delete" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-sm p-5 flex flex-col gap-4">
-            <h2 className="text-sm font-semibold text-slate-200">Delete Record</h2>
-            <p className="text-xs text-slate-400">Delete <span className="font-mono text-slate-200">{modal.tx.transaction_no}</span>? This cannot be undone.</p>
+            <h2 className="text-sm font-semibold text-slate-200">{xlate("Delete Record")}</h2>
+            <p className="text-xs text-slate-400">{xlate("Delete")} <span className="font-mono text-slate-200">{modal.tx.transaction_no}</span>{xlate("? This cannot be undone.")}</p>
             <div className="flex justify-end gap-2">
               <button onClick={() => setModal({ type: "none" })}
                 className="px-3 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors">
-                Cancel
+                {xlate("Cancel")}
               </button>
               <button onClick={() => deleteMut.mutate(modal.tx.id)} disabled={deleteMut.isPending}
                 className="px-3 py-1.5 text-xs bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white rounded transition-colors">
-                {deleteMut.isPending ? "Deleting…" : "Delete"}
+                {deleteMut.isPending ? xlate("Deleting…") : xlate("Delete")}
               </button>
             </div>
           </div>

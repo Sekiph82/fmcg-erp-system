@@ -172,9 +172,9 @@ export default function SecurityPage() {
   }
 
   const methodLabels: Record<TwoFAMethod, string> = {
-    totp: "Authenticator App (TOTP)",
-    sms: "SMS OTP",
-    email: "Email OTP",
+    totp: tx("Authenticator App (TOTP)"),
+    sms: tx("SMS OTP"),
+    email: tx("Email OTP"),
   };
 
   return (
@@ -198,7 +198,7 @@ export default function SecurityPage() {
             <h2 className="text-lg font-semibold text-gray-900">{tx("Two-Factor Authentication")}</h2>
             <p className="text-sm text-gray-500">
               {settings?.is_enabled
-                ? `Enabled · Method: ${methodLabels[settings.method!] || settings.method}`
+                ? tx("Enabled · Method: {methodLabels}", { methodLabels: methodLabels[settings.method!] || settings.method })
                 : tx("Not enabled")}
             </p>
           </div>

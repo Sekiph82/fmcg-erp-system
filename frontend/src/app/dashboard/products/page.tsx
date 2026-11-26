@@ -37,16 +37,16 @@ const UOMS: { value: string; label: string }[] = [
 
 const empty: ProductCreate = { sku: "", name: "", category: "HOUSEHOLD", uom: "PCS", units_per_carton: 1, reorder_point: 0, is_active: true };
 
-const DELETE_BLOCKERS = [
-  { module: "Inventory", detail: "Stock entries, stock lots, and stock movement records for this product." },
-  { module: "Sales", detail: "Sales order lines, invoice lines, and delivery lines referencing this product." },
-  { module: "Production", detail: "Production plan lines, production orders, and output records for this product." },
-  { module: "Recipe", detail: "All recipe versions that have this product as their output." },
-  { module: "Procurement", detail: "Purchase order lines, goods receipt lines, and supplier quotes for this product." },
-  { module: "Returns", detail: "All customer/supplier return records referencing this product." },
-  { module: "Warehouse (WMS)", detail: "Warehouse movement records tied to this product." },
-  { module: "Finance – Product Cost", detail: "Cost entries (standard cost per period) for this product." },
-];
+const DELETE_BLOCKERS = lx(() => [
+  { module: tx("Inventory"), detail: tx("Stock entries, stock lots, and stock movement records for this product.") },
+  { module: tx("Sales"), detail: tx("Sales order lines, invoice lines, and delivery lines referencing this product.") },
+  { module: tx("Production"), detail: tx("Production plan lines, production orders, and output records for this product.") },
+  { module: tx("Recipe"), detail: tx("All recipe versions that have this product as their output.") },
+  { module: tx("Procurement"), detail: tx("Purchase order lines, goods receipt lines, and supplier quotes for this product.") },
+  { module: tx("Returns"), detail: tx("All customer/supplier return records referencing this product.") },
+  { module: tx("Warehouse (WMS)"), detail: tx("Warehouse movement records tied to this product.") },
+  { module: tx("Finance – Product Cost"), detail: tx("Cost entries (standard cost per period) for this product.") },
+]);
 
 function ProductsListTab() {
   const qc = useQueryClient();
@@ -164,7 +164,7 @@ function ProductsListTab() {
         <Table
           keyField="id"
           data={filtered}
-          emptyMessage={search ? "No products match your search." : "No products yet. Add your first product."}
+          emptyMessage={search ? tx("No products match your search.") : tx("No products yet. Add your first product.")}
           columns={[
             { header: "SKU", accessor: "sku", className: "font-mono text-xs font-medium" },
             { header: tx("Name"), accessor: "name" },
@@ -384,7 +384,7 @@ export default function ProductsPage() {
   return (
     <ModuleWorkspace
       title={tx("Products")}
-      description="Finished goods, SKUs, categories, pricing, units of measure"
+      description={tx("Finished goods, SKUs, categories, pricing, units of measure")}
       permission="products.view"
       tabs={tabs}
       defaultTab="products"

@@ -20,7 +20,7 @@ export default function ExpenseAIPage() {
   const runAgent = async (agent: (typeof AGENTS)[0]) => {
     setRunning(agent.type);
     const result = await agent.fn();
-    setMsg(`${AI_AGENT_LABEL[agent.type]}: ${result.generated} recommendation(s) generated`);
+    setMsg(tx("{AI_AGENT_LABEL}: {generated} recommendation(s) generated", { AI_AGENT_LABEL: AI_AGENT_LABEL[agent.type], generated: result.generated }));
     await loadRecs(); setRunning(null); setTimeout(() => setMsg(""), 3000);
   };
 

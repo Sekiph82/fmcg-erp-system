@@ -4,11 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { apiClient } from "@/lib/api";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 interface Msg { id: string; direction: "IN" | "OUT"; sender: string | null; body: string; status: string; at: string }
 interface Thread { id: string; channel: string; subject: string; status: string; messages: Msg[] }
-const LABEL: Record<string, string> = { MESSENGER: "Messenger", INSTAGRAM: "Instagram DM", CUSTOM: "Custom channel" };
+const LABEL: Record<string, string> = lx(() => ({ MESSENGER: tx("Messenger"), INSTAGRAM: tx("Instagram DM"), CUSTOM: tx("Custom channel") }));
 const STATUS: Record<string, string> = { QUEUED: "waiting for the channel to fetch it", DELIVERED: "fetched by the channel", FAILED: "failed" };
 
 export default function ChannelThreadPage() {

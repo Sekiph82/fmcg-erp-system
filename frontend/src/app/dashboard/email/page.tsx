@@ -130,7 +130,7 @@ export default function EmailPage() {
           {activeAccount && (
             <div className="mt-2 text-xs space-y-1">
               {activeAccount.connected ? (
-                <p className="text-emerald-700">{tx("Connected ·")} {activeAccount.imap_host}{activeAccount.last_sync_at ? ` · synced ${fmtEmailDate(activeAccount.last_sync_at)}` : ""}</p>
+                <p className="text-emerald-700">{tx("Connected ·")} {activeAccount.imap_host}{activeAccount.last_sync_at ? tx(" · synced {fmtEmailDate}", { fmtEmailDate: fmtEmailDate(activeAccount.last_sync_at) }) : ""}</p>
               ) : (
                 <p className="text-amber-700">{tx("Not connected: cannot send or receive.")}</p>
               )}
@@ -368,7 +368,7 @@ export default function EmailPage() {
 
 function errorText(e: unknown) {
   const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
-  return typeof detail === "string" ? detail : "Request failed.";
+  return typeof detail === "string" ? detail : tx("Request failed.");
 }
 
 const FIELD = "w-full border rounded px-3 py-2 text-sm";
@@ -383,11 +383,11 @@ function serverPayload(form: Record<string, string>) {
 }
 
 function ServerFields({ form, set, provider }: { form: Record<string, string>; set: (k: string, v: string) => void; provider: EmailProvider }) {
-  const hint = provider === "GMAIL" ? "Google account → Security → App passwords (needs 2-step verification)."
-    : provider === "OUTLOOK" ? "Microsoft account → Security → App password, or ask IT to allow IMAP/SMTP."
-    : "The password your mail host gives for IMAP/SMTP.";
-  const servers = [["imap_host", "IMAP server"], ["imap_port", "IMAP port (993)"], ["smtp_host", "SMTP server"],
-    ["smtp_port", "SMTP port (465 or 587)"], ["username", "Login, if not the address"]] as const;
+  const hint = provider === "GMAIL" ? tx("Google account → Security → App passwords (needs 2-step verification).")
+    : provider === "OUTLOOK" ? tx("Microsoft account → Security → App password, or ask IT to allow IMAP/SMTP.")
+    : tx("The password your mail host gives for IMAP/SMTP.");
+  const servers = [["imap_host", tx("IMAP server")], ["imap_port", tx("IMAP port (993)")], ["smtp_host", tx("SMTP server")],
+    ["smtp_port", tx("SMTP port (465 or 587)")], ["username", tx("Login, if not the address")]] as const;
   return (
     <>
       <div>

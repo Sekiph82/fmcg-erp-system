@@ -10,7 +10,7 @@ import {
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 const clearanceBadge = (s?: ClearanceStatus) => {
   if (!s) return "gray";
@@ -207,9 +207,9 @@ export default function ArrivalsPage() {
           {/* Tabs */}
           <div className="flex gap-1 border-b">
             {([
-              { key: "arrival", label: "Arrival Events" },
-              { key: "clearance", label: "Customs Clearance (KRA)" },
-              { key: "local_costs", label: "Local Costs & Payments" },
+              { key: "arrival", label: tx("Arrival Events") },
+              { key: "clearance", label: tx("Customs Clearance (KRA)") },
+              { key: "local_costs", label: tx("Local Costs & Payments") },
             ] as const).map(({ key, label }) => (
               <button key={key} onClick={() => setTab(key)}
                 className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${tab === key ? "border-indigo-600 text-indigo-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
@@ -598,15 +598,15 @@ function ClearanceForm({
 
 // ── Local Costs Panel ──────────────────────────────────────────────────────────
 
-const COST_TYPE_LABELS: Record<LocalCostType, string> = {
-  TRANSPORT: "Transport",
-  CLEARING_FEE: "Clearing Fee",
-  PORT_HANDLING: "Port Handling",
-  WAREHOUSE_HANDLING: "Warehouse Handling",
-  FUMIGATION: "Fumigation",
-  INSPECTION_FEE: "Inspection Fee",
-  OTHER: "Other",
-};
+const COST_TYPE_LABELS: Record<LocalCostType, string> = lx(() => ({
+  TRANSPORT: tx("Transport"),
+  CLEARING_FEE: tx("Clearing Fee"),
+  PORT_HANDLING: tx("Port Handling"),
+  WAREHOUSE_HANDLING: tx("Warehouse Handling"),
+  FUMIGATION: tx("Fumigation"),
+  INSPECTION_FEE: tx("Inspection Fee"),
+  OTHER: tx("Other"),
+}));
 
 const statusBadge = (s: LocalCostStatus) =>
   s === "PAID" ? "bg-emerald-100 text-emerald-700" : s === "DISPUTED" ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700";

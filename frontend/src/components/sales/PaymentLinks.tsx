@@ -16,7 +16,7 @@ type RecRow = Card & { tracking_id: string | null; confirmation_code: string | n
 type Rec = { invoice_no: string; total: string; paid: string; status: string; currency: string;
   credit: { limit: string | null; outstanding: string; available: string | null; over_limit: boolean; note: string }; card_payments: RecRow[] };
 
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 const low = (s: string) => s.toLowerCase().replace(/_/g, " ");
 
 export function PaymentLinks({ invoiceId, open }: { invoiceId: string; open: boolean }) {
@@ -64,8 +64,8 @@ export function PaymentLinks({ invoiceId, open }: { invoiceId: string; open: boo
   const cfgAction = (a: string) => act(() => apiClient.post(`/api/v1/payment-links/card/config/${a}`));
 
   const cardOff = !cfg || cfg.mode === "NOT_CONFIGURED" || cfg.mode === "BLOCKED";
-  const cardReason = (l: Link) => l.status !== "ACTIVE" ? "The link is not open for payment." :
-    cardOff ? (cfg?.disabled_reasons.join(" ") || "Card payments are not set up.") : "";
+  const cardReason = (l: Link) => l.status !== "ACTIVE" ? tx("The link is not open for payment.") :
+    cardOff ? (cfg?.disabled_reasons.join(" ") || tx("Card payments are not set up.")) : "";
 
   return (
     <div className="bg-white rounded-lg border">

@@ -53,7 +53,13 @@ export default function PipelineBoardPage() {
   const stageTotal = (stageId: string) =>
     recordsByStage(stageId).reduce((s, r) => s + (r.expected_revenue || 0), 0);
 
-  if (loading) return <div className="p-6 text-gray-500">{tx("Loading pipeline…")}</div>;
+  // The pipeline selector must render while loading: it picks the default pipeline, which starts the first load.
+  if (loading) return (
+    <div className="p-6 space-y-4">
+      <PipelineSelect value={pipelineId} onChange={setPipelineId} />
+      <div className="text-gray-500">{tx("Loading pipeline…")}</div>
+    </div>
+  );
 
   return (
     <div className="p-6 space-y-4">

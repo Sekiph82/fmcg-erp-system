@@ -64,10 +64,10 @@ export default function SubscriptionsPage() {
       const r = await testSubscription(id);
       setTestResults((prev) => ({
         ...prev,
-        [id]: r.success ? `OK ${r.status_code}` : `FAIL: ${r.error || r.status_code}`,
+        [id]: r.success ? `OK ${r.status_code}` : tx("FAIL: {error}", { error: r.error || r.status_code }),
       }));
     } catch {
-      setTestResults((prev) => ({ ...prev, [id]: "Request failed" }));
+      setTestResults((prev) => ({ ...prev, [id]: tx("Request failed") }));
     }
   }
 
@@ -79,7 +79,7 @@ export default function SubscriptionsPage() {
       await load();
     } catch (err: unknown) {
       const e2 = err as { response?: { data?: { detail?: string } } };
-      setTestResults((previous) => ({ ...previous, [id]: e2?.response?.data?.detail || "Secret rotation failed" }));
+      setTestResults((previous) => ({ ...previous, [id]: e2?.response?.data?.detail || tx("Secret rotation failed") }));
     }
   }
 

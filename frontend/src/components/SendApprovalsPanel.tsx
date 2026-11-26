@@ -26,7 +26,7 @@ export function SendApprovalsPanel({ kind, targetId, picked, onPick, refresh, on
         sendApprovalsApi.list(kind, "APPROVED")]);
       setPolicy(p); onPolicy?.(p);
       setRows([...pending, ...approved].filter((r) => r.target_id === targetId));
-    } catch (e) { setMsg({ ok: false, text: apiError(e, "Could not load approvals.") }); onPolicy?.(null); }
+    } catch (e) { setMsg({ ok: false, text: apiError(e, tx("Could not load approvals.")) }); onPolicy?.(null); }
   }, [kind, targetId, onPolicy]);
   useEffect(() => { load(); }, [load, refresh]);
   useEffect(() => { if (picked && !rows.some((r) => r.id === picked && r.status === "APPROVED")) onPick(null); }, [rows, picked, onPick]);

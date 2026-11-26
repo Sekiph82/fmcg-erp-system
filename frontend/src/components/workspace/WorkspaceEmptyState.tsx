@@ -1,3 +1,4 @@
+import { tx } from "@/lib/i18n/core";
 interface WorkspaceEmptyStateProps {
   title?: string;
   message?: string;
@@ -5,7 +6,7 @@ interface WorkspaceEmptyStateProps {
 }
 
 export function WorkspaceEmptyState({
-  title = "No items yet",
+  title = tx("No items yet"),
   message,
   action,
 }: WorkspaceEmptyStateProps) {

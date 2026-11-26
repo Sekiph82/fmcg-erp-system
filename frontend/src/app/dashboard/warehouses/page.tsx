@@ -171,7 +171,7 @@ export default function WarehousesPage() {
   return (
     <ModuleWorkspace
       title={tx("Warehouses")}
-      description="Warehouse management, locations, WMS operations"
+      description={tx("Warehouse management, locations, WMS operations")}
       permission="inventory.view"
       tabs={tabs}
       defaultTab="warehouses"

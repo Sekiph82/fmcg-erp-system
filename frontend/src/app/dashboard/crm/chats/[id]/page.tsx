@@ -26,7 +26,7 @@ export default function CRMChatPage() {
     <div className="p-6 space-y-4 max-w-3xl">
       <div>
         <Link href="/dashboard/crm?tab=inbox" className="text-xs text-indigo-600">{tx("← Inbox")}</Link>
-        <h1 className="text-xl font-bold text-gray-900">{tx("Website chat ·")} {t.visitor_name || t.visitor_email || "visitor"}</h1>
+        <h1 className="text-xl font-bold text-gray-900">{tx("Website chat ·")} {t.visitor_name || t.visitor_email || tx("visitor")}</h1>
         <p className="text-sm text-gray-500">
           {t.status === "CLOSED" ? tx("Closed") : t.status === "WAITING" ? tx("Waiting for our team") : tx("With the bot")}
           {t.visitor_email && ` · ${t.visitor_email}${t.consent_given ? " (agreed to be contacted)" : ""}`}

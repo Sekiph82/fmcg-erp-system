@@ -297,7 +297,7 @@ function MaintenanceActionModal({
       qc.invalidateQueries({ queryKey: ["alarm-events"] });
       qc.invalidateQueries({ queryKey: ["alarm-summary"] });
       const ref = result.wo_no ?? result.breakdown_no ?? result.type;
-      onSuccess(`Maintenance action created: ${ref}`);
+      onSuccess(tx("Maintenance action created: {ref}", { ref }));
       onClose();
     },
   });
@@ -760,7 +760,7 @@ export default function AlarmCenterPage() {
     onSuccess: (data) => {
       invalidate();
       showToast(
-        data.new_alarms > 0 ? `${data.new_alarms} new alarm${data.new_alarms !== 1 ? "s" : ""} detected` : tx("Evaluation complete — no new alarms"),
+        data.new_alarms > 0 ? ((data.new_alarms !== 1) ? tx("{new_alarms} new alarms detected", { new_alarms: data.new_alarms }) : tx("{new_alarms} new alarm detected", { new_alarms: data.new_alarms })) : tx("Evaluation complete — no new alarms"),
         data.new_alarms > 0 ? "error" : "info",
       );
     },

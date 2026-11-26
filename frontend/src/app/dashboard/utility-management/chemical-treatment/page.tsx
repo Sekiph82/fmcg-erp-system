@@ -695,9 +695,9 @@ export default function ChemicalTreatmentPage() {
               flag={(kpis?.overdose_count ?? 0) > 0 || (kpis?.underdose_count ?? 0) > 0}
               flagMsg={
                 (kpis?.overdose_count ?? 0) > 0
-                  ? `${kpis?.overdose_count} overdose(s)`
+                  ? tx("{overdose_count} overdose(s)", { overdose_count: kpis?.overdose_count })
                   : (kpis?.underdose_count ?? 0) > 0
-                    ? `${kpis?.underdose_count} underdose(s)`
+                    ? tx("{underdose_count} underdose(s)", { underdose_count: kpis?.underdose_count })
                     : undefined
               }
               accent="border-red-500/30"

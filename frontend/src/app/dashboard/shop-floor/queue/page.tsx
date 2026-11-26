@@ -16,7 +16,7 @@ export default function WorkCenterQueuePage() {
 
   // Group by line
   const byLine = queue.reduce<Record<string, LiveWOItem[]>>((acc, wo) => {
-    const key = wo.line_id || "No Line";
+    const key = wo.line_id || tx("No Line");
     acc[key] = acc[key] || [];
     acc[key].push(wo);
     return acc;

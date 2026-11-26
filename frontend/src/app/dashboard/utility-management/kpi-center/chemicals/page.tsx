@@ -56,9 +56,9 @@ export default function ChemicalsKpiPage() {
 
   // Build pie data from category costs
   const pieData = [
-    { name: "Boiler Chemicals", value: kpi?.boiler_cost ?? 0 },
-    { name: "Cooling Treatment", value: kpi?.cooling_cost ?? 0 },
-    { name: "WWTP Chemicals", value: kpi?.wwtp_cost ?? 0 },
+    { name: tx("Boiler Chemicals"), value: kpi?.boiler_cost ?? 0 },
+    { name: tx("Cooling Treatment"), value: kpi?.cooling_cost ?? 0 },
+    { name: tx("WWTP Chemicals"), value: kpi?.wwtp_cost ?? 0 },
     { name: "Other", value: Math.max(0, (kpi?.total_cost ?? 0) - (kpi?.boiler_cost ?? 0) - (kpi?.cooling_cost ?? 0) - (kpi?.wwtp_cost ?? 0)) },
   ].filter(d => d.value > 0);
 

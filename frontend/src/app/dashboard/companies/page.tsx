@@ -106,8 +106,8 @@ export default function CompaniesPage() {
                     </span>
                   </div>
                   <div className="flex gap-3 mt-1 text-xs text-gray-400">
-                    <span>{c.branch_count} branches</span>
-                    <span>{c.user_count} users</span>
+                    <span>{tx("{n} branches", { n: c.branch_count })}</span>
+                    <span>{tx("{n} users", { n: c.user_count })}</span>
                   </div>
                 </button>
               ))}
@@ -154,12 +154,12 @@ export default function CompaniesPage() {
                 <div className="p-5 space-y-5">
                   <div className="grid grid-cols-2 gap-4">
                     {[
-                      ["Registration No.", selected.registration_no ?? "—"],
-                      ["Tax PIN (KRA)",   selected.tax_pin ?? "—"],
-                      ["Phone",           selected.phone ?? "—"],
-                      ["Email",           selected.email ?? "—"],
-                      ["Website",         selected.website ?? "—"],
-                      ["Address",         selected.address ?? "—"],
+                      [tx("Registration No."), selected.registration_no ?? "—"],
+                      [tx("Tax PIN (KRA)"),   selected.tax_pin ?? "—"],
+                      [tx("Phone"),           selected.phone ?? "—"],
+                      [tx("Email"),           selected.email ?? "—"],
+                      [tx("Website"),         selected.website ?? "—"],
+                      [tx("Address"),         selected.address ?? "—"],
                     ].map(([label, value]) => (
                       <div key={label}>
                         <p className="text-xs text-gray-400">{label}</p>

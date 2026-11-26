@@ -12,7 +12,7 @@ type O = { datasets: string[]; formats: Record<string, string>; kinds: Record<st
   jobs: { id: string; target_id: string; dataset: string; format: string; every_minutes: number | null; watermark: string | null }[];
   runs: { id: string; job_id: string; status: string; rows: number; deleted: number; error: string | null; mode: string | null; schema_change: { added: string[]; removed: string[] } | null; started_at: string }[] };
 type Plan = { pending_rows: number; batch_rows: number; column_types: Record<string, string>; plan: Record<string, unknown>[]; configured: boolean };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 const inp = "border rounded px-2 py-1 text-xs";
 const CLOUD = ["SNOWFLAKE", "BIGQUERY"];
 const FIELDS: Record<string, { key: string; label: string; ph?: string }[]> = lx(() => ({
@@ -54,11 +54,11 @@ export default function WarehouseExportsPage() {
     setT({ ...t, secret: "" }); setPassphrase("");
     return `Target added${r.data.public_key_fp ? ` — register this public key fingerprint on the Snowflake user: ${r.data.public_key_fp}` : ""}${r.data.client_email ? ` — service account ${r.data.client_email}` : ""}${isCloud && !t.secret ? " (not configured until a credential is saved)" : ""}.`;
   });
-  const addJob = () => act("job", async () => { await apiClient.post("/api/v1/warehouse-exports/jobs", { ...j, every_minutes: j.every_minutes ? +j.every_minutes : null }); return "Job added."; });
+  const addJob = () => act("job", async () => { await apiClient.post("/api/v1/warehouse-exports/jobs", { ...j, every_minutes: j.every_minutes ? +j.every_minutes : null }); return tx("Job added."); });
   const run = (id: string) => act(`run-${id}`, async () => { const r = await apiClient.post(`/api/v1/warehouse-exports/jobs/${id}/run`); return `Run ${r.data.status.toLowerCase()}${r.data.mode ? ` (${r.data.mode.toLowerCase()})` : ""}: ${r.data.rows} rows, ${r.data.deleted} deletes${r.data.error ? ` — ${r.data.error}` : ""}`; });
-  const dry = (id: string) => act(`dry-${id}`, async () => { const r = await apiClient.post(`/api/v1/warehouse-exports/jobs/${id}/dry-run`); setPlan((p) => ({ ...p, [id]: r.data })); return `Dry run: ${r.data.pending_rows} rows pending; nothing was sent.`; });
-  const test = (id: string) => act(`test-${id}`, async () => { const r = await apiClient.post(`/api/v1/warehouse-exports/targets/${id}/test`); return r.data.ok ? `Connection OK (${(r.data.mode ?? "").toLowerCase()}): ${Object.entries(r.data).filter(([k]) => !["ok", "mode"].includes(k)).map(([k, v]) => `${k} ${v}`).join(", ")}` : `Connection failed: ${r.data.error}`; });
-  const approve = (id: string) => act(`approve-${id}`, async () => { const r = await apiClient.post(`/api/v1/warehouse-exports/targets/${id}/approve`); return `Target approved for live sync to ${(r.data.hosts ?? []).join(", ")} (still needs the owner's runtime switch).`; });
+  const dry = (id: string) => act(`dry-${id}`, async () => { const r = await apiClient.post(`/api/v1/warehouse-exports/jobs/${id}/dry-run`); setPlan((p) => ({ ...p, [id]: r.data })); return tx("Dry run: {pending_rows} rows pending; nothing was sent.", { pending_rows: r.data.pending_rows }); });
+  const test = (id: string) => act(`test-${id}`, async () => { const r = await apiClient.post(`/api/v1/warehouse-exports/targets/${id}/test`); return r.data.ok ? tx("Connection OK ({mode}): {data}", { mode: (r.data.mode ?? "").toLowerCase(), data: Object.entries(r.data).filter(([k]) => !["ok", "mode"].includes(k)).map(([k, v]) => `${k} ${v}`).join(", ") }) : tx("Connection failed: {error}", { error: r.data.error }); });
+  const approve = (id: string) => act(`approve-${id}`, async () => { const r = await apiClient.post(`/api/v1/warehouse-exports/targets/${id}/approve`); return tx("Target approved for live sync to {hosts} (still needs the owner's runtime switch).", { hosts: (r.data.hosts ?? []).join(", ") }); });
   const saveSecret = () => replace && act(`secret-${replace.id}`, async () => { const r = await apiClient.put(`/api/v1/warehouse-exports/targets/${replace.id}/secret`, { secret: replace.secret, passphrase: replace.passphrase || null }); setReplace(null); return `Credential saved${r.data.public_key_fp ? ` — fingerprint ${r.data.public_key_fp}` : ""}${r.data.client_email ? ` — ${r.data.client_email}` : ""}. Approval must be given again.`; });
   if (!o) return <p className="p-4 text-sm">{msg ?? tx("Loading…")}</p>;
   const tgt = (id: string) => o.targets.find((y) => y.id === id);
@@ -87,11 +87,11 @@ export default function WarehouseExportsPage() {
         <ul className="text-xs divide-y">{o.targets.map((x) => {
           const c = CLOUD.includes(x.kind);
           return <li key={x.id} className="py-1 space-y-1"><div className="flex flex-wrap justify-between gap-2">
-            <span>{x.name} · {x.kind}{c && <> · <b>{x.status?.replace("_", " ").toLowerCase()}</b>{x.config.public_key_fp ? ` · key ${String(x.config.public_key_fp).slice(0, 20)}…` : ""}{x.config.client_email ? ` · ${x.config.client_email}` : ""}{x.config.approved_by ? tx(" · approved by {approved_by}", { approved_by: x.config.approved_by }) : ""}{x.secret_set_by ? tx(" · credential set by {secret_set_by}", { secret_set_by: x.secret_set_by }) : ""}</>}</span>
+            <span>{x.name} · {x.kind}{c && <> · <b>{x.status?.replace("_", " ").toLowerCase()}</b>{x.config.public_key_fp ? tx(" · key {public_key_fp}…", { public_key_fp: String(x.config.public_key_fp).slice(0, 20) }) : ""}{x.config.client_email ? ` · ${x.config.client_email}` : ""}{x.config.approved_by ? tx(" · approved by {approved_by}", { approved_by: x.config.approved_by }) : ""}{x.secret_set_by ? tx(" · credential set by {secret_set_by}", { secret_set_by: x.secret_set_by }) : ""}</>}</span>
             {c && <span className="flex gap-2">
               <button className="underline disabled:opacity-50" disabled={busy === `test-${x.id}`} onClick={() => test(x.id)}>{tx("Test connection")}</button>
               <button className="underline" onClick={() => setReplace({ id: x.id, secret: "", passphrase: "" })}>{x.configured ? tx("Replace credential") : tx("Add credential")}</button>
-              <button className="underline disabled:opacity-50" disabled={!x.configured || !!x.config.approved_by} title={!x.configured ? tx("Save a credential first") : x.config.approved_by ? tx("Already approved") : `Approve live sync to ${(x.hosts ?? []).join(", ")} — only an administrator who neither created this target nor set its credential`} onClick={() => approve(x.id)}>{tx("Approve")}</button>
+              <button className="underline disabled:opacity-50" disabled={!x.configured || !!x.config.approved_by} title={!x.configured ? tx("Save a credential first") : x.config.approved_by ? tx("Already approved") : tx("Approve live sync to {hosts} — only an administrator who neither created this target nor set its credential", { hosts: (x.hosts ?? []).join(", ") })} onClick={() => approve(x.id)}>{tx("Approve")}</button>
             </span>}</div>
             {c && x.hosts && <p className={x.hosts.some((h) => h.startsWith("REFUSED")) ? "text-red-700" : "text-gray-600"}>{tx("Sends to:")} {x.hosts.join(" · ")}</p>}
             {replace?.id === x.id && <div className="flex flex-wrap gap-2"><textarea aria-label={tx("New credential")} className={`${inp} font-mono h-16 flex-1`} autoComplete="off" spellCheck={false} placeholder={x.kind === "SNOWFLAKE" ? tx("PEM private key") : tx("service-account JSON")} value={replace.secret} onChange={(e) => setReplace({ ...replace, secret: e.target.value })} />
@@ -101,7 +101,7 @@ export default function WarehouseExportsPage() {
       <section className="border rounded p-3 bg-white space-y-2"><h3 className="font-semibold text-xs">{tx("Jobs")}</h3>
         <div className="flex flex-wrap gap-2"><select aria-label={tx("Job target")} className={inp} value={j.target_id} onChange={(e) => setJ({ ...j, target_id: e.target.value })}><option value="">{tx("target…")}</option>{o.targets.map((x) => <option key={x.id} value={x.id}>{x.name} ({x.kind})</option>)}</select>
           <select aria-label={tx("Dataset")} className={inp} value={j.dataset} onChange={(e) => setJ({ ...j, dataset: e.target.value })}>{o.datasets.map((d) => <option key={d}>{d}</option>)}</select>
-          <select aria-label={tx("Format")} className={inp} value={j.file_format} onChange={(e) => setJ({ ...j, file_format: e.target.value })}><option>{tx("csv")}</option><option>{tx("jsonl")}</option></select>
+          <select aria-label={tx("Format")} className={inp} value={j.file_format} onChange={(e) => setJ({ ...j, file_format: e.target.value })}><option value="csv">{tx("csv")}</option><option value="jsonl">{tx("jsonl")}</option></select>
           <input aria-label={tx("Every minutes")} className={`${inp} w-24`} placeholder={tx("every min")} value={j.every_minutes} onChange={(e) => setJ({ ...j, every_minutes: e.target.value })} />
           <button className="border rounded px-2 disabled:opacity-50" disabled={!j.target_id} title={!j.target_id ? tx("Choose a target") : undefined} onClick={addJob}>{tx("Add job")}</button></div>
         <ul className="text-xs divide-y">{o.jobs.map((x) => { const tg = tgt(x.target_id); const c = tg && CLOUD.includes(tg.kind); const p = plan[x.id];
@@ -109,11 +109,11 @@ export default function WarehouseExportsPage() {
             <span className="flex gap-2">{c && <button className="underline disabled:opacity-50" disabled={busy === `dry-${x.id}`} onClick={() => dry(x.id)}>{tx("Dry run")}</button>}
               <button className="underline disabled:opacity-50" disabled={busy === `run-${x.id}` || (c && !tg?.configured)} title={c && !tg?.configured ? tx("NOT_CONFIGURED: save the target's credential first") : undefined} onClick={() => run(x.id)}>{busy === `run-${x.id}` ? tx("Syncing…") : c ? tx("Sync now") : tx("Run now")}</button></span></div>
             {p && <div className="border rounded p-2 bg-gray-50 space-y-1"><p>{p.pending_rows} {tx("rows pending, first batch")} {p.batch_rows}{tx(". Column types:")} {Object.entries(p.column_types).map(([k, v]) => `${k} ${v}`).join(", ")}</p>
-              <ol className="list-decimal pl-5 space-y-0.5 font-mono break-all">{p.plan.map((s, i) => <li key={i}>{String(s.request)} {s.statement ? String(s.statement) : s.body ? JSON.stringify(s.body) : ""}{s.upload ? ` [${(s.upload as { rows: number }).rows} rows]` : ""}</li>)}</ol>
+              <ol className="list-decimal pl-5 space-y-0.5 font-mono break-all">{p.plan.map((s, i) => <li key={i}>{String(s.request)} {s.statement ? String(s.statement) : s.body ? JSON.stringify(s.body) : ""}{s.upload ? tx(" [{upload} rows]", { upload: (s.upload as { rows: number }).rows }) : ""}</li>)}</ol>
               <button className="underline" onClick={() => setPlan((q) => { const n = { ...q }; delete n[x.id]; return n; })}>{tx("Hide plan")}</button></div>}
           </li>; })}</ul></section>
       <section className="border rounded p-3 bg-white"><h3 className="font-semibold text-xs">{tx("Recent runs")}</h3>
-        <ul className="text-xs divide-y">{o.runs.map((r) => <li key={r.id} className={`py-1 ${r.status === "FAILED" ? "text-red-700" : ""}`}>{new Date(r.started_at).toLocaleString()} · {r.status.toLowerCase()}{r.mode ? ` · ${r.mode.toLowerCase()}` : ""} · {r.rows} {tx("rows ·")} {r.deleted} {tx("deletes")}{r.schema_change ? ` · new columns ${r.schema_change.added.join(", ")}` : ""}{r.error ? ` · ${r.error}` : ""}</li>)}</ul></section>
+        <ul className="text-xs divide-y">{o.runs.map((r) => <li key={r.id} className={`py-1 ${r.status === "FAILED" ? "text-red-700" : ""}`}>{new Date(r.started_at).toLocaleString()} · {r.status.toLowerCase()}{r.mode ? ` · ${r.mode.toLowerCase()}` : ""} · {r.rows} {tx("rows ·")} {r.deleted} {tx("deletes")}{r.schema_change ? tx(" · new columns {added}", { added: r.schema_change.added.join(", ") }) : ""}{r.error ? ` · ${r.error}` : ""}</li>)}</ul></section>
     </div>
   );
 }

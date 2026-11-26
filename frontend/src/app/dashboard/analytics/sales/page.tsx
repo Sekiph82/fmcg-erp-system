@@ -83,23 +83,23 @@ export default function SalesAnalyticsPage() {
         </div>
 
         {/* Revenue trend */}
-        <ChartCard title={tx("Revenue Trend")} subtitle={`Last ${days} days (invoiced)`}>
+        <ChartCard title={tx("Revenue Trend")} subtitle={tx("Last {days} days (invoiced)", { days })}>
           <LineChart
             series={[
               { name: "Revenue", color: "#f97316", data: data?.revenue_trend ?? [] },
-              { name: "Order Count", color: "#6366f1", data: data?.order_count_trend ?? [], dashed: true },
+              { name: tx("Order Count"), color: "#6366f1", data: data?.order_count_trend ?? [], dashed: true },
             ]}
             formatY={(v) => fmtKES(v)}
           />
         </ChartCard>
 
         {/* By channel */}
-        <ChartCard title={tx("Sales by Channel")} subtitle={`Last ${days} days`}>
+        <ChartCard title={tx("Sales by Channel")} subtitle={tx("Last {days} days", { days })}>
           <DistributionBar data={data?.by_channel ?? []} formatValue={(v) => fmtKES(v)} />
         </ChartCard>
 
         {/* Order count trend as bar */}
-        <ChartCard title={tx("Daily Order Count")} subtitle={`Last ${days} days`}>
+        <ChartCard title={tx("Daily Order Count")} subtitle={tx("Last {days} days", { days })}>
           <BarChart
             data={data?.order_count_trend ?? []}
             color="#6366f1"
@@ -108,7 +108,7 @@ export default function SalesAnalyticsPage() {
         </ChartCard>
 
         {/* Top customers */}
-        <ChartCard title={tx("Top Customers")} subtitle="By invoice value">
+        <ChartCard title={tx("Top Customers")} subtitle={tx("By invoice value")}>
           <DistributionBar data={data?.top_customers ?? []} formatValue={(v) => fmtKES(v)} />
         </ChartCard>
 

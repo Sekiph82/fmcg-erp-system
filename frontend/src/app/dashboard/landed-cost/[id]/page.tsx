@@ -294,7 +294,7 @@ export default function LandedCostDetailPage() {
                       </button>
                     </div>
                   ) : cl.actual_record ? (
-                    <span title={`Recorded ${new Date(cl.actual_record.recorded_at).toLocaleString()}`}>
+                    <span title={tx("Recorded {date}", { date: new Date(cl.actual_record.recorded_at).toLocaleString() })}>
                       {cl.actual_record.variance_status === "POSTED"
                         ? tx("Posted ({length} entries)", { length: cl.actual_record.variance_postings.length })
                         : cl.actual_record.variance_status === "NOT_REQUIRED"

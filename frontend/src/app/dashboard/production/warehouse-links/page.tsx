@@ -10,10 +10,10 @@ import { tx, lx } from "@/lib/i18n/core";
 type Links = Record<string, string | null>;
 
 const LINKS: { key: string; label: string; help: string }[] = lx(() => [
-  { key: "raw_material_warehouse_id", label: tx("Raw materials"), help: "Recipe materials are issued from here when the order names no source warehouse." },
-  { key: "packaging_warehouse_id", label: tx("Packaging"), help: "Packaging materials (bottles, sachets, cartons) are issued from here." },
-  { key: "wip_warehouse_id", label: tx("Semi-finished (WIP)"), help: "Semi-finished materials are issued from here." },
-  { key: "finished_goods_warehouse_id", label: tx("Finished goods, ready to ship"), help: "Completed output is received here when the order names no target warehouse." },
+  { key: "raw_material_warehouse_id", label: tx("Raw materials"), help: tx("Recipe materials are issued from here when the order names no source warehouse.") },
+  { key: "packaging_warehouse_id", label: tx("Packaging"), help: tx("Packaging materials (bottles, sachets, cartons) are issued from here.") },
+  { key: "wip_warehouse_id", label: tx("Semi-finished (WIP)"), help: tx("Semi-finished materials are issued from here.") },
+  { key: "finished_goods_warehouse_id", label: tx("Finished goods, ready to ship"), help: tx("Completed output is received here when the order names no target warehouse.") },
 ]);
 
 export default function ProductionWarehouseLinksPage() {

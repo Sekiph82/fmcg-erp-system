@@ -9,7 +9,7 @@ type Form = { id: string; name: string; slug: string };
 type Route = { id: string; event_type: string; channel_label: string; active: boolean; webhook: string };
 const SKIPPABLE = ["company_name", "contact_person_name"];   // e-mail and phone are always typed (M47 review)
 const EVENTS = ["DEAL", "TICKET", "APPROVAL", "APPROVE"];
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Request failed."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Request failed."); };
 
 export default function CrmPlatformDepthPage() {
   const [msg, setMsg] = useState<string | null>(null);
@@ -55,7 +55,7 @@ export default function CrmPlatformDepthPage() {
         {routes && <p className="text-xs text-gray-500">{tx("Approve / Reject buttons:")} {routes.signing_secret_configured ? tx("signing secret configured") : tx("NOT CONFIGURED (no SLACK_SIGNING_SECRET)")}.</p>}
         {routes && <table className="text-xs w-full"><tbody>{routes.routes.map((r) => <tr key={r.id} className="border-t"><td className="p-1">{r.event_type}</td><td>{r.channel_label}</td><td>{r.webhook}</td><td>{r.active ? tx("on") : tx("off")}</td>
           <td><button className="underline text-red-600" onClick={() => run(apiClient.delete(`/api/v1/platform-depth/slack/routes/${r.event_type}`).then(loadRoutes), "Removed.")}>{tx("Remove")}</button></td></tr>)}</tbody></table>}
-        {routes && <form className="flex flex-wrap gap-2 text-xs" onSubmit={(e) => { e.preventDefault(); run(apiClient.put("/api/v1/platform-depth/slack/routes", route).then(loadRoutes), "Route saved."); }}>
+        {routes && <form className="flex flex-wrap gap-2 text-xs" onSubmit={(e) => { e.preventDefault(); run(apiClient.put("/api/v1/platform-depth/slack/routes", route).then(loadRoutes), tx("Route saved.")); }}>
           <select aria-label={tx("Event")} className="border rounded px-1" value={route.event_type} onChange={(e) => setRoute({ ...route, event_type: e.target.value })}>{EVENTS.map((x) => <option key={x}>{x}</option>)}</select>
           <input aria-label={tx("Channel")} className="border rounded px-1 w-28" required placeholder="#approvals" value={route.channel_label} onChange={(e) => setRoute({ ...route, channel_label: e.target.value })} />
           <input aria-label={tx("Webhook URL")} className="border rounded px-1 w-72" required type="url" placeholder="https://hooks.slack.com/services/…" value={route.webhook_url} onChange={(e) => setRoute({ ...route, webhook_url: e.target.value })} />

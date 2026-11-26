@@ -88,7 +88,7 @@ export function EntityPicker({ kind, value, onChange, placeholder, required, lab
   return (
     <div ref={box} className={`relative ${className ?? ""}`}>
       <input role="combobox" aria-expanded={open} aria-controls={listId} aria-label={label ?? placeholder ?? kind}
-        required={required && !value} value={open ? q : chosen} placeholder={placeholder ?? `Search ${kind.replace("_", " ")}…`}
+        required={required && !value} value={open ? q : chosen} placeholder={placeholder ?? tx("Search {kind}…", { kind: kind.replace("_", " ") })}
         onFocus={() => { setOpen(true); setQ(""); }} onChange={(e) => { setQ(e.target.value); setOpen(true); }}
         onKeyDown={(e) => { if (e.key === "Enter" && open) { e.preventDefault(); const hit = exact(shown, q, true); if (hit) pick(hit); else pendingScan.current = q; } }}
         className="w-full border rounded px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500 outline-none" />

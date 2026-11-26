@@ -5,7 +5,7 @@ import { apiClient } from "@/lib/api";
 import { tx } from "@/lib/i18n/core";
 
 type Step = { table: string; key: string; action: string; changed?: string[]; detail?: string };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 
 export default function ConfigSandboxPage() {
   const [bundle, setBundle] = useState<Record<string, unknown> | null>(null);

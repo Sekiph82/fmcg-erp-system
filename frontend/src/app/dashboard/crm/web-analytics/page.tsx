@@ -13,7 +13,7 @@ interface Journey { linked: boolean; first_touch: { source: string; medium: stri
 
 interface EventDef { id: string; name: string; description: string | null; properties: Record<string, string>; active: boolean }
 const parseProps = (t: string) => Object.fromEntries(t.split(",").map((x) => x.trim()).filter(Boolean).map((x) => { const [k, v] = x.split(":").map((y) => y.trim()); return [k, v || "string"]; }));
-const err = (e: unknown) => ((e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail as string) || "Request failed.";
+const err = (e: unknown) => ((e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail as string) || tx("Request failed.");
 
 function List({ title, rows }: { title: string; rows: [string, number][] }) {
   return (
@@ -56,7 +56,7 @@ export default function WebAnalyticsPage() {
       {!sum ? <p className="text-gray-500">{tx("Loading…")}</p> : <>
         <p className="text-xs text-gray-500">{sum.note}</p>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          {([["Visitors", sum.visitors], ["Sessions", sum.sessions], ["Page views", sum.page_views], ["Identified (consented)", sum.identified_visitors]] as const).map(([k, v]) =>
+          {([[tx("Visitors"), sum.visitors], [tx("Sessions"), sum.sessions], [tx("Page views"), sum.page_views], [tx("Identified (consented)"), sum.identified_visitors]] as const).map(([k, v]) =>
             <div key={k} className="border rounded p-3 bg-white"><div className="text-xs text-gray-500">{k}</div><div className="text-xl font-semibold">{v}</div></div>)}
         </div>
         <div className="grid md:grid-cols-3 gap-2"><List title={tx("Top pages")} rows={sum.top_pages} /><List title={tx("First-touch sources")} rows={sum.sources} /><List title={tx("Events")} rows={sum.events} /></div>
@@ -67,7 +67,7 @@ export default function WebAnalyticsPage() {
         <div className="flex flex-wrap gap-2"><input aria-label={tx("Funnel steps")} className="border rounded px-2 py-1 flex-1 min-w-0" value={steps} onChange={(e) => setSteps(e.target.value)} />
           <button className="border rounded px-3 py-1">{tx("Show")}</button></div>
         <p className="text-xs text-gray-500">{tx("Comma-separated, in order: page paths (/pricing) or events (CTA:demo, FORM:contact).")}</p>
-        {funnel && <ol className="text-xs space-y-1">{funnel.map((s) => <li key={s.step}><b>{s.step}</b>: {s.visitors} {tx("visitors")}{s.of_previous != null ? ` (${Math.round(s.of_previous * 100)}% of previous)` : ""}</li>)}</ol>}
+        {funnel && <ol className="text-xs space-y-1">{funnel.map((s) => <li key={s.step}><b>{s.step}</b>: {s.visitors} {tx("visitors")}{s.of_previous != null ? tx(" ({of_previous}% of previous)", { of_previous: Math.round(s.of_previous * 100) }) : ""}</li>)}</ol>}
       </form>
       <form className="border rounded p-3 bg-white space-y-2" onSubmit={(e) => { e.preventDefault(); setMsg(null);
         apiClient.get("/api/v1/web-analytics/journey", { params: { email } }).then((r) => setJourney(r.data)).catch((x) => setMsg(err(x))); }}>

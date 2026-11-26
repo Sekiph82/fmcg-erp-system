@@ -10,7 +10,7 @@ import { tx } from "@/lib/i18n/core";
  * `onScan` receives the code and the device time of the scan.
  */
 export function ScanInput({
-  onScan, label = "Scan barcode", placeholder = "Scan or type barcode", disabled = false, id = "scan-input",
+  onScan, label = tx("Scan barcode"), placeholder = tx("Scan or type barcode"), disabled = false, id = "scan-input",
 }: {
   onScan: (code: string, scannedAt: string) => void;
   label?: string;

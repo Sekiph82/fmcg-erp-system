@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { esgApi, ESGDashboard, EmissionSummary, ESGInsight } from "@/lib/esg";
 import Link from "next/link";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 const SCOPE_COLORS: Record<string, string> = {
   SCOPE1: "bg-red-100 text-red-700",
@@ -11,11 +11,11 @@ const SCOPE_COLORS: Record<string, string> = {
   SCOPE3: "bg-yellow-100 text-yellow-700",
 };
 
-const SCOPE_LABELS: Record<string, string> = {
-  SCOPE1: "Scope 1 (Direct)",
-  SCOPE2: "Scope 2 (Electricity)",
-  SCOPE3: "Scope 3 (Value Chain)",
-};
+const SCOPE_LABELS: Record<string, string> = lx(() => ({
+  SCOPE1: tx("Scope 1 (Direct)"),
+  SCOPE2: tx("Scope 2 (Electricity)"),
+  SCOPE3: tx("Scope 3 (Value Chain)"),
+}));
 
 export default function ESGDashboardPage() {
   const [dashboard, setDashboard] = useState<ESGDashboard | null>(null);
@@ -149,8 +149,8 @@ export default function ESGDashboardPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
               { label: tx("Total Emissions"), value: `${fmt(dashboard.total_emissions_kgco2e)} kg`, sub: `${(dashboard.total_emissions_kgco2e / 1000).toFixed(2)} tCO₂e`, color: "text-red-600" },
-              { label: tx("Scope 1 (Direct)"), value: `${fmt(dashboard.scope1_kgco2e)} kg`, sub: "Direct combustion", color: "text-red-500" },
-              { label: tx("Scope 2 (Electricity)"), value: `${fmt(dashboard.scope2_kgco2e)} kg`, sub: "Grid & generation", color: "text-orange-500" },
+              { label: tx("Scope 1 (Direct)"), value: `${fmt(dashboard.scope1_kgco2e)} kg`, sub: tx("Direct combustion"), color: "text-red-500" },
+              { label: tx("Scope 2 (Electricity)"), value: `${fmt(dashboard.scope2_kgco2e)} kg`, sub: tx("Grid & generation"), color: "text-orange-500" },
               { label: tx("Scope 3 (Value Chain)"), value: `${fmt(dashboard.scope3_kgco2e)} kg`, sub: "Upstream/downstream", color: "text-yellow-600" },
             ].map((k) => (
               <div key={k.label} className="bg-white rounded-lg border p-4">

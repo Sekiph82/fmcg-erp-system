@@ -70,7 +70,7 @@ export default function ValuationPage() {
           <p className="text-xs text-gray-500 mb-1">{tx("Standard Cost Value")}</p>
           <p className="text-xl font-bold text-blue-700">{fmtKES(stdTotal)}</p>
           <p className={`text-xs mt-1 font-medium ${stdTotal > fifoTotal ? "text-red-500" : "text-emerald-500"}`}>
-            {fifoTotal > 0 ? `${((stdTotal - fifoTotal) / fifoTotal * 100).toFixed(1)}% vs FIFO` : "—"}
+            {fifoTotal > 0 ? tx("{stdTotal}% vs FIFO", { stdTotal: ((stdTotal - fifoTotal) / fifoTotal * 100).toFixed(1) }) : "—"}
           </p>
         </div>
         <div className="bg-white rounded-lg border p-4">
@@ -83,8 +83,8 @@ export default function ValuationPage() {
       {/* Tabs */}
       <div className="flex gap-1 border-b">
         {([
-          { key: "valuation", label: "Valuation Report" },
-          { key: "aging",     label: "Inventory Aging" },
+          { key: "valuation", label: tx("Valuation Report") },
+          { key: "aging",     label: tx("Inventory Aging") },
         ] as const).map((t) => (
           <button
             key={t.key}

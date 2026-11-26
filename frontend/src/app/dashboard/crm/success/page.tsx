@@ -12,7 +12,7 @@ type Alert = { id: string; kind: string; customer: string; customer_id: string; 
 type Intent = { score: number; threshold: number; hot: boolean; external_feed: string; explanation: { kind: string; at: string; detail: string; points: number }[] };
 type Model = { trained_at: string; metrics: { auc: number | null; brier: number; n_train: number; n_valid: number; split_date: string; note: string; baseline_rule: { auc: number | null; brier: number }; calibration: { bin: string; n: number; predicted: number; observed: number }[] } } | null;
 
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 const color = (s: number | null) => s == null ? "text-gray-400" : s >= 70 ? "text-green-700" : s >= 50 ? "text-amber-700" : "text-red-700";
 
 export default function CustomerSuccessPage() {
@@ -59,7 +59,7 @@ export default function CustomerSuccessPage() {
             <td className="p-2">{r.name}</td>
             <td className={color(r.health.score)}>{r.health.score ?? "—"} · {r.health.label}</td>
             <td className="text-gray-500">{r.health.missing.join(", ") || "—"}</td>
-            <td>{r.churn.probability == null ? <span className="text-gray-400">{r.churn.reason ?? "—"}</span> : `${Math.round(r.churn.probability * 100)}% (${r.churn.method}, ${r.churn.confidence} confidence)`}</td>
+            <td>{r.churn.probability == null ? <span className="text-gray-400">{r.churn.reason ?? "—"}</span> : tx("{probability}% ({method}, {confidence} confidence)", { probability: Math.round(r.churn.probability * 100), method: r.churn.method, confidence: r.churn.confidence })}</td>
             <td className="text-gray-500">{(r.churn.factors ?? []).map((f) => `${f.feature} ${f.effect}`).join("; ")}</td></tr>)}</tbody></table></div>
       {open && <section className="border rounded p-3 bg-white space-y-2">
         <div className="flex justify-between"><h3 className="font-semibold">{open.row.name}</h3><button aria-label={tx("Close")} onClick={() => setOpen(null)}>×</button></div>

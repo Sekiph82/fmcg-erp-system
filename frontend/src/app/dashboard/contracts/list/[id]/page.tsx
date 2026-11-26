@@ -64,7 +64,7 @@ export default function ContractDetailPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: tx("Start Date"), value: c.start_date },
-          { label: tx("End Date"), value: c.end_date ?? "No end" },
+          { label: tx("End Date"), value: c.end_date ?? tx("No end") },
           { label: tx("Days Left"), value: daysLeft !== null ? (daysLeft < 0 ? `${Math.abs(daysLeft)}d expired` : `${daysLeft}d`) : "—", color: daysLeft !== null && daysLeft < 30 ? "text-amber-400" : "text-white" },
           { label: tx("Currency"), value: c.currency },
           { label: tx("Terms"), value: String(c.terms.length) },

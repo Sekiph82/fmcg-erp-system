@@ -17,7 +17,7 @@ import { tx } from "@/lib/i18n/core";
 
 const CHANNEL_OPTS = ["RETAIL", "WHOLESALE", "DISTRIBUTOR", "DIRECT", "EXPORT", "ONLINE"].map((c) => ({ value: c, label: c }));
 const CURRENCY_OPTS = ["USD", "EUR", "GBP", "JPY", "CNY", "SGD"].map((c) => ({ value: c, label: c }));
-const TERMS_OPTS = [7, 14, 30, 45, 60, 90].map((d) => ({ value: String(d), label: `Net ${d}` }));
+const TERMS_OPTS = [7, 14, 30, 45, 60, 90].map((d) => ({ value: String(d), label: tx("Net {d}", { d }) }));
 
 const channelVariant = (c: CustomerChannel) =>
   c === "EXPORT" ? "blue" : c === "RETAIL" ? "green" : c === "ONLINE" ? "yellow" : "blue";
@@ -157,7 +157,7 @@ export default function CustomersPage() {
     )},
     { header: tx("Contact"), accessor: (r: typeof customers[0]) => r.contact_person || "—" },
     { header: tx("Email"), accessor: (r: typeof customers[0]) => r.email || "—" },
-    { header: tx("Payment Terms"), accessor: (r: typeof customers[0]) => `Net ${r.payment_terms_days}` },
+    { header: tx("Payment Terms"), accessor: (r: typeof customers[0]) => tx("Net {payment_terms_days}", { payment_terms_days: r.payment_terms_days }) },
     { header: tx("Credit Limit"), accessor: (r: typeof customers[0]) =>
       r.credit_limit != null ? `${r.currency} ${Number(r.credit_limit).toLocaleString()}` : "—"
     },

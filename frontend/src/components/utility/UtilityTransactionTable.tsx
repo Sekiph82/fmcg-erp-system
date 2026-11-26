@@ -31,6 +31,7 @@ import {
 import { UTILITY_TYPE_LABELS } from "@/lib/utilityManagement";
 import type { UtilityType } from "@/lib/utilityManagement";
 import type { TxReferenceType, SourceMethod, DataQuality } from "@/lib/utilityTransactions";
+import { tx as xlate } from "@/lib/i18n/core";
 
 // ── Badge helpers ─────────────────────────────────────────────────────────────
 
@@ -155,7 +156,7 @@ export default function UtilityTransactionTable({
             onChange={(e) => setFilter("utility_type", e.target.value as UtilityType || undefined)}
             className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
           >
-            <option value="">All utilities</option>
+            <option value="">{xlate("All utilities")}</option>
             {UTILITY_TYPE_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
@@ -167,7 +168,7 @@ export default function UtilityTransactionTable({
             onChange={(e) => setFilter("source_method", e.target.value as SourceMethod || undefined)}
             className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
           >
-            <option value="">All sources</option>
+            <option value="">{xlate("All sources")}</option>
             {Object.entries(SOURCE_METHOD_LABELS).map(([v, l]) => (
               <option key={v} value={v}>{l}</option>
             ))}
@@ -181,7 +182,7 @@ export default function UtilityTransactionTable({
               onChange={(e) => setFilter("is_anomaly", e.target.checked ? true : undefined)}
               className="accent-red-500"
             />
-            Anomalies only
+            {xlate("Anomalies only")}
           </label>
 
           {/* Date from */}
@@ -204,7 +205,7 @@ export default function UtilityTransactionTable({
           {!deptProp && (
             <input
               type="text"
-              placeholder="Department…"
+              placeholder={xlate("Department…")}
               value={filters.department ?? ""}
               onChange={(e) => setFilter("department", e.target.value || undefined)}
               className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 w-28"
@@ -214,7 +215,7 @@ export default function UtilityTransactionTable({
           {/* Batch */}
           <input
             type="text"
-            placeholder="Batch ID…"
+            placeholder={xlate("Batch ID…")}
             value={filters.batch_id ?? ""}
             onChange={(e) => setFilter("batch_id", e.target.value || undefined)}
             className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 w-24"
@@ -223,15 +224,15 @@ export default function UtilityTransactionTable({
           <div className="ml-auto flex items-center gap-2">
             {anomalyCount > 0 && (
               <span className="text-xs text-red-400 font-medium">
-                {anomalyCount} anomal{anomalyCount === 1 ? "y" : "ies"}
+                {anomalyCount} {xlate("anomal")}{anomalyCount === 1 ? xlate("y") : xlate("ies")}
               </span>
             )}
-            <span className="text-xs text-slate-500">{rows.length} row{rows.length !== 1 ? "s" : ""}</span>
+            <span className="text-xs text-slate-500">{rows.length} {xlate("row")}{rows.length !== 1 ? xlate("s") : ""}</span>
             <button
               onClick={handleExport}
               className="px-2.5 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors"
             >
-              Export CSV
+              {xlate("Export CSV")}
             </button>
           </div>
         </div>
@@ -242,33 +243,33 @@ export default function UtilityTransactionTable({
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-slate-700/60 bg-slate-800/60">
-              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Tx No.</th>
-              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Date</th>
-              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Utility</th>
-              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Qty / UOM</th>
-              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Cost</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{xlate("Tx No.")}</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{xlate("Date")}</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{xlate("Utility")}</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{xlate("Qty / UOM")}</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{xlate("Cost")}</th>
               {!compact && (
                 <>
-                  <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Source</th>
-                  <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Dept / Line</th>
-                  <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Ref.</th>
+                  <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{xlate("Source")}</th>
+                  <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{xlate("Dept / Line")}</th>
+                  <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{xlate("Ref.")}</th>
                 </>
               )}
-              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Quality</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{xlate("Quality")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/30">
             {isLoading && (
               <tr>
                 <td colSpan={compact ? 5 : 9} className="px-4 py-8 text-center text-xs text-slate-500">
-                  Loading…
+                  {xlate("Loading…")}
                 </td>
               </tr>
             )}
             {!isLoading && rows.length === 0 && (
               <tr>
                 <td colSpan={compact ? 5 : 9} className="px-4 py-8 text-center text-xs text-slate-500">
-                  No transactions found.
+                  {xlate("No transactions found.")}
                 </td>
               </tr>
             )}
@@ -317,8 +318,8 @@ export default function UtilityTransactionTable({
                     <td className={tdCls}>
                       <div className="flex flex-col gap-0.5">
                         {tx.department && <span className="text-slate-300">{tx.department}</span>}
-                        {tx.line_id && <span className="text-slate-500 text-[10px]">Line: {tx.line_id}</span>}
-                        {tx.machine_id && <span className="text-slate-500 text-[10px]">Machine: {tx.machine_id}</span>}
+                        {tx.line_id && <span className="text-slate-500 text-[10px]">{xlate("Line:")} {tx.line_id}</span>}
+                        {tx.machine_id && <span className="text-slate-500 text-[10px]">{xlate("Machine:")} {tx.machine_id}</span>}
                         {!tx.department && !tx.line_id && !tx.machine_id && (
                           <span className="text-slate-600">—</span>
                         )}

@@ -59,21 +59,21 @@ export function AqlSpcPanel({ notify }: { notify: Notify }) {
     () => qaEnterpriseApi.evaluateAql({
       lot_size: Number(aql.lot_size), applies_to: aql.applies_to,
       sample_inspected: Number(aql.sample_inspected), defects_found: Number(aql.defects_found),
-    }), notify, (r) => `AQL decision: ${r.decision}`, []);
+    }), notify, (r) => tx("AQL decision: {decision}", { decision: r.decision }), []);
   const spcParams = () => ({
     product_id: spc.product_id.trim(), parameter_name: spc.parameter_name.trim(),
     ...(spc.qc_type ? { qc_type: spc.qc_type as QCType } : {}),
   });
   const loadChart = useAction(() => qaEnterpriseApi.spcChart(spcParams()), notify,
-    (a) => `${a.n} points, ${a.violations.length} rule hits`, []);
+    (a) => tx("{n} points, {length} rule hits", { n: a.n, length: a.violations.length }), []);
   const escalate = useAction(() => qaEnterpriseApi.spcEvaluate(spcParams()), notify,
-    (r) => (r.new_signals ? `${r.new_signals} new signal(s); deviation opened` : "No new out-of-control signals"), []);
+    (r) => (r.new_signals ? tx("{new_signals} new signal(s); deviation opened", { new_signals: r.new_signals }) : tx("No new out-of-control signals")), []);
 
   if (!perms.canView) return <ReadOnlyNotice>{tx("AQL and SPC require quality.view.")}</ReadOnlyNotice>;
 
   return (
     <div className="space-y-4">
-      <Section title={tx("AQL lot decision")} description="Picks the active sampling plan for the lot size (item-specific plans first) and applies its accept/reject numbers.">
+      <Section title={tx("AQL lot decision")} description={tx("Picks the active sampling plan for the lot size (item-specific plans first) and applies its accept/reject numbers.")}>
         <form className="grid gap-3 md:grid-cols-5" onSubmit={(e) => { e.preventDefault(); evaluateAql.mutate(undefined, { onSuccess: setAqlResult }); }}>
           <Input id="aql-lot-size" label={tx("Lot size")} type="number" min={1} required value={aql.lot_size}
             onChange={(e) => setAql((a) => ({ ...a, lot_size: e.target.value }))} />
@@ -97,7 +97,7 @@ export function AqlSpcPanel({ notify }: { notify: Notify }) {
         )}
       </Section>
 
-      <Section title={tx("SPC control chart")} description="Individuals chart from recorded numeric results with Western Electric rules 1–4. Pp/Ppk use overall sigma.">
+      <Section title={tx("SPC control chart")} description={tx("Individuals chart from recorded numeric results with Western Electric rules 1–4. Pp/Ppk use overall sigma.")}>
         <form className="grid gap-3 md:grid-cols-4" onSubmit={(e) => { e.preventDefault(); loadChart.mutate(undefined, { onSuccess: setChart }); }}>
           <Input id="spc-product" label={tx("Product ID")} required value={spc.product_id}
             onChange={(e) => setSpc((s) => ({ ...s, product_id: e.target.value }))} />

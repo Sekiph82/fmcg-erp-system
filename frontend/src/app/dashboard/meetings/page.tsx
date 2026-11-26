@@ -8,7 +8,7 @@ import { EntityPicker } from "@/components/EntityPicker";
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { MeetingRecap } from "@/components/sales/MeetingRecap";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 interface Meeting {
   id: string;
@@ -72,12 +72,12 @@ function errorText(e: unknown, fallback: string) {
   return fallback;
 }
 
-const INVITE_TEXT: Record<string, string> = {
-  SENT: "Invitations e-mailed from your mailbox.",
-  NO_MAILBOX: "Saved. Invitations were not sent: connect your mailbox under Communication → Email.",
-  NO_ATTENDEES: "Saved.",
-  NOT_REQUESTED: "Saved.",
-};
+const INVITE_TEXT: Record<string, string> = lx(() => ({
+  SENT: tx("Invitations e-mailed from your mailbox."),
+  NO_MAILBOX: tx("Saved. Invitations were not sent: connect your mailbox under Communication → Email."),
+  NO_ATTENDEES: tx("Saved."),
+  NOT_REQUESTED: tx("Saved."),
+}));
 
 function CalendarConflicts() {
   // M43.S01.T003/T004: calendar edits the two-way sync did not apply (ERP version kept)
@@ -142,18 +142,18 @@ export default function MeetingsPage() {
         agenda: form.agenda || null,
         attendees: form.attendees.split(",").map((x) => x.trim()).filter(Boolean).map((email) => ({ email })),
       });
-      setInfo(INVITE_TEXT[r.data.invites] ?? `Saved. ${r.data.invites}`);
+      setInfo(INVITE_TEXT[r.data.invites] ?? tx("Saved. {invites}", { invites: r.data.invites }));
       setShowCreate(false); setForm({ ...BLANK }); await load();
-    } catch (e) { setError(errorText(e, "Failed to create meeting")); }
+    } catch (e) { setError(errorText(e, tx("Failed to create meeting"))); }
     finally { setSaving(false); }
   };
 
   const calendarLink = async (revoke: boolean) => {
     setError("");
     try {
-      if (revoke) { await apiClient.delete("/api/v1/meetings/calendar-feed"); setFeedUrl(""); setInfo("Calendar link revoked."); }
+      if (revoke) { await apiClient.delete("/api/v1/meetings/calendar-feed"); setFeedUrl(""); setInfo(tx("Calendar link revoked.")); }
       else { const r = await apiClient.post<{ url: string }>("/api/v1/meetings/calendar-feed"); setFeedUrl(r.data.url); }
-    } catch (e) { setError(errorText(e, "Request failed")); }
+    } catch (e) { setError(errorText(e, tx("Request failed"))); }
   };
 
   const markComplete = async (id: string) => {
@@ -165,16 +165,16 @@ export default function MeetingsPage() {
       });
       setEditId(null); setEditNotes(""); setEditOutcome("");
       await load();
-    } catch (e) { setError(errorText(e, "Update failed")); }
+    } catch (e) { setError(errorText(e, tx("Update failed"))); }
   };
 
   const cancel = async (id: string) => {
     if (!confirm(tx("Cancel this meeting? Invitees get a calendar cancellation."))) return;
     try {
       const r = await apiClient.delete<{ invites: string }>(`/api/v1/meetings/${id}`);
-      setInfo(r.data.invites === "SENT" ? "Cancelled; invitees were notified." : "Cancelled.");
+      setInfo(r.data.invites === "SENT" ? tx("Cancelled; invitees were notified.") : tx("Cancelled."));
       await load();
-    } catch (e) { setError(errorText(e, "Cancel failed")); }
+    } catch (e) { setError(errorText(e, tx("Cancel failed"))); }
   };
 
   return (
@@ -284,7 +284,7 @@ export default function MeetingsPage() {
                       </span>
                     </div>
                     <div className="flex gap-3 text-xs text-gray-500 mt-0.5 flex-wrap">
-                      <span>{new Date(m.scheduled_at).toLocaleString()}{m.time_zone && m.time_zone !== BROWSER_TZ ? ` (booked as ${m.local_start?.slice(11, 16)} ${m.time_zone})` : ""}</span>
+                      <span>{new Date(m.scheduled_at).toLocaleString()}{m.time_zone && m.time_zone !== BROWSER_TZ ? tx(" (booked as {local_start} {time_zone})", { local_start: m.local_start?.slice(11, 16), time_zone: m.time_zone }) : ""}</span>
                       <span>{m.duration_minutes}{tx("min")}</span>
                       {m.customer_name && <span>{tx("with")} {m.customer_name}</span>}
                       {m.host_name && <span>{tx("by")} {m.host_name}</span>}

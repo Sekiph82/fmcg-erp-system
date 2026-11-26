@@ -45,7 +45,7 @@ export default function InboundEndpointsPage() {
       await load();
     } catch (err: unknown) {
       const e2 = err as { response?: { data?: { detail?: string } } };
-      setActionErrors((previous) => ({ ...previous, [id]: e2?.response?.data?.detail || "Secret rotation failed" }));
+      setActionErrors((previous) => ({ ...previous, [id]: e2?.response?.data?.detail || tx("Secret rotation failed") }));
     }
   }
 

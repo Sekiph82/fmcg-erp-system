@@ -116,7 +116,7 @@ export default function PaymentsAnalyticsPage() {
         </div>
 
         {/* Collection trend */}
-        <ChartCard title={tx("Daily Collection Trend")} subtitle={`Last ${days} days`}>
+        <ChartCard title={tx("Daily Collection Trend")} subtitle={tx("Last {days} days", { days })}>
           <LineChart
             series={[
               { name: "Collected (KES)", color: "#10b981", data: data?.daily_collection_trend ?? [] },
@@ -127,7 +127,7 @@ export default function PaymentsAnalyticsPage() {
         </ChartCard>
 
         {/* Transaction volume */}
-        <ChartCard title={tx("Daily Transaction Volume")} subtitle={`Last ${days} days`}>
+        <ChartCard title={tx("Daily Transaction Volume")} subtitle={tx("Last {days} days", { days })}>
           <LineChart
             series={[
               { name: "Total", color: "#6366f1", data: data?.daily_transaction_count ?? [] },
@@ -138,7 +138,7 @@ export default function PaymentsAnalyticsPage() {
         </ChartCard>
 
         {/* Status distribution */}
-        <ChartCard title={tx("Transaction Status Distribution")} subtitle={`Last ${days} days`}>
+        <ChartCard title={tx("Transaction Status Distribution")} subtitle={tx("Last {days} days", { days })}>
           <DistributionBar data={data?.by_status ?? []} formatValue={(v) => fmtKES(v)} />
         </ChartCard>
 

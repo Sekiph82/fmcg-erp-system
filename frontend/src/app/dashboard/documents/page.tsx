@@ -13,7 +13,7 @@ import { RequirePermission } from "@/components/PermissionGuard";
 import { Badge } from "@/components/ui/Badge";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 const STATUS_VARIANT: Record<DocumentStatus, "yellow" | "green" | "gray" | "red"> = {
   DRAFT: "yellow",
@@ -25,23 +25,23 @@ const STATUS_VARIANT: Record<DocumentStatus, "yellow" | "green" | "gray" | "red"
 const CATEGORIES = Object.entries(CATEGORY_LABELS) as [DocumentCategory, string][];
 
 // Entity type display labels for the filter
-const ENTITY_TYPE_LABELS: Record<string, string> = {
-  mpesa_transaction: "M-Pesa Transaction",
-  purchase_order: "Purchase Order",
-  sales_order: "Sales Order",
-  invoice: "Invoice",
-  shipment: "Shipment",
-  international_shipment: "Intl Shipment",
-  qc_inspection: "QC Inspection",
-  production_order: "Production Order",
-  goods_receipt: "Goods Receipt",
-  supplier: "Supplier",
-  employee: "Employee",
-  asset: "Asset",
-  delivery_trip: "Delivery Trip",
-  cash_transaction: "Cash Transaction",
-  payroll_period: "Payroll Period",
-};
+const ENTITY_TYPE_LABELS: Record<string, string> = lx(() => ({
+  mpesa_transaction: tx("M-Pesa Transaction"),
+  purchase_order: tx("Purchase Order"),
+  sales_order: tx("Sales Order"),
+  invoice: tx("Invoice"),
+  shipment: tx("Shipment"),
+  international_shipment: tx("Intl Shipment"),
+  qc_inspection: tx("QC Inspection"),
+  production_order: tx("Production Order"),
+  goods_receipt: tx("Goods Receipt"),
+  supplier: tx("Supplier"),
+  employee: tx("Employee"),
+  asset: tx("Asset"),
+  delivery_trip: tx("Delivery Trip"),
+  cash_transaction: tx("Cash Transaction"),
+  payroll_period: tx("Payroll Period"),
+}));
 
 function DocumentsContent() {
   const router = useRouter();
@@ -241,7 +241,7 @@ export default function DocumentsPage() {
   return (
     <ModuleWorkspace
       title={tx("Documents")}
-      description="Document library, compliance docs, expiring alerts, knowledge base, e-sign"
+      description={tx("Document library, compliance docs, expiring alerts, knowledge base, e-sign")}
       permission="documents.view"
       tabs={tabs}
       defaultTab="documents"

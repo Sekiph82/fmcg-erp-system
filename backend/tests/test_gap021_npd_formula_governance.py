@@ -78,7 +78,9 @@ def test_quality_manager_has_approval_visibility_but_not_mutation_overreach():
 
 
 def test_frontend_navigation_uses_dedicated_permissions():
-    nav = _source("../frontend/src/components/nav-config.tsx")
+    import re
+    # M51.S01.T008: labels are wrapped in tx("…") for localization; compare the English source text
+    nav = re.sub(r'tx\(("[^"]*")\)', r"\1", _source("../frontend/src/components/nav-config.tsx"))
 
     assert '{ label: "Recipes / BOM", href: "/dashboard/recipes",         permission: "recipe.view" }' in nav
     assert 'label: "New Product Development"' in nav

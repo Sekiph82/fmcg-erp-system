@@ -176,7 +176,7 @@ export default function CollectionsPage() {
       ) : (
         <div className="space-y-2">
           {actionError && <p role="alert" className="rounded-lg p-2 text-sm bg-red-50 border border-red-200 text-red-700">
-            {errorText(actionError, "The action failed.")}</p>}
+            {errorText(actionError, tx("The action failed."))}</p>}
           {collections.map((c) => (
             <CollectionRow
               key={c.id}
@@ -308,7 +308,7 @@ export default function CollectionsPage() {
             />
           </div>
 
-          {create.error && <p role="alert" className="text-sm text-red-600">{errorText(create.error, "Failed to record collection.")}</p>}
+          {create.error && <p role="alert" className="text-sm text-red-600">{errorText(create.error, tx("Failed to record collection."))}</p>}
           <div className="flex justify-end gap-3 pt-2">
             <Button variant="secondary" type="button" onClick={() => setOpen(false)}>{tx("Cancel")}</Button>
             <Button type="submit" loading={create.isPending}>{tx("Record")}</Button>

@@ -1,0 +1,107 @@
+{
+  "src/components/DashboardShell.tsx": [
+    "POVU ERP"
+  ],
+  "src/components/documents/DocumentPanel.tsx": [
+    "· v"
+  ],
+  "src/app/dashboard/appraisals/records/new/page.tsx": [
+    "Problem Solving",
+    "Attendance & Discipline",
+    "Technical Skill",
+    "Quality Focus",
+    "Safety Compliance"
+  ],
+  "src/app/dashboard/bank-api/page.tsx": [
+    "KCB Bank Kenya",
+    "FMCG Operations Account"
+  ],
+  "src/app/dashboard/crm/abm/page.tsx": [
+    "Hello {contact_name},",
+    "Hello {contact_name},\n\n"
+  ],
+  "src/app/dashboard/crm/ai-access/page.tsx": [
+    "Outlook add-in"
+  ],
+  "src/app/dashboard/crm/email-designer/page.tsx": [
+    "POVU Synthetic 500 ml",
+    "Arial, Helvetica, sans-serif",
+    "New design"
+  ],
+  "src/app/dashboard/crm/lead-forms/page.tsx": [
+    "I agree to be contacted about products and offers."
+  ],
+  "src/app/dashboard/crm/playbooks/page.tsx": [
+    "Path to first POVU order",
+    "Did we meet the person who signs the order?",
+    "Who signs?",
+    "Expected POVU cases per month",
+    "Expected order value (KES)"
+  ],
+  "src/app/dashboard/crm/workflows/page.tsx": [
+    "Follow up"
+  ],
+  "src/app/dashboard/developer/applications/page.tsx": [
+    "Default OAuth client secret"
+  ],
+  "src/app/dashboard/ess/admin/page.tsx": [
+    "Operational requirements"
+  ],
+  "src/app/dashboard/expenses/approval/page.tsx": [
+    "Rejected from queue"
+  ],
+  "src/app/dashboard/integrations/marketplace/page.tsx": [
+    "Installed from marketplace"
+  ],
+  "src/app/dashboard/logistics/shipments/page.tsx": [
+    "Port of Istanbul",
+    "Port of Mombasa"
+  ],
+  "src/app/dashboard/marketing/content-studio/page.tsx": [
+    "Needs changes"
+  ],
+  "src/app/dashboard/marketing/website/page.tsx": [
+    "Changes needed"
+  ],
+  "src/app/dashboard/mobile/devices/page.tsx": [
+    "Hello from ERP!"
+  ],
+  "src/app/dashboard/nps/page.tsx": [
+    "Please rate POVU: "
+  ],
+  "src/app/dashboard/portal/accounts/[id]/page.tsx": [
+    "Rejected by admin"
+  ],
+  "src/app/dashboard/procurement/rfq/page.tsx": [
+    "Technical fit",
+    "Commercial value",
+    "New criterion"
+  ],
+  "src/app/dashboard/quality/parameters/page.tsx": [
+    "Moisture Content",
+    "Specific Gravity",
+    "Color Conformance",
+    "Label Check",
+    "Net Weight"
+  ],
+  "src/app/dashboard/security/sso/page.tsx": [
+    "Company IdP",
+    "Company SAML IdP"
+  ],
+  "src/app/dashboard/traceability/mock-recall/page.tsx": [
+    "Mock Recall Drill ",
+    "Domestic Kenya"
+  ],
+  "src/app/dashboard/utility-management/kpi-center/machine-utility/page.tsx": [
+    "Standby Control"
+  ],
+  "src/app/dashboard/van-sales/reconciliation/page.tsx": [
+    "End of day reconciliation"
+  ],
+  "src/components/BookingPagesPanel.tsx": [
+    "I agree that POVU stores my name and e-mail to arrange this meeting."
+  ],
+  "src/components/VoicePanel.tsx": [
+    "Welcome to POVU."
+  ]
+}

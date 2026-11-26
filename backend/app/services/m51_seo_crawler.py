@@ -6,8 +6,8 @@ no credentials, public addresses only, loopback only in PROVIDER_EGRESS=local); 
 never leave the allowed origin; page count, depth, bytes and time are bounded. External links are NOT fetched (that
 would be crawling sites nobody authorised), so broken-link checks cover internal links only.
 
-Vitals: LAB = a local headless browser run (Lighthouse CLI or Playwright, whichever is installed) → UNAVAILABLE when
-neither is; FIELD = Chrome UX Report API
+Vitals: LAB = a local headless browser run (Playwright only; Lighthouse is refused because it cannot carry the host-pinning Chrome flags) →
+UNAVAILABLE when Playwright is not installed; FIELD = Chrome UX Report API
   POST https://chromeuxreport.googleapis.com/v1/records:queryRecord?key=<API key>   body {origin|url, formFactor, metrics}
   https://developer.chrome.com/docs/crux/api  (150 queries/min/project; 28-day collection window; p75 + histogram).
   The doc does not state the no-data response; HTTP 404 is mapped to NO_DATA (UNVERIFIED against the docs).
@@ -24,9 +24,9 @@ from __future__ import annotations
 import asyncio
 import csv
 import io
+import ipaddress
 import json
 import re
-import shutil
 import socket
 import uuid
 from collections import Counter
@@ -456,8 +456,8 @@ def compare(a: list, b: list) -> dict:
 # ── vitals ───────────────────────────────────────────────────────────────────────────────────────
 
 def lab_tool() -> Optional[str]:
-    if shutil.which("lighthouse"):
-        return "lighthouse"
+    """Playwright only. Lighthouse is refused for lab vitals: its single --chrome-flags string cannot carry the host-resolver
+    pin (the rule contains spaces), so it could not be confined to the checked own host (DNS rebinding / off-origin fetches)."""
     try:
         import playwright  # noqa: F401
         return "playwright"
@@ -465,32 +465,34 @@ def lab_tool() -> Optional[str]:
         return None
 
 
-def parse_lighthouse(report: dict) -> dict:
-    a = report.get("audits", {})
-    g = lambda k: (a.get(k) or {}).get("numericValue")   # noqa: E731
-    return {"lcp_ms": g("largest-contentful-paint"), "cls": g("cumulative-layout-shift"),
-            "tbt_ms": g("total-blocking-time"), "fcp_ms": g("first-contentful-paint"),
-            "performance_score": (report.get("categories", {}).get("performance") or {}).get("score")}
+def _lab_ok(ip: ipaddress._BaseAddress, local: bool) -> bool:
+    return (local and ip.is_loopback) or (ip.is_global and not ip.is_multicast)
 
 
 async def _public_ips(url: str, local: bool) -> list[str]:
-    """check_url, then the addresses the lab browser is pinned to (it must not re-resolve the name later)."""
+    """check_url (scheme, credentials, port), then ONE resolution whose every address passes the public-IP rule (loopback only
+    when egress=local). Only these validated addresses are pinned into the browser, so it never re-resolves the name."""
     await check_url(url, local=local)
     host = urlsplit(url).hostname
     try:
-        return sorted({i[4][0].split("%")[0] for i in await asyncio.get_running_loop().getaddrinfo(host, None, type=socket.SOCK_STREAM)})
+        ips = sorted({i[4][0].split("%")[0] for i in await asyncio.get_running_loop().getaddrinfo(host, None, type=socket.SOCK_STREAM)})
     except OSError:
         raise FetchBlocked(f"Cannot resolve {host}.") from None
+    if not ips or not all(_lab_ok(ipaddress.ip_address(i), local) for i in ips):
+        raise FetchBlocked(f"{host} resolves to a non-public address; refused.")
+    return ips
 
 
 def chrome_lockdown_flags(host: str, ips: list[str]) -> list[str]:
-    """Chrome flags that confine a lab browser to the ONE own host: the name is pinned to the addresses checked above (no
-    DNS rebinding), every other name does not resolve, and every other address (IP literals, loopback) goes to a dead proxy.
-    The host-resolver rule contains spaces, which Lighthouse's single --chrome-flags string cannot carry, so Lighthouse gets only
-    the space-free proxy flags (every non-own address -> dead proxy); Playwright passes the full list as separate arguments."""
-    ip = ips[0] if ips else "0.0.0.0"
-    return ["--headless", "--no-sandbox", f"--host-resolver-rules=MAP {host} {ip}, MAP * ~NOTFOUND",
-            "--proxy-server=http://127.0.0.1:9", f"--proxy-bypass-list=<-loopback>;{host}"]
+    """Chrome flags that confine a lab browser to the ONE own host: the name is pinned to a validated address (IPv4 preferred, an
+    IPv6 literal bracketed, so no DNS rebinding), every other name does not resolve, every other address (IP literals, loopback)
+    goes to a dead proxy, and WebRTC cannot open direct UDP paths."""
+    v4 = [i for i in ips if ipaddress.ip_address(i).version == 4]
+    ip = (v4 or ips or ["0.0.0.0"])[0]
+    if ":" in ip:
+        ip = f"[{ip}]"
+    return [f"--host-resolver-rules=MAP {host} {ip}, MAP * ~NOTFOUND", "--proxy-server=http://127.0.0.1:9",
+            f"--proxy-bypass-list=<-loopback>;{host}", "--force-webrtc-ip-handling-policy=disable_non_proxied_udp"]
 
 
 async def _lab_request_guard(route, local: bool, host: str) -> None:
@@ -508,17 +510,16 @@ async def _lab_request_guard(route, local: bool, host: str) -> None:
 
 
 async def lab_vitals(db: AsyncSession, url: str) -> dict:
-    """Lab run in a local headless Chrome. OWN origins only (an AUTHORIZED_SOURCE is someone else's site: a browser would run its
-    scripts and fetch whatever they ask for). The browser is confined to the checked own host (see chrome_lockdown_flags for
-    Lighthouse; a page.route guard that re-runs check_url on every request and redirect for Playwright). The subprocess/browser is
-    always killed/closed, also on timeout. Residual: Lighthouse trusts Chrome's own flag handling, Playwright additionally filters
-    each request."""
+    """Lab run in a local headless Chrome driven by Playwright. OWN origins only (an AUTHORIZED_SOURCE is someone else's site: a
+    browser would run its scripts and fetch whatever they ask for). The browser is confined to the checked own host (see
+    chrome_lockdown_flags) and a page.route guard re-runs check_url on every request and redirect. The browser is always closed,
+    also on timeout. Lighthouse is not used (see lab_tool)."""
     await allowed(db, url, kinds=("OWN",))
     tool = lab_tool()
     base = {"kind": "LAB", "url": url, "measured_at": datetime.now(timezone.utc).isoformat(), "tool": tool}
     if tool is None:
         return {**base, "state": "UNAVAILABLE", "metrics": None,
-                "reason": "Neither Lighthouse nor Playwright is installed on this server; no numbers are shown."}
+                "reason": "Playwright is not installed on this server; no numbers are shown."}
     if egress_mode() == "off":
         return {**base, "state": "BLOCKED", "metrics": None, "reason": "Provider traffic is switched off (PROVIDER_EGRESS=off)."}
     local = egress_mode() == "local"
@@ -528,36 +529,27 @@ async def lab_vitals(db: AsyncSession, url: str) -> dict:
     except (FetchBlocked, EgressBlocked) as e:
         return {**base, "state": "BLOCKED", "metrics": None, "reason": str(e)[:200]}
     timeout = int(getattr(settings, "SEO_LAB_TIMEOUT", 90))
-    proc = br = None
-    try:
-        if tool == "lighthouse":
-            proc = await asyncio.create_subprocess_exec(
-                shutil.which("lighthouse"), url, "--output=json", "--quiet", "--only-categories=performance",
-                "--chrome-flags=" + " ".join(f for f in chrome_lockdown_flags(host, ips) if " " not in f), stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL)
-            out, _ = await asyncio.wait_for(proc.communicate(), timeout)
-            return {**base, "state": "OK", "metrics": parse_lighthouse(json.loads(out))}
+    br = None
 
-        async def run_playwright() -> dict:
-            nonlocal br
-            from playwright.async_api import async_playwright
-            async with async_playwright() as p:
-                br = await p.chromium.launch(args=chrome_lockdown_flags(host, ips)[2:])
-                pg = await br.new_page()
-                await pg.route("**", lambda route: _lab_request_guard(route, local, host))
-                await pg.add_init_script("""window.__v={lcp:0,cls:0};
-                  new PerformanceObserver(l=>{for(const e of l.getEntries())window.__v.lcp=e.startTime}).observe({type:'largest-contentful-paint',buffered:true});
-                  new PerformanceObserver(l=>{for(const e of l.getEntries())if(!e.hadRecentInput)window.__v.cls+=e.value}).observe({type:'layout-shift',buffered:true});""")
-                await pg.goto(url, wait_until="load", timeout=timeout * 1000)
-                await pg.wait_for_timeout(1000)
-                return await pg.evaluate("window.__v")
+    async def run_playwright() -> dict:
+        nonlocal br
+        from playwright.async_api import async_playwright
+        async with async_playwright() as p:
+            br = await p.chromium.launch(args=chrome_lockdown_flags(host, ips))
+            pg = await br.new_page()
+            await pg.route("**", lambda route: _lab_request_guard(route, local, host))
+            await pg.add_init_script("""window.__v={lcp:0,cls:0};
+              new PerformanceObserver(l=>{for(const e of l.getEntries())window.__v.lcp=e.startTime}).observe({type:'largest-contentful-paint',buffered:true});
+              new PerformanceObserver(l=>{for(const e of l.getEntries())if(!e.hadRecentInput)window.__v.cls+=e.value}).observe({type:'layout-shift',buffered:true});""")
+            await pg.goto(url, wait_until="load", timeout=timeout * 1000)
+            await pg.wait_for_timeout(1000)
+            return await pg.evaluate("window.__v")
+    try:
         v = await asyncio.wait_for(run_playwright(), timeout + 10)
         return {**base, "state": "OK", "metrics": {"lcp_ms": v["lcp"], "cls": v["cls"]}}
-    except (asyncio.TimeoutError, OSError, ValueError, Exception) as e:  # noqa: BLE001  tool failure is reported, not hidden
+    except Exception as e:  # noqa: BLE001  tool failure is reported, not hidden
         return {**base, "state": "ERROR", "metrics": None, "reason": f"Lab run failed: {type(e).__name__}"}
     finally:
-        if proc is not None and getattr(proc, "returncode", 0) is None:
-            proc.kill()
-            await proc.wait()
         if br is not None:
             try:
                 await br.close()

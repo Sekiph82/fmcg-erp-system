@@ -200,7 +200,7 @@ export default function NewAssetPage() {
         <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">{tx("Location & Assignment")}</h2>
         <div className="grid grid-cols-2 gap-4">
           {[
-            ["Cost Center", "cost_center"],
+            [tx("Cost Center"), "cost_center"],
             ["Location", "location"],
             ["Department", "department"],
             ["Plant", "plant"],

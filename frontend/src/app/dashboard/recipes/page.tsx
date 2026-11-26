@@ -143,7 +143,7 @@ function RecipesListTab() {
         <Table
           keyField="id"
           data={filtered}
-          emptyMessage={search ? "No recipes match your search." : "No recipes yet."}
+          emptyMessage={search ? tx("No recipes match your search.") : tx("No recipes yet.")}
           columns={[
             {
               header: tx("Name"),
@@ -323,7 +323,7 @@ export default function RecipesPage() {
   return (
     <ModuleWorkspace
       title={tx("Recipes")}
-      description="Production recipes, instructions, ingredient steps"
+      description={tx("Production recipes, instructions, ingredient steps")}
       permission="recipe.view"
       tabs={tabs}
       defaultTab="recipes"

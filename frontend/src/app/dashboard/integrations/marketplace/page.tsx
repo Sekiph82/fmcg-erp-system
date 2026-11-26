@@ -138,10 +138,10 @@ export default function IntegrationMarketplacePage() {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          ["Installable", installableCount, "Active or beta connectors"],
-          ["Installed", installedCount, `Tenant ${tenantKey}`],
-          ["Disabled", disabledCount, "Installed but inactive"],
-          ["Audit Events", events.length, "Latest lifecycle changes"],
+          [tx("Installable"), installableCount, tx("Active or beta connectors")],
+          [tx("Installed"), installedCount, tx("Tenant {tenantKey}", { tenantKey })],
+          [tx("Disabled"), disabledCount, tx("Installed but inactive")],
+          [tx("Audit Events"), events.length, tx("Latest lifecycle changes")],
         ].map(([label, value, sub]) => (
           <div key={label as string} className="bg-white rounded-lg border p-4">
             <p className="text-xs text-gray-500">{label}</p>

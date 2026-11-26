@@ -1,4 +1,5 @@
 import { ReactNode } from "react";
+import { tx } from "@/lib/i18n/core";
 
 interface Column<T> {
   header: string;
@@ -13,7 +14,7 @@ interface TableProps<T> {
   emptyMessage?: string;
 }
 
-export function Table<T>({ columns, data, keyField, emptyMessage = "No records found." }: TableProps<T>) {
+export function Table<T>({ columns, data, keyField, emptyMessage = tx("No records found.") }: TableProps<T>) {
   const getKey = (row: T) =>
     typeof keyField === "function" ? keyField(row) : String(row[keyField]);
   return (

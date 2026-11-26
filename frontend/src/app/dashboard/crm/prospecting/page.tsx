@@ -18,7 +18,7 @@ type Hit = { rank: number; title: string; url: string; description: string };
 type Doc = { id: string; url: string; status: string; reason: string | null; title: string | null; facts: { field: string; value: string; snippet: string }[] };
 type Prop = { id: string; field: string; value: string; current: string | null; confidence: number; status: string; source_ref: string; expires_at: string; expired: boolean; applicable: boolean };
 type Alert = { id: string; customer: string; score: number; reasons: string[]; acknowledged_by: string | null };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 const box = "border rounded p-3 bg-white space-y-2";
 const inp = "border rounded px-2 py-1";
 const btn = "border rounded px-2 py-1 bg-gray-50 disabled:opacity-50";
@@ -62,7 +62,7 @@ export default function ProspectingPage() {
     name: icp.name, city: icp.city || undefined, channel: icp.channel || undefined, segment: icp.segment || undefined,
     keywords: icp.keywords ? icp.keywords.split(",").map((s) => s.trim()).filter(Boolean) : undefined,
     competitors: icp.competitors.split(",").map((s) => s.trim()).filter(Boolean), use_search: icp.use_search,
-  }).then(() => load()), "Target profile saved.");
+  }).then(() => load()), tx("Target profile saved."));
   const runAgent = () => go(apiClient.post(`${API}/runs`, { icp_id: sel, discovery_queries: disc ? [disc] : [] }).then((r) => setRun(r.data)));
   const showDraft = (c: Cand) => go(apiClient.post(`${API}/candidates/${c.id}/draft`).then((r) => setDraft({ id: c.id, ...r.data })));
   const propose = (c: Cand) => go(apiClient.post(`${API}/candidates/${c.id}/outreach`, {}).then((r) => {
@@ -72,7 +72,7 @@ export default function ProspectingPage() {
   const dismiss = (c: Cand) => go(apiClient.post(`${API}/candidates/${c.id}/dismiss`).then(() => setRun((x) => x && { ...x, candidates: x.candidates.map((k) => k.id === c.id ? { ...k, status: "DISMISSED" } : k) })));
 
   const search = (page = 0) => go(apiClient.post(`${API}/research/search`, { q, page }).then((r) => setHits({ hits: r.data.results, more: r.data.more_available, page, qid: r.data.query_id })));
-  const fetchDoc = (h: Hit) => go(apiClient.post(`${API}/research/fetch`, { url: h.url, query_id: hits?.qid }).then(() => load()), "Page fetched under the safe-fetch policy.");
+  const fetchDoc = (h: Hit) => go(apiClient.post(`${API}/research/fetch`, { url: h.url, query_id: hits?.qid }).then(() => load()), tx("Page fetched under the safe-fetch policy."));
   const reconcile = () => go(apiClient.post(`${API}/research/reconcile`, { doc_ids: docs.filter((d) => d.status === "FETCHED").slice(0, 20).map((d) => d.id) }).then((r) => setVerdict(r.data.fields)));
 
   const findCust = () => apiClient.get("/api/v1/customer-intel/customers", { params: { q: cq, limit: 10 } }).then((r) => setCusts(r.data)).catch((e) => setMsg(err(e)));
@@ -81,7 +81,7 @@ export default function ProspectingPage() {
   const decide = (p: Prop, what: "apply" | "reject" | "revoke", overwrite = false) =>
     apiClient.post(`${API}/enrichment/${p.id}/${what}`, what === "apply" ? { overwrite } : undefined).then(() => { setMsg(tx("{what} done.", { what })); return loadProps(cust); })
       .catch((e) => { const m = err(e); if (m.includes("confirm the overwrite") && window.confirm(tx("{m} Overwrite?", { m }))) decide(p, what, true); else setMsg(m); });
-  const purge = () => go(apiClient.delete(`${API}/enrichment/customers/${cust}`).then(() => loadProps(cust)), "Stored proposals deleted; customer data is unchanged.");
+  const purge = () => go(apiClient.delete(`${API}/enrichment/customers/${cust}`).then(() => loadProps(cust)), tx("Stored proposals deleted; customer data is unchanged."));
 
   const importFeed = () => {
     let events: unknown;
@@ -154,7 +154,7 @@ export default function ProspectingPage() {
             <button className={btn} disabled={!hits.more} title={hits.more ? "" : tx("The provider reports no more results")} onClick={() => search(hits.page + 1)}>{tx("Next page")}</button></div></div>)}
         <ul className="text-xs space-y-1">{docs.map((d) => <li key={d.id}>{d.status}: {d.title ?? d.url}{d.reason ? ` - ${d.reason}` : ""}{d.facts.length > 0 && ` (${d.facts.map((f) => `${f.field}=${f.value}`).join(", ")})`}</li>)}</ul>
         <button className={btn} disabled={!docs.some((d) => d.status === "FETCHED")} onClick={reconcile}>{tx("Compare facts across pages")}</button>
-        {verdict.map((f) => <p key={f.field} className="text-xs"><b>{f.field}</b>: {f.verdict}{f.values.map((v) => ` | ${v.value} (${v.sources.length} page(s))`).join("")}</p>)}
+        {verdict.map((f) => <p key={f.field} className="text-xs"><b>{f.field}</b>: {f.verdict}{f.values.map((v) => tx(" | {value} ({length} page(s))", { value: v.value, length: v.sources.length })).join("")}</p>)}
       </section>
 
       <section className={box}>

@@ -13,7 +13,7 @@ type Page = { id: string; title: string; path: string; slug: string; kind: strin
   translation_state: string; parent_id: string | null; table_id: string | null; author: string | null; category: string | null; tags: string[]; submitted_by: string | null; approved_by: string | null };
 type Detail = Page & { draft: { blocks: Block[]; seo: any }; versions: { version: number; title: string; note: string | null; published_by: string; published_at: string; live: boolean }[];
   translations: { id: string; locale: string; path: string; status: string; translation_state: string }[] };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : Array.isArray(d) ? String(d[0]?.msg ?? "Invalid input") : typeof (d as { detail?: unknown })?.detail === "string" ? (d as { detail: string }).detail : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : Array.isArray(d) ? String(d[0]?.msg ?? tx("Invalid input")) : typeof (d as { detail?: unknown })?.detail === "string" ? (d as { detail: string }).detail : tx("Something went wrong."); };
 const LOC = ["en", "sw", "tr"];
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
@@ -24,7 +24,7 @@ function SiteSettings({ site, onSaved, say }: { site: Site; onSaved: () => void;
   const [f, setF] = useState({ name: site.name, locales: site.locales, default_locale: site.default_locale, domain: site.domain ?? "", theme: site.theme,
     nav: site.nav.map((n) => `${n.label} | ${n.path}`).join("\n"), require_approval: site.require_approval });
   const save = () => apiClient.patch(`/api/v1/cms/sites/${site.id}`, { ...f, nav: f.nav.split("\n").filter((l) => l.includes("|")).map((l) => { const [label, path] = l.split("|"); return { label: label.trim(), path: path.trim() }; }) })
-    .then(() => { say("Site saved."); onSaved(); }).catch((e) => say(err(e)));
+    .then(() => { say(tx("Site saved.")); onSaved(); }).catch((e) => say(err(e)));
   return <Panel title={tx("Site settings")}>
     <div className="grid gap-2 sm:grid-cols-3 text-xs">
       <label>{tx("Name")}<input aria-label={tx("Site name")} className="border rounded px-1 block w-full" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
@@ -66,17 +66,17 @@ function Editor({ id, site, pages, acls, tables, reload, say }: { id: string; si
   const act = (path: string, body: object = {}) => apiClient.post(`/api/v1/cms/pages/${id}/${path}`, body).then(() => { say("Done."); load(); reload(); }).catch((e) => say(err(e)));
   const save = () => {
     let draft: object = { blocks, seo, ...(Object.keys(lay).length ? { layout: lay } : {}) };
-    if (json !== null) { try { draft = JSON.parse(json); } catch { say("The JSON is not valid."); return; } }
+    if (json !== null) { try { draft = JSON.parse(json); } catch { say(tx("The JSON is not valid.")); return; } }
     return apiClient.patch(`/api/v1/cms/pages/${id}`, { title: meta.title, slug: meta.slug, draft, author: meta.author, category: meta.category,
       tags: meta.tags.split(",").map((t) => t.trim()).filter(Boolean), parent_id: meta.parent_id || null })
-      .then((r) => { say(r.data.warnings?.length ? `Saved. ${r.data.warnings.join(" ")}` : "Draft saved (not live until published)."); setJson(null); load(); reload(); }).catch((e) => say(err(e)));
+      .then((r) => { say(r.data.warnings?.length ? tx("Saved. {warnings}", { warnings: r.data.warnings.join(" ") }) : tx("Draft saved (not live until published).")); setJson(null); load(); reload(); }).catch((e) => say(err(e)));
   };
   const setAccess = (access: string, access_list_id: string | null) => apiClient.patch(`/api/v1/cms/pages/${id}`, { access, ...(access_list_id ? { access_list_id } : {}) }).then(() => { load(); reload(); }).catch((e) => say(err(e)));
   return (
     <div className="space-y-3">
       <Panel title={tx("{title} · {locale} · {path}", { title: d.title, locale: d.locale, path: d.path })}>
         <p className="text-xs">{tx("Status")} <b>{d.status}</b>{d.live_version ? tx(" · live v{live_version}", { live_version: d.live_version }) : tx(" · not live")}{d.submitted_by ? tx(" · submitted by {submitted_by}", { submitted_by: d.submitted_by }) : ""}{d.approved_by ? tx(" · approved by {approved_by}", { approved_by: d.approved_by }) : ""}
-          {d.translation_state !== "SOURCE" && ` · translation ${d.translation_state.replace("_", " ").toLowerCase()}`}</p>
+          {d.translation_state !== "SOURCE" && tx(" · translation {translation_state}", { translation_state: d.translation_state.replace("_", " ").toLowerCase() })}</p>
         <div className="grid gap-2 sm:grid-cols-3 text-xs">
           <label>{tx("Title")}<input aria-label={tx("Page title")} className="border rounded px-1 block w-full" value={meta.title} onChange={(e) => setMeta({ ...meta, title: e.target.value })} /></label>
           <label>{tx("Slug")}<input aria-label={tx("Slug")} className="border rounded px-1 block w-full" value={meta.slug} onChange={(e) => setMeta({ ...meta, slug: e.target.value })} /></label>
@@ -116,7 +116,7 @@ function Editor({ id, site, pages, acls, tables, reload, say }: { id: string; si
           {d.status === "IN_REVIEW" && <><button className="border rounded px-3 py-1 bg-green-50" onClick={() => act("approve", { ok: true })}>{tx("Approve")}</button>
             <button className="border rounded px-3 py-1" onClick={() => act("approve", { ok: false, note: "Changes needed" })}>{tx("Send back")}</button></>}
           {(d.status === "APPROVED" || !site.require_approval) && <button className="bg-green-600 text-white rounded px-3 py-1" onClick={() => act("publish", { note: "" })}>{tx("Publish")}</button>}
-          <button className="border rounded px-3 py-1" onClick={() => apiClient.post(`/api/v1/cms/pages/${id}/narrate`).then(() => say("Narration saved in Members & media as staff-only audio; an approver decides who may hear it.")).catch((e) => say(err(e)))}>{tx("Narrate (audio)")}</button>
+          <button className="border rounded px-3 py-1" onClick={() => apiClient.post(`/api/v1/cms/pages/${id}/narrate`).then(() => say(tx("Narration saved in Members & media as staff-only audio; an approver decides who may hear it."))).catch((e) => say(err(e)))}>{tx("Narrate (audio)")}</button>
           {d.live_version && <button className="border rounded px-3 py-1 text-red-600" onClick={() => act("unpublish")}>{tx("Unpublish")}</button>}
           {d.live_version && <a className="underline self-center" target="_blank" rel="noreferrer" href={`/site/${site.key}/${d.locale}${d.path === "/" ? "" : d.path}`}>{tx("Open live page")}</a>}
         </div>
@@ -147,7 +147,7 @@ function Editor({ id, site, pages, acls, tables, reload, say }: { id: string; si
         <Panel title={tx("Translations")}>
           <ul className="text-xs">{d.translations.map((t) => <li key={t.id}>{t.locale} · {t.path} · {t.status.toLowerCase()} · {t.translation_state.replace("_", " ").toLowerCase()}</li>)}</ul>
           <div className="flex gap-2 text-xs flex-wrap">{site.locales.filter((l) => l !== d.locale && !d.translations.some((t) => t.locale === l)).map((l) =>
-            <button key={l} className="border rounded px-2 py-1" onClick={() => apiClient.post(`/api/v1/cms/pages/${id}/translate`, { locale: l, ai: aiTr }).then((r) => { say(r.data.engine === "copy" ? `Translation draft for ${l} created as a copy${aiTr ? " (no AI budget or provider)" : ""} — translate and review it.` : `Translation draft for ${l} written by ${r.data.engine} (≈ $${Number(r.data.cost).toFixed(4)}) — review it before publishing.`); load(); reload(); }).catch((e) => say(err(e)))}>{tx("Translate to")} {l}</button>)}
+            <button key={l} className="border rounded px-2 py-1" onClick={() => apiClient.post(`/api/v1/cms/pages/${id}/translate`, { locale: l, ai: aiTr }).then((r) => { say(r.data.engine === "copy" ? tx("Translation draft for {l} created as a copy{aiTr} — translate and review it.", { l, aiTr: aiTr ? " (no AI budget or provider)" : "" }) : tx("Translation draft for {l} written by {engine} (≈ ${cost}) — review it before publishing.", { l, engine: r.data.engine, cost: Number(r.data.cost).toFixed(4) })); load(); reload(); }).catch((e) => say(err(e)))}>{tx("Translate to")} {l}</button>)}
             <label className="flex items-center gap-1"><input type="checkbox" checked={aiTr} onChange={(e) => setAiTr(e.target.checked)} />{tx("Draft with AI (brand budget)")}</label>
             {d.translation_state !== "SOURCE" && d.translation_state !== "REVIEWED" && <button className="border rounded px-2 py-1" onClick={() => apiClient.post(`/api/v1/cms/pages/${id}/translation-state`, { state: "REVIEWED" }).then(load).catch((e) => say(err(e)))}>{tx("Mark translation reviewed")}</button>}</div>
         </Panel>
@@ -176,20 +176,20 @@ function SiteData({ site, say }: { site: Site; say: (m: string) => void }) {
   const post = (path: string, body: object) => apiClient.post(`/api/v1/cms/sites/${site.id}/${path}`, body).then(() => { say("Saved."); load(); }).catch((e) => say(err(e)));
   const input = (k: string, label: string) => <input aria-label={label} placeholder={label} className="border rounded px-1" value={f[k] ?? ""} onChange={(e) => setF({ ...f, [k]: e.target.value })} />;
   return <Panel title={tx("Site data")}>
-    <div className="flex gap-3 text-xs">{["redirects", "ctas", "tables", "keywords"].map((t) => <button key={t} className={tab === t ? "font-bold underline" : ""} onClick={() => setTab(t)}>{t === "ctas" ? tx("CTAs") : t[0].toUpperCase() + t.slice(1)}</button>)}</div>
+    <div className="flex gap-3 text-xs">{["redirects", "ctas", "tables", "keywords"].map((t) => <button key={t} className={tab === t ? "font-bold underline" : ""} onClick={() => setTab(t)}>{t === "ctas" ? tx("CTAs") : { redirects: tx("Redirects"), tables: tx("Tables"), keywords: tx("Keywords") }[t]}</button>)}</div>
     {tab === "redirects" && <><div className="flex flex-wrap gap-2 text-xs">{input("from_path", "/old-path")}{input("to_path", "/new-path")}<button className="border rounded px-2" onClick={() => post("redirects", { from_path: f.from_path, to_path: f.to_path, code: 301 })}>{tx("Add 301")}</button></div>
       <ul className="text-xs divide-y">{rows.map((r) => <li key={r.id} className="py-1 flex justify-between gap-2"><span>{r.from_path} → {r.to_path} ({r.code}{r.auto ? tx(", automatic") : ""}) · {r.hits} {tx("hits")}</span>
         <button className="text-red-600" onClick={() => apiClient.delete(`/api/v1/cms/redirects/${r.id}`).then(load)}>{tx("Delete")}</button></li>)}</ul></>}
     {tab === "ctas" && <><div className="flex flex-wrap gap-2 text-xs">{input("key", "key")}{input("label", "Label")}{input("href", "/path or https://…")}<button className="border rounded px-2" onClick={() => post("ctas", { key: f.key, label: f.label, href: f.href })}>{tx("Save CTA")}</button></div>
       <ul className="text-xs divide-y">{rows.map((c) => <li key={c.id} className="py-1">{c.key} · “{c.label}” → {c.href} · {c.views} {tx("views ·")} {c.clicks} {tx("clicks")}{c.ctr !== null ? ` · ${(c.ctr * 100).toFixed(1)}%` : ""}</li>)}</ul></>}
-    {tab === "tables" && <><div className="flex flex-wrap gap-2 text-xs">{input("key", "key (products)")}{input("name", "Name")}{input("columns", "Columns: name, size, price")}
+    {tab === "tables" && <><div className="flex flex-wrap gap-2 text-xs">{input("key", "key (products)")}{input("name", "Name")}{input("columns", tx("Columns: name, size, price"))}
       <button className="border rounded px-2" onClick={() => post("tables", { key: f.key, name: f.name, columns: (f.columns ?? "").split(",").map((c) => ({ key: c.trim().toLowerCase().replace(/\W+/g, "_"), label: c.trim() })).filter((c) => c.key) })}>{tx("Create table")}</button></div>
       <ul className="text-xs divide-y">{rows.map((t) => <li key={t.id} className="py-1 space-y-1"><div className="flex flex-wrap gap-2 justify-between"><span><b>{t.name}</b> ({t.key}) · {t.rows} {tx("rows ·")} {t.published ? tx("published") : tx("not published")}</span>
         <span className="flex gap-2"><button className="underline" onClick={() => apiClient.get(`/api/v1/cms/tables/${t.id}/rows`).then((r) => setTableRows({ id: t.id, text: ["slug," + t.columns.map((c: any) => c.key).join(","), ...r.data.map((x: any) => [x.slug, ...t.columns.map((c: any) => x.values[c.key] ?? "")].join(","))].join("\n") }))}>{tx("Edit rows")}</button>
           <button className="underline" onClick={() => apiClient.patch(`/api/v1/cms/tables/${t.id}`, { published: !t.published }).then(load).catch((e) => say(err(e)))}>{t.published ? tx("Unpublish") : tx("Publish")}</button></span></div>
         {tableRows && tableRows.id === t.id && <div><textarea aria-label={tx("Rows CSV")} rows={6} className="w-full border rounded font-mono" value={tableRows.text} onChange={(e) => setTableRows({ id: tableRows.id, text: e.target.value })} />
           <button className="border rounded px-2" onClick={() => { const [head, ...lines] = tableRows.text.split("\n").filter(Boolean); const cols = head.split(",").map((x) => x.trim());
-            apiClient.put(`/api/v1/cms/tables/${t.id}/rows`, { rows: lines.map((l, i) => Object.fromEntries([...cols.map((c, j) => [c, l.split(",")[j]?.trim() ?? ""]), ["position", i]])) }).then(() => { say("Rows saved."); load(); }).catch((e) => say(err(e))); }}>{tx("Save rows")}</button></div>}</li>)}</ul></>}
+            apiClient.put(`/api/v1/cms/tables/${t.id}/rows`, { rows: lines.map((l, i) => Object.fromEntries([...cols.map((c, j) => [c, l.split(",")[j]?.trim() ?? ""]), ["position", i]])) }).then(() => { say(tx("Rows saved.")); load(); }).catch((e) => say(err(e))); }}>{tx("Save rows")}</button></div>}</li>)}</ul></>}
     {tab === "keywords" && <><p className="text-xs text-gray-500">{tx("Paste a keyword export (keyword, volume, difficulty, locale). Only the numbers in your file are shown — nothing is estimated.")}</p>
       <textarea aria-label={tx("Keyword CSV")} rows={3} className="w-full border rounded text-xs font-mono" value={f.csv ?? ""} onChange={(e) => setF({ ...f, csv: e.target.value })} />
       <button className="border rounded px-2 text-xs" onClick={() => post("keywords/import", { csv: f.csv ?? "", source: "import" })}>{tx("Import")}</button>

@@ -19,10 +19,10 @@ export function CapaLinksPanel({ notify }: { notify: Notify }) {
   const [links, setLinks] = useState<CapaLink[] | null>(null);
 
   const lookup = useAction(() => qaEnterpriseApi.capaLinks(trigger, triggerId.trim()), notify,
-    (rows) => `${rows.length} linked CAPA(s)`, []);
+    (rows) => tx("{length} linked CAPA(s)", { length: rows.length }), []);
   const raise = useAction(
     () => (trigger === "COMPLAINT" ? qaEnterpriseApi.capaFromComplaint(triggerId.trim()) : qaEnterpriseApi.capaFromRecall(triggerId.trim())),
-    notify, (r) => (r.created ? `CAPA ${r.ca_no} opened` : `Open CAPA ${r.ca_no} already exists`), [],
+    notify, (r) => (r.created ? tx("CAPA {ca_no} opened", { ca_no: r.ca_no }) : tx("Open CAPA {ca_no} already exists", { ca_no: r.ca_no })), [],
   );
 
   if (!perms.canView) return <ReadOnlyNotice>{tx("CAPA links require quality.view.")}</ReadOnlyNotice>;
@@ -30,7 +30,7 @@ export function CapaLinksPanel({ notify }: { notify: Notify }) {
   const refresh = () => lookup.mutate(undefined, { onSuccess: setLinks });
 
   return (
-    <Section title={tx("Complaint, recall and audit CAPAs")} description="Open one CAPA per complaint or recall (repeat requests return the open one). A live recall cannot close until its CAPAs are verified.">
+    <Section title={tx("Complaint, recall and audit CAPAs")} description={tx("Open one CAPA per complaint or recall (repeat requests return the open one). A live recall cannot close until its CAPAs are verified.")}>
       <form className="grid gap-3 md:grid-cols-4" onSubmit={(e) => { e.preventDefault(); refresh(); }}>
         <Select id="link-trigger" label={tx("Source")} value={trigger} onChange={(e) => { setTrigger(e.target.value as Trigger); setLinks(null); }}
           options={["COMPLAINT", "RECALL", "AUDIT", "DEVIATION"].map((v) => ({ value: v, label: v[0] + v.slice(1).toLowerCase() }))} />

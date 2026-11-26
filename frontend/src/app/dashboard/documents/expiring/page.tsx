@@ -35,8 +35,8 @@ function urgencyColor(days: number | null, expired: boolean): string {
 function urgencyLabel(days: number | null, expired: boolean): string {
   if (expired) return "Expired";
   if (days === null) return "—";
-  if (days === 0) return "Expires today";
-  if (days < 0) return `Expired ${Math.abs(days)}d ago`;
+  if (days === 0) return tx("Expires today");
+  if (days < 0) return tx("Expired {days}d ago", { days: Math.abs(days) });
   return `${days}d left`;
 }
 
@@ -87,7 +87,7 @@ export default function ExpiringDocumentsPage() {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         {[
           { label: tx("Expired"), value: expired.length, color: "text-red-600" },
-          { label: `Expiring in ${days}d`, value: expiringSoon.length, color: "text-orange-500" },
+          { label: tx("Expiring in {days}d", { days }), value: expiringSoon.length, color: "text-orange-500" },
           { label: tx("Total At Risk"), value: docs.length, color: "text-gray-700" },
         ].map((k) => (
           <div key={k.label} className="bg-white border rounded-lg p-4 shadow-sm">

@@ -252,7 +252,7 @@ export default function CRMPage() {
   return (
     <ModuleWorkspace
       title="CRM"
-      description="Pipeline, leads, opportunities, forecast, loyalty, NPS"
+      description={tx("Pipeline, leads, opportunities, forecast, loyalty, NPS")}
       permission="crm.view"
       tabs={tabs}
       defaultTab="overview"

@@ -5,7 +5,7 @@ import { apiClient } from "@/lib/api";
 import { tx } from "@/lib/i18n/core";
 
 type Sess = { id: string; host: string; origin: string; scopes: string[]; created_at: string; last_used_at: string | null };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 
 export default function AddinSessionsPage() {
   const [rows, setRows] = useState<Sess[] | null>(null);
@@ -20,7 +20,7 @@ export default function AddinSessionsPage() {
       {msg && <p role="status" className="text-xs">{msg}</p>}
       {rows && rows.length === 0 && <p className="text-xs">{tx("No add-in is signed in.")}</p>}
       <ul className="divide-y">{(rows ?? []).map((s) => <li key={s.id} className="py-2 flex justify-between gap-2 items-center">
-        <span><b>{s.host === "gmail" ? tx("Gmail add-on") : tx("Outlook add-in")}</b> · {s.scopes.includes("addin.write") ? tx("look-up, log e-mails, notes and tasks") : tx("look-up only")} {tx("· signed in")} {new Date(s.created_at).toLocaleString()} · {s.last_used_at ? `last used ${new Date(s.last_used_at).toLocaleString()}` : tx("not used yet")}</span>
+        <span><b>{s.host === "gmail" ? tx("Gmail add-on") : tx("Outlook add-in")}</b> · {s.scopes.includes("addin.write") ? tx("look-up, log e-mails, notes and tasks") : tx("look-up only")} {tx("· signed in")} {new Date(s.created_at).toLocaleString()} · {s.last_used_at ? tx("last used {date}", { date: new Date(s.last_used_at).toLocaleString() }) : tx("not used yet")}</span>
         <button className="border rounded px-2 py-1 text-xs" onClick={() => revoke(s.id)}>{tx("Revoke")}</button></li>)}</ul>
     </div>
   );

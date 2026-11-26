@@ -144,7 +144,10 @@ export function lx<T extends object>(build: () => T): T {
   });
 }
 
-/** API system message -> locale. Exact catalog match only (backend_messages.json); anything else, including user data, is returned unchanged. */
+/** API system message -> locale. Exact match in backend_messages.json only; anything else, including user data, is returned unchanged. */
 export function txApi(message: string): string {
-  return Object.hasOwn(TX_MESSAGES.en, message) ? tx(message) : message;
+  const api = backendMessages as Catalog;           // ONLY the API-message catalog: never the staff UI strings (a user's own text could match one)
+  if (!txLive || !Object.hasOwn(api.en, message)) return message;
+  const hit = api[getLocale()]?.[message];
+  return hit && hit.trim() ? hit : message;
 }

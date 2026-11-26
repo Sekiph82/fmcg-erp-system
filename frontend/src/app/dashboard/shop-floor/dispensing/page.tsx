@@ -43,7 +43,7 @@ function DispenseForm({ line, onDone }: { line: Line; onDone: (label: PreparedLo
       setError("");
       if (info.data.material_id !== line.item_id) {
         setSource(null);
-        setError(`Scanned ${info.data.material_name ?? info.type} — this line needs ${line.item_name}.`);
+        setError(tx("Scanned {material_name} — this line needs {item_name}.", { material_name: info.data.material_name ?? info.type, item_name: line.item_name }));
       } else setSource(info);
     },
     onError: (e) => { setSource(null); setError(describeShopFloorError(e).message); },

@@ -121,16 +121,16 @@ export default function RecallDetailPage() {
       {tab === "overview" && (
         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-3">
           {[
-            ["Recall No", recall.recall_no],
-            ["Reason", recall.recall_reason],
-            ["Source Lot", recall.source_lot_id || "—"],
-            ["Target Market", recall.target_market || "—"],
-            ["Country Scope", recall.country_scope || "—"],
-            ["Scope Calculated", recall.scope_calculated_at ? new Date(recall.scope_calculated_at).toLocaleString() : "Not yet"],
-            ["Contained At", recall.contained_at ? new Date(recall.contained_at).toLocaleString() : "—"],
-            ["Total Affected Qty", recall.total_affected_qty || "—"],
-            ["Total Customers", recall.total_affected_customers ?? "—"],
-            ["Notes", recall.notes || "—"],
+            [tx("Recall No"), recall.recall_no],
+            [tx("Reason"), recall.recall_reason],
+            [tx("Source Lot"), recall.source_lot_id || "—"],
+            [tx("Target Market"), recall.target_market || "—"],
+            [tx("Country Scope"), recall.country_scope || "—"],
+            [tx("Scope Calculated"), recall.scope_calculated_at ? new Date(recall.scope_calculated_at).toLocaleString() : tx("Not yet")],
+            [tx("Contained At"), recall.contained_at ? new Date(recall.contained_at).toLocaleString() : "—"],
+            [tx("Total Affected Qty"), recall.total_affected_qty || "—"],
+            [tx("Total Customers"), recall.total_affected_customers ?? "—"],
+            [tx("Notes"), recall.notes || "—"],
           ].map(([k, v]) => (
             <div key={k} className="flex gap-4 text-sm border-b border-gray-50 pb-2">
               <span className="text-gray-500 w-36 shrink-0">{k}</span>

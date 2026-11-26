@@ -53,28 +53,28 @@ function FinanceDashboardContent() {
     {
       label: tx("Total Cash & Bank"),
       value: `KES ${totalCash.toLocaleString(undefined, { minimumFractionDigits: 0 })}`,
-      sub: `${cashPosition.length} accounts`,
+      sub: tx("{length} accounts", { length: cashPosition.length }),
       color: "text-green-700",
       href: "/dashboard/finance/cashbook",
     },
     {
       label: tx("Outstanding Receivables"),
       value: `KES ${totalReceivables.toLocaleString(undefined, { minimumFractionDigits: 0 })}`,
-      sub: `${overdueCount > 0 ? `${overdueCount} overdue` : "no overdue"}`,
+      sub: `${overdueCount > 0 ? tx("{overdueCount} overdue", { overdueCount }) : "no overdue"}`,
       color: overdueCount > 0 ? "text-red-600" : "text-orange-600",
       href: "/dashboard/finance/receivables",
     },
     {
       label: tx("M-Pesa This Month"),
       value: `KES ${monthMpesaTotal.toLocaleString(undefined, { minimumFractionDigits: 0 })}`,
-      sub: `${monthMpesaMatched} matched / ${monthMpesaUnmatched} pending`,
+      sub: tx("{monthMpesaMatched} matched / {monthMpesaUnmatched} pending", { monthMpesaMatched, monthMpesaUnmatched }),
       color: "text-indigo-700",
       href: "/dashboard/finance/mpesa",
     },
     {
       label: tx("Recon Exceptions"),
       value: exceptionCount.toString(),
-      sub: `${unmatchedCount} unmatched`,
+      sub: tx("{unmatchedCount} unmatched", { unmatchedCount }),
       color: exceptionCount > 0 ? "text-red-600" : "text-gray-700",
       href: "/dashboard/finance/mpesa",
     },
@@ -218,7 +218,7 @@ export default function FinanceDashboardPage() {
   return (
     <ModuleWorkspace
       title={tx("Finance")}
-      description="Accounting, cashbook, receivables, bank recon, tax, expenses"
+      description={tx("Accounting, cashbook, receivables, bank recon, tax, expenses")}
       permission="finance.view"
       tabs={tabs}
       defaultTab="overview"

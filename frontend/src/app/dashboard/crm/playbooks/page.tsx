@@ -30,7 +30,7 @@ export default function CRMPlaybooksPage() {
   const [recordId, setRecordId] = useState("");
   const load = useCallback(() => { apiClient.get("/api/v1/crm-playbooks").then((r) => setItems(r.data)).catch(() => setItems([])); }, []);
   useEffect(() => { load(); }, [load]);
-  const act = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); setMsg(ok); load(); } catch (e) { setMsg(err(e, "Not allowed.")); } };
+  const act = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); setMsg(ok); load(); } catch (e) { setMsg(err(e, tx("Not allowed."))); } };
 
   return (
     <div className="p-4 space-y-4">
@@ -45,19 +45,19 @@ export default function CRMPlaybooksPage() {
               <div className="flex justify-between gap-2"><span className="font-medium">{p.name} {tx("· v")}{p.version}</span><span>{p.purpose} · {p.status}{p.blocks_stage_exit && tx(" · stage gate")}</span></div>
               {p.guidance && <p className="text-gray-600">{p.guidance}</p>}
               <div className="flex flex-wrap gap-2">
-                {p.status === "DRAFT" && <button className="underline" onClick={() => act(() => apiClient.post(`/api/v1/crm-playbooks/${p.id}/lifecycle/submit`), "Sent for approval.")}>{tx("Submit")}</button>}
+                {p.status === "DRAFT" && <button className="underline" onClick={() => act(() => apiClient.post(`/api/v1/crm-playbooks/${p.id}/lifecycle/submit`), tx("Sent for approval."))}>{tx("Submit")}</button>}
                 {p.status === "PENDING_APPROVAL" && <>
                   <button className="underline text-green-700" onClick={() => act(() => apiClient.post(`/api/v1/crm-playbooks/${p.id}/lifecycle/approve`), "Published.")}>{tx("Approve")}</button>
-                  <button className="underline" onClick={() => act(() => apiClient.post(`/api/v1/crm-playbooks/${p.id}/lifecycle/reject`), "Back to draft.")}>{tx("Reject")}</button></>}
-                {p.status === "PUBLISHED" && <button className="underline" onClick={() => act(() => apiClient.post(`/api/v1/crm-playbooks/${p.id}/lifecycle/new-version`), "New draft version created.")}>{tx("New version")}</button>}
+                  <button className="underline" onClick={() => act(() => apiClient.post(`/api/v1/crm-playbooks/${p.id}/lifecycle/reject`), tx("Back to draft."))}>{tx("Reject")}</button></>}
+                {p.status === "PUBLISHED" && <button className="underline" onClick={() => act(() => apiClient.post(`/api/v1/crm-playbooks/${p.id}/lifecycle/new-version`), tx("New draft version created."))}>{tx("New version")}</button>}
                 <button className="underline" onClick={async () => { try { const r = (await apiClient.get(`/api/v1/crm-playbooks/${p.family_id}/report`)).data;
-                  setMsg(`${p.name}: ${r.completed}/${r.runs} runs completed · win rate with ${r.with_playbook.win_rate ?? "—"} vs without ${r.without_playbook.win_rate ?? "—"} (${r.note})`); } catch (e) { setMsg(err(e, "Managers only.")); } }}>{tx("Report")}</button>
+                  setMsg(tx("{name}: {completed}/{runs} runs completed · win rate with {win_rate} vs without {win_rate2} ({note})", { name: p.name, completed: r.completed, runs: r.runs, win_rate: r.with_playbook.win_rate ?? "—", win_rate2: r.without_playbook.win_rate ?? "—", note: r.note })); } catch (e) { setMsg(err(e, tx("Managers only."))); } }}>{tx("Report")}</button>
               </div>
             </div>
           ))}
           <form className="border rounded p-2 bg-white space-y-1 text-xs" onSubmit={(e) => { e.preventDefault();
             let questions; try { questions = JSON.parse(draft.questions); } catch { setMsg(tx("Questions must be valid JSON.")); return; }
-            act(() => apiClient.post("/api/v1/crm-playbooks", { ...draft, stage_id: draft.stage_id || null, questions }), "Draft saved."); }}>
+            act(() => apiClient.post("/api/v1/crm-playbooks", { ...draft, stage_id: draft.stage_id || null, questions }), tx("Draft saved.")); }}>
             <div className="font-semibold">{tx("New playbook (CRM managers)")}</div>
             <input className="border rounded px-2 py-1 w-full" required placeholder={tx("Name")} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
             <select className="border rounded px-2 py-1" value={draft.purpose} onChange={(e) => setDraft({ ...draft, purpose: e.target.value })}>
@@ -97,7 +97,7 @@ function Guide({ recordId, onMsg }: { recordId: string; onMsg: (m: string) => vo
       setRunId(r.completed ? null : r.id);
       onMsg(r.completed ? `Playbook completed${r.updated_fields.length ? `; updated ${r.updated_fields.join(", ")}` : ""}.` : "Saved.");
       if (r.completed) setActive(null);
-    } catch (e) { onMsg(err(e, "Check the answers.")); }
+    } catch (e) { onMsg(err(e, tx("Check the answers."))); }
   }
   if (!g) return null;
   return (
@@ -144,7 +144,7 @@ function DealPlan({ recordId, onMsg }: { recordId: string; onMsg: (m: string) =>
     }).catch(() => setSteps([]));
     setLink(null);
   }, [recordId]);
-  const save = async () => { try { await apiClient.put(`/api/v1/crm-playbooks/records/${recordId}/plan`, { title, steps }); onMsg("Deal plan saved."); } catch (e) { onMsg(err(e, "Check the steps.")); } };
+  const save = async () => { try { await apiClient.put(`/api/v1/crm-playbooks/records/${recordId}/plan`, { title, steps }); onMsg(tx("Deal plan saved.")); } catch (e) { onMsg(err(e, tx("Check the steps."))); } };
   return (
     <div className="border rounded p-2 bg-white text-xs space-y-1">
       <div className="font-semibold">{tx("Deal plan (shared with the customer)")}</div>
@@ -161,8 +161,8 @@ function DealPlan({ recordId, onMsg }: { recordId: string; onMsg: (m: string) =>
       <div className="flex flex-wrap gap-2">
         <button className="underline" onClick={() => setSteps([...steps, { title: "", owner: "us", due_date: null, done: false }])}>{tx("+ Step")}</button>
         <button className="bg-indigo-600 text-white rounded px-2 py-0.5" onClick={save}>{tx("Save")}</button>
-        <button className="underline" onClick={async () => { try { const r = (await apiClient.post(`/api/v1/crm-playbooks/records/${recordId}/plan/share`, null, { params: { on: true } })).data; setLink(r.share_url); } catch (e) { onMsg(err(e, "Save the plan first.")); } }}>{tx("Share link")}</button>
-        <button className="underline text-red-600" onClick={async () => { await apiClient.post(`/api/v1/crm-playbooks/records/${recordId}/plan/share`, null, { params: { on: false } }).catch(() => null); setLink(null); onMsg("Sharing stopped."); }}>{tx("Stop sharing")}</button>
+        <button className="underline" onClick={async () => { try { const r = (await apiClient.post(`/api/v1/crm-playbooks/records/${recordId}/plan/share`, null, { params: { on: true } })).data; setLink(r.share_url); } catch (e) { onMsg(err(e, tx("Save the plan first."))); } }}>{tx("Share link")}</button>
+        <button className="underline text-red-600" onClick={async () => { await apiClient.post(`/api/v1/crm-playbooks/records/${recordId}/plan/share`, null, { params: { on: false } }).catch(() => null); setLink(null); onMsg(tx("Sharing stopped.")); }}>{tx("Stop sharing")}</button>
       </div>
       {link && <p className="break-all">{tx("Send this to the customer:")} <a className="text-indigo-600 underline" href={link}>{link}</a></p>}
     </div>
@@ -180,7 +180,7 @@ function DealScore({ recordId }: { recordId: string }) {
   return (
     <div className="border rounded p-2 bg-white text-xs space-y-1">
       <div className="flex justify-between"><span className="font-semibold">{tx("Deal score")} {d.score}/100</span>
-        <span className="text-gray-500">{d.trend.length > 1 ? `was ${d.trend[d.trend.length - 2].score}` : ""}</span></div>
+        <span className="text-gray-500">{d.trend.length > 1 ? tx("was {trend}", { trend: d.trend[d.trend.length - 2].score }) : ""}</span></div>
       {d.factors.map((f) => <div key={f.factor} className="flex justify-between gap-2"><span>{f.reason}</span><span className="text-gray-500">{Math.round(f.value * 100)}% × {f.weight}</span></div>)}
       {d.missing.length > 0 && <p className="text-gray-500">{tx("No data yet (left out):")} {d.missing.join(", ")}.</p>}
       {d.buying_group.missing.length > 0 && <p className="text-amber-700">{tx("Buying group: add")} {d.buying_group.missing.join(", ")} {tx("(link contacts with these roles).")}</p>}
@@ -206,8 +206,8 @@ function Splits({ recordId, onMsg }: { recordId: string; onMsg: (m: string) => v
       <EntityPicker kind="user" value={pick} onChange={(id) => { if (id && !rows.some((r) => r.user_id === id)) setRows([...rows, { user_id: id, share_pct: 0 }]); setPick(""); }} placeholder={tx("Add a person…")} />
       <div className={total === 100 || rows.length === 0 ? "text-gray-500" : "text-red-600"}>{tx("Total")} {total}%</div>
       <button className="border rounded px-2 py-0.5" onClick={async () => {
-        try { await apiClient.put(`/api/v1/crm-routing/records/${recordId}/splits`, rows); onMsg("Split saved."); }
-        catch (e) { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; onMsg(typeof d === "string" ? d : "Shares must total 100%."); }
+        try { await apiClient.put(`/api/v1/crm-routing/records/${recordId}/splits`, rows); onMsg(tx("Split saved.")); }
+        catch (e) { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; onMsg(typeof d === "string" ? d : tx("Shares must total 100%.")); }
       }}>{tx("Save split")}</button>
     </div>
   );

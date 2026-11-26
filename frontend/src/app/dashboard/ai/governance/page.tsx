@@ -336,9 +336,9 @@ export default function AIGovernancePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
-              ["requires_human_approval", "Human Approval"],
+              ["requires_human_approval", tx("Human Approval")],
               ["hallucination_guardrail", "Guardrail"],
-              ["rag_enabled", "RAG Enabled"],
+              ["rag_enabled", tx("RAG Enabled")],
             ].map(([key, text]) => (
               <label key={key} className="flex items-center gap-2 text-sm text-gray-700 border border-gray-200 rounded-lg px-3 py-2">
                 <input

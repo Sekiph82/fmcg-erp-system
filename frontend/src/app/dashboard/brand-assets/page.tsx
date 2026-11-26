@@ -123,9 +123,9 @@ export default function BrandAssetsPage() {
             { label: tx("Total Assets"), value: stats.total_assets, color: "text-gray-800" },
             { label: tx("Print Ready"), value: stats.by_status.PRINT_READY ?? 0, color: "text-green-600" },
             { label: tx("In Review"), value: stats.by_status.IN_REVIEW ?? 0, color: "text-blue-600" },
-            { label: "BOM Change Alerts", value: stats.bom_change_alerts, color: "text-red-600" },
+            { label: tx("BOM Change Alerts"), value: stats.bom_change_alerts, color: "text-red-600" },
           ].map((k) => (
-            <div key={k.label} className={`bg-white border rounded-lg p-4 shadow-sm ${k.label === "BOM Change Alerts" && k.value > 0 ? "border-red-300 bg-red-50" : ""}`}>
+            <div key={k.label} className={`bg-white border rounded-lg p-4 shadow-sm ${k.label === tx("BOM Change Alerts") && k.value > 0 ? "border-red-300 bg-red-50" : ""}`}>
               <p className="text-xs text-gray-500">{k.label}</p>
               <p className={`text-2xl font-bold mt-1 ${k.color}`}>{k.value}</p>
             </div>

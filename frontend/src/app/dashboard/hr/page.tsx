@@ -43,14 +43,14 @@ function HRContent() {
     {
       label: tx("Active Employees"),
       value: activeEmployees.toString(),
-      sub: `${employees.length} total`,
+      sub: tx("{length} total", { length: employees.length }),
       color: "text-indigo-700",
       href: "/dashboard/hr/employees",
     },
     {
       label: tx("Present Today"),
       value: presentToday.toString(),
-      sub: `${absentToday} absent · ${lateToday} late`,
+      sub: tx("{absentToday} absent · {lateToday} late", { absentToday, lateToday }),
       color: presentToday > 0 ? "text-green-700" : "text-gray-500",
       href: "/dashboard/hr/attendance",
     },
@@ -64,7 +64,7 @@ function HRContent() {
     {
       label: tx("Draft Payrolls"),
       value: draftPayrolls.toString(),
-      sub: `${payrollPeriods.length} total periods`,
+      sub: tx("{length} total periods", { length: payrollPeriods.length }),
       color: draftPayrolls > 0 ? "text-yellow-600" : "text-gray-500",
       href: "/dashboard/hr/payroll",
     },
@@ -144,7 +144,7 @@ export default function HRPage() {
   return (
     <ModuleWorkspace
       title={tx("HR & Payroll")}
-      description="Employees, attendance, leave, payroll, recruitment, training"
+      description={tx("Employees, attendance, leave, payroll, recruitment, training")}
       permission="hr.view"
       tabs={tabs}
       defaultTab="overview"

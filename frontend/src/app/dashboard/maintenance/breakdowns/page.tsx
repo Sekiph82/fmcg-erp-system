@@ -120,7 +120,7 @@ export default function BreakdownsPage() {
                   <tr key={`${impact.source_type}-${impact.source_id}`}>
                     <td className="px-3 py-2">{impact.source_type === "BREAKDOWN" ? tx("Breakdown") : "PM"} {impact.source_number}<div className="text-gray-500">{impact.status}{impact.ongoing ? tx(" · open") : ""}</div></td>
                     <td className="px-3 py-2">{impact.asset_no} — {impact.asset_name}<div className="text-gray-500">{tx("Work center:")} {impact.work_center_id || tx("not linked")}</div></td>
-                    <td className="px-3 py-2">{new Date(impact.start_time).toLocaleString()} – {impact.end_time ? new Date(impact.end_time).toLocaleString() : `observed through ${impact.observed_through ? new Date(impact.observed_through).toLocaleString() : "snapshot"}`}</td>
+                    <td className="px-3 py-2">{new Date(impact.start_time).toLocaleString()} – {impact.end_time ? new Date(impact.end_time).toLocaleString() : tx("observed through {observed_through}", { observed_through: impact.observed_through ? new Date(impact.observed_through).toLocaleString() : "snapshot" })}</td>
                     <td className="px-3 py-2">{impact.unavailable_reason ? <span className="text-amber-700">{tx("Unknown:")} {impact.unavailable_reason}</span> : `${impact.schedule_minutes_at_risk.toLocaleString()} min`}</td>
                     <td className="px-3 py-2">{impact.affected_production_order_ids.length ? impact.affected_production_order_ids.join(", ") : impact.unavailable_reason ? tx("Not calculated") : tx("None in active schedule")}</td>
                   </tr>

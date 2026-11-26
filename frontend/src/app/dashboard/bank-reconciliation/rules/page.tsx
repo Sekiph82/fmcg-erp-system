@@ -2,17 +2,17 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { brApi, BRRule, BRRuleConditionType, BRERPTransactionType, ERP_TX_LABEL } from "@/lib/bank_reconciliation";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
-const CONDITION_LABELS: Record<BRRuleConditionType, string> = {
-  NARRATION_CONTAINS:    "Narration contains",
-  REFERENCE_STARTS_WITH: "Reference starts with",
-  REFERENCE_CONTAINS:    "Reference contains",
-  AMOUNT_EQUALS:         "Amount equals",
-  AMOUNT_RANGE:          "Amount in range",
-  PAYEE_NAME_CONTAINS:   "Payee name contains",
-  ACCOUNT_SPECIFIC:      "Account-specific",
-};
+const CONDITION_LABELS: Record<BRRuleConditionType, string> = lx(() => ({
+  NARRATION_CONTAINS:    tx("Narration contains"),
+  REFERENCE_STARTS_WITH: tx("Reference starts with"),
+  REFERENCE_CONTAINS:    tx("Reference contains"),
+  AMOUNT_EQUALS:         tx("Amount equals"),
+  AMOUNT_RANGE:          tx("Amount in range"),
+  PAYEE_NAME_CONTAINS:   tx("Payee name contains"),
+  ACCOUNT_SPECIFIC:      tx("Account-specific"),
+}));
 
 export default function RulesPage() {
   const qc = useQueryClient();

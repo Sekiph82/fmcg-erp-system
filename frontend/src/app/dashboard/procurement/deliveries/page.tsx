@@ -117,7 +117,7 @@ export default function DeliveryPlanningPage() {
                   <span className={r.is_overdue ? "text-red-600 font-semibold" : r.days_until_delivery <= 7 ? "text-amber-600" : ""}>
                     {new Date(r.expected_delivery_date).toLocaleDateString()}
                     <span className="ml-1 text-xs text-gray-400">
-                      {r.is_overdue ? `(${Math.abs(r.days_until_delivery)}d overdue)` : tx("(in {days_until_delivery}d)", { days_until_delivery: r.days_until_delivery })}
+                      {r.is_overdue ? tx("({days_until_delivery}d overdue)", { days_until_delivery: Math.abs(r.days_until_delivery) }) : tx("(in {days_until_delivery}d)", { days_until_delivery: r.days_until_delivery })}
                     </span>
                   </span>
                 ),
@@ -134,7 +134,7 @@ export default function DeliveryPlanningPage() {
               {
                 header: tx("Shipment"),
                 accessor: (r) => r.has_shipment
-                  ? <span className="text-green-600 text-xs font-medium">{r.shipment_eta ? `ETA ${new Date(r.shipment_eta).toLocaleDateString()}` : tx("Linked")}</span>
+                  ? <span className="text-green-600 text-xs font-medium">{r.shipment_eta ? tx("ETA {date}", { date: new Date(r.shipment_eta).toLocaleDateString() }) : tx("Linked")}</span>
                   : <span className="text-amber-600 text-xs">{tx("No shipment")}</span>,
               },
               {

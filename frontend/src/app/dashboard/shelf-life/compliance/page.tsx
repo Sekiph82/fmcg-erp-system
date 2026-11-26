@@ -3,15 +3,15 @@ import { useEffect, useState } from "react";
 import {
   shelfLifeApi, FEFOComplianceReport, FEFOAuditLog, FEFOContext,
 } from "@/lib/shelfLife";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
-const CONTEXT_LABEL: Record<FEFOContext, string> = {
-  production_issue:  "Production Issue",
-  warehouse_pick:    "Warehouse Pick",
-  sales_shipment:    "Sales Shipment",
-  internal_transfer: "Internal Transfer",
-  line_side_issue:   "Line-Side Issue",
-};
+const CONTEXT_LABEL: Record<FEFOContext, string> = lx(() => ({
+  production_issue:  tx("Production Issue"),
+  warehouse_pick:    tx("Warehouse Pick"),
+  sales_shipment:    tx("Sales Shipment"),
+  internal_transfer: tx("Internal Transfer"),
+  line_side_issue:   tx("Line-Side Issue"),
+}));
 
 export default function FEFOCompliancePage() {
   const [report, setReport] = useState<FEFOComplianceReport | null>(null);

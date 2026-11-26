@@ -4,7 +4,7 @@
 // subscriptions). "Polling" is the honest fallback: the 5-minute sync keeps running whatever the state here.
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 interface Sub {
   id: string; status: string; mode: string; environment: string; expires_at: string; renew_due: boolean;
@@ -12,11 +12,11 @@ interface Sub {
 }
 interface Row { connection_id: string; provider: string; account_email: string | null; mode: string; subscription: Sub | null }
 
-const LABEL: Record<string, string> = { google: "Google Calendar", microsoft: "Outlook calendar" };
+const LABEL: Record<string, string> = lx(() => ({ google: tx("Google Calendar"), microsoft: tx("Outlook calendar") }));
 const when = (v: string | null) => (v ? new Date(v).toLocaleString() : "never");
 function errorText(e: unknown) {
   const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
-  return typeof d === "string" ? d : "The request failed.";
+  return typeof d === "string" ? d : tx("The request failed.");
 }
 
 export function CalendarSubscriptionsPanel() {
@@ -62,16 +62,16 @@ export function CalendarSubscriptionsPanel() {
               <div className="flex gap-3 flex-wrap">
                 {!live && (
                   <button className="text-indigo-600 hover:underline disabled:opacity-50" disabled={busy !== null}
-                    onClick={() => act(`en-${r.connection_id}`, async () => { await apiClient.post("/api/v1/calendar-subscriptions", null, { params: { connection_id: r.connection_id } }); return "Notifications enabled and the first sync ran."; })}>
+                    onClick={() => act(`en-${r.connection_id}`, async () => { await apiClient.post("/api/v1/calendar-subscriptions", null, { params: { connection_id: r.connection_id } }); return tx("Notifications enabled and the first sync ran."); })}>
                     {busy === `en-${r.connection_id}` ? tx("Enabling...") : tx("Enable notifications")}</button>)}
                 {s && s.status !== "STOPPED" && (
                   <>
                     <button className="text-indigo-600 hover:underline disabled:opacity-50" disabled={busy !== null}
                       onClick={() => act(`rn-${s.id}`, async () => { await apiClient.post(`/api/v1/calendar-subscriptions/${s.id}/renew`); return "Renewed."; })}>{tx("Renew now")}</button>
                     <button className="text-indigo-600 hover:underline disabled:opacity-50" disabled={busy !== null}
-                      onClick={() => act(`sy-${s.id}`, async () => { const x = await apiClient.post<Record<string, number>>(`/api/v1/calendar-subscriptions/${s.id}/sync`); return `Synced: ${x.data.busy ?? 0} busy block(s), ${x.data.moved ?? 0} moved, ${x.data.cancelled ?? 0} cancelled.`; })}>{tx("Sync now")}</button>
+                      onClick={() => act(`sy-${s.id}`, async () => { const x = await apiClient.post<Record<string, number>>(`/api/v1/calendar-subscriptions/${s.id}/sync`); return tx("Synced: {busy} busy block(s), {moved} moved, {cancelled} cancelled.", { busy: x.data.busy ?? 0, moved: x.data.moved ?? 0, cancelled: x.data.cancelled ?? 0 }); })}>{tx("Sync now")}</button>
                     <button className="text-red-600 hover:underline disabled:opacity-50" disabled={busy !== null}
-                      onClick={() => { if (confirm(tx("Stop notifications for this calendar? Changes will still be picked up every 5 minutes."))) act(`dc-${s.id}`, async () => { await apiClient.post(`/api/v1/calendar-subscriptions/${s.id}/disconnect`); return "Notifications stopped."; }); }}>{tx("Disconnect")}</button>
+                      onClick={() => { if (confirm(tx("Stop notifications for this calendar? Changes will still be picked up every 5 minutes."))) act(`dc-${s.id}`, async () => { await apiClient.post(`/api/v1/calendar-subscriptions/${s.id}/disconnect`); return tx("Notifications stopped."); }); }}>{tx("Disconnect")}</button>
                   </>)}
               </div>
             </div>);

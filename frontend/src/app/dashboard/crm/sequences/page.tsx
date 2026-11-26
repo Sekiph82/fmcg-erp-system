@@ -9,7 +9,7 @@ function errorText(e: unknown) {
   if (typeof detail === "string") return detail;
   if (Array.isArray(detail)) return detail.map((d) => (d as { msg?: string }).msg).join("; ");
   if (detail && typeof detail === "object" && "detail" in detail) return String((detail as { detail: unknown }).detail);
-  return "Request failed.";
+  return tx("Request failed.");
 }
 
 const NEW_STEP = (n: number): SequenceStep => ({ step_no: n, delay_days: n === 1 ? 0 : 3, subject: "", body: "" });
@@ -75,7 +75,7 @@ export default function CRMSequencesPage() {
       </div>
 
       <form aria-label={tx("New sequence")} className="bg-white rounded-xl border shadow-sm p-4 space-y-2"
-        onSubmit={(e) => { e.preventDefault(); act(() => crmApi.createSequence({ name, steps, track_engagement: track }), "Sequence created."); setName(""); setTrack(false); setSteps([NEW_STEP(1)]); }}>
+        onSubmit={(e) => { e.preventDefault(); act(() => crmApi.createSequence({ name, steps, track_engagement: track }), tx("Sequence created.")); setName(""); setTrack(false); setSteps([NEW_STEP(1)]); }}>
         <h2 className="font-semibold text-gray-800">{tx("New sequence")}</h2>
         <input aria-label={tx("Sequence name")} required placeholder={tx("Name")} value={name} onChange={(e) => setName(e.target.value)} className={`${input} w-full`} />
         {steps.map((st, i) => (
@@ -115,7 +115,7 @@ export default function CRMSequencesPage() {
                 <tr key={en.id} className="border-t">
                   <td className="py-1.5"><Link className="underline" href={`/dashboard/crm/records/${en.crm_record_id}`}>{en.company_name}</Link></td>
                   <td>{en.email}</td><td>{en.status}{en.stop_reason ? ` — ${en.stop_reason}` : ""}</td>
-                  <td>{en.status === "ACTIVE" ? `step ${en.next_step_no}, ${new Date(en.next_due_at).toLocaleString()}` : "—"}</td>
+                  <td>{en.status === "ACTIVE" ? tx("step {next_step_no}, {date}", { next_step_no: en.next_step_no, date: new Date(en.next_due_at).toLocaleString() }) : "—"}</td>
                   <td>{en.status === "ACTIVE" && <button className="text-xs underline" onClick={() => act(() => crmApi.stopEnrollment(en.id, "contact replied (logged by rep)"), "Stopped.")}>{tx("Mark replied")}</button>}</td>
                 </tr>
               ))}</tbody>

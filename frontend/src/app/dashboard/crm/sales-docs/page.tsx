@@ -6,7 +6,7 @@ import { tx } from "@/lib/i18n/core";
 
 type Doc = { id: string; title: string; version: number; status: string; file_name: string | null; scan: string; links: number };
 type Link = { id: string; label: string | null; pin_version: boolean; expires_at: string; revoked: boolean; views: number; downloads: number; last_activity: string | null };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 
 export default function SalesDocsPage() {
   const [docs, setDocs] = useState<Doc[]>([]);
@@ -37,7 +37,7 @@ export default function SalesDocsPage() {
           <button className="bg-indigo-600 text-white rounded px-3 py-1" onClick={share}>{tx("Create link")}</button></div>
         {url && <p className="text-xs break-all bg-amber-50 border rounded p-2">{tx("Send this link (shown once):")} <b>{url}</b></p>}
         <ul className="text-xs divide-y">{links.map((l) => <li key={l.id} className="py-1 flex flex-wrap justify-between gap-2">
-          <span>{l.label ?? tx("link")} · {l.views} {tx("views ·")} {l.downloads} {tx("downloads")}{l.last_activity ? ` · last ${new Date(l.last_activity).toLocaleString()}` : ""} · {l.revoked ? tx("withdrawn") : `until ${new Date(l.expires_at).toLocaleDateString()}`}{l.pin_version ? tx(" · pinned") : ""}</span>
+          <span>{l.label ?? tx("link")} · {l.views} {tx("views ·")} {l.downloads} {tx("downloads")}{l.last_activity ? tx(" · last {date}", { date: new Date(l.last_activity).toLocaleString() }) : ""} · {l.revoked ? tx("withdrawn") : tx("until {date}", { date: new Date(l.expires_at).toLocaleDateString() })}{l.pin_version ? tx(" · pinned") : ""}</span>
           {!l.revoked && <button className="text-red-600 underline" onClick={() => revoke(l.id)}>{tx("Withdraw")}</button>}</li>)}</ul>
       </section>}
     </div>

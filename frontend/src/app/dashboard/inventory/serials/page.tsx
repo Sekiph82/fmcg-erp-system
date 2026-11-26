@@ -315,7 +315,7 @@ function CreateSerialModal({
             <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Serial No.")}</label>
             <input className="w-full border rounded px-3 py-2 text-sm" value={form.serial_no} onChange={(e) => set("serial_no", e.target.value)} placeholder="SN-001234" />
           </div>
-          {([["product_id", "Product", "product"], ["lot_id", "Lot (optional)", "lot"], ["warehouse_id", "Warehouse (optional)", "warehouse"]] as const).map(([k, label, kind]) => (
+          {([["product_id", "Product", "product"], ["lot_id", tx("Lot (optional)"), "lot"], ["warehouse_id", tx("Warehouse (optional)"), "warehouse"]] as const).map(([k, label, kind]) => (
             <div key={k}>
               <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
               <EntityPicker kind={kind} label={label} value={(form as Record<string, string>)[k]} onChange={(id) => set(k, id)} />

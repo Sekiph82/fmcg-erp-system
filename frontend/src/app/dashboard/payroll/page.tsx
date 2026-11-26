@@ -225,7 +225,7 @@ export default function PayrollDashboard() {
   return (
     <ModuleWorkspace
       title={tx("Kenya Payroll")}
-      description="Payroll runs, employee profiles, PAYE, NHIF, NSSF, reports"
+      description={tx("Payroll runs, employee profiles, PAYE, NHIF, NSSF, reports")}
       permission="payroll_ke.view"
       tabs={tabs}
       defaultTab="overview"

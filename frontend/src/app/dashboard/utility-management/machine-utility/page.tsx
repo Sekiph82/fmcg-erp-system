@@ -250,18 +250,18 @@ function RecordForm({
 
           {textField("Shift", "shift_ref", "e.g. A")}
           {textField("Department", "department")}
-          {textField("Production Line", "production_line")}
-          {textField("Batch No", "batch_no")}
+          {textField(tx("Production Line"), "production_line")}
+          {textField(tx("Batch No"), "batch_no")}
 
-          {numField("Runtime Hours", "runtime_hours")}
-          {numField("Nominal Rate (per h)", "nominal_rate")}
-          {textField("Nominal Unit", "nominal_unit", "e.g. kWh/h")}
+          {numField(tx("Runtime Hours"), "runtime_hours")}
+          {numField(tx("Nominal Rate (per h)"), "nominal_rate")}
+          {textField(tx("Nominal Unit"), "nominal_unit", "e.g. kWh/h")}
 
-          {numField("Actual Consumption", "actual_consumption")}
-          {textField("Actual Unit", "actual_unit", "e.g. kWh")}
+          {numField(tx("Actual Consumption"), "actual_consumption")}
+          {textField(tx("Actual Unit"), "actual_unit", "e.g. kWh")}
 
-          {numField("Cost Rate (per unit)", "cost_rate")}
-          {numField("Total Cost", "total_cost")}
+          {numField(tx("Cost Rate (per unit)"), "cost_rate")}
+          {numField(tx("Total Cost"), "total_cost")}
           {textField("Currency", "currency_code", "USD")}
 
           {/* Flags */}
@@ -685,7 +685,7 @@ export default function MachineUtilityPage() {
                 sub={`Runtime: ${n(kpis.total_runtime_hours, 1)} h`}
                 accent="border-amber-700"
                 flag={kpis.flag_high_variance}
-                flagMsg={kpis.flag_high_variance ? `Variance ${n(kpis.avg_variance_pct)}% from nominal` : undefined}
+                flagMsg={kpis.flag_high_variance ? tx("Variance {n}% from nominal", { n: n(kpis.avg_variance_pct) }) : undefined}
               />
               <KPICard
                 label={tx("Water / Batch")}
@@ -705,12 +705,12 @@ export default function MachineUtilityPage() {
                 sub={kpis.standby_pct != null ? `${n(kpis.standby_pct, 1)}% of total` : ""}
                 accent="border-orange-700"
                 flag={kpis.flag_standby_waste}
-                flagMsg={kpis.flag_standby_waste ? "Standby > 20% of consumption" : undefined}
+                flagMsg={kpis.flag_standby_waste ? tx("Standby > 20% of consumption") : undefined}
               />
               <KPICard
                 label={tx("Cost / Batch")}
                 value={kpis.cost_per_batch != null ? `$${n(kpis.cost_per_batch, 4)}` : "—"}
-                sub={kpis.total_cost != null ? `Total $${n(kpis.total_cost, 2)}` : "No cost data"}
+                sub={kpis.total_cost != null ? tx("Total ${n}", { n: n(kpis.total_cost, 2) }) : tx("No cost data")}
                 accent="border-violet-700"
               />
               <KPICard
@@ -726,7 +726,7 @@ export default function MachineUtilityPage() {
                 sub={`${kpis.order_count} orders linked`}
                 accent={kpis.anomaly_count > 0 ? "border-red-700" : "border-slate-700"}
                 flag={kpis.anomaly_count > 0}
-                flagMsg={kpis.anomaly_count > 0 ? "Review anomaly records" : undefined}
+                flagMsg={kpis.anomaly_count > 0 ? tx("Review anomaly records") : undefined}
               />
             </div>
           ) : null}

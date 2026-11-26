@@ -10,7 +10,7 @@ import { NAV_CONFIG, NavSection, NavStandaloneLink } from "./nav-config";
 import { ACTION_REGISTRY, filterActions, PaletteAction } from "@/lib/actionRegistry";
 import { apiClient } from "@/lib/api";
 import { RecentItem } from "@/hooks/useCommandPalette";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -52,14 +52,14 @@ const RECORD_ICONS: Record<string, string> = {
   invoice:        "📄",
 };
 
-const CAT_LABEL: Record<string, string> = {
-  navigation: "Navigation",
-  action:     "Actions",
-  report:     "Reports",
-  ai:         "AI Commands",
-  record:     "Records",
-  recent:     "Recent",
-};
+const CAT_LABEL: Record<string, string> = lx(() => ({
+  navigation: tx("Navigation"),
+  action:     tx("Actions"),
+  report:     tx("Reports"),
+  ai:         tx("AI Commands"),
+  record:     tx("Records"),
+  recent:     tx("Recent"),
+}));
 
 // ── Fuzzy match ───────────────────────────────────────────────────────────────
 

@@ -155,7 +155,7 @@ export default function FieldSalesPage() {
             { header: tx("Name"), accessor: "name" },
             { header: tx("Region"), accessor: (r) => r.region ?? "—" },
             { header: tx("Assigned Rep"), accessor: (r) => r.rep_name ?? "—" },
-            { header: tx("Stops"), accessor: (r) => `${r.stop_count} customers` },
+            { header: tx("Stops"), accessor: (r) => tx("{stop_count} customers", { stop_count: r.stop_count }) },
             { header: tx("Status"), accessor: (r) => (
               <Badge label={r.is_active ? tx("Active") : tx("Inactive")} variant={r.is_active ? "green" : "red"} />
             )},

@@ -114,7 +114,7 @@ export default function DispositionPage() {
                 <td className="px-4 py-3">
                   {s.days_until_expiry !== null ? (
                     <span className={s.days_until_expiry < 0 ? "text-red-700 font-bold" : s.days_until_expiry <= 14 ? "text-amber-700 font-semibold" : "text-gray-700"}>
-                      {s.days_until_expiry < 0 ? `${Math.abs(s.days_until_expiry)}d expired` : tx("{days_until_expiry}d", { days_until_expiry: s.days_until_expiry })}
+                      {s.days_until_expiry < 0 ? tx("{days_until_expiry}d expired", { days_until_expiry: Math.abs(s.days_until_expiry) }) : tx("{days_until_expiry}d", { days_until_expiry: s.days_until_expiry })}
                     </span>
                   ) : "—"}
                 </td>

@@ -20,7 +20,7 @@ function ProcurementDashboard() {
   return (
     <DashboardShell
       title={tx("Procurement Analytics")}
-      subtitle="Open POs, overdue orders, and supplier performance"
+      subtitle={tx("Open POs, overdue orders, and supplier performance")}
       days={days}
       onDaysChange={setDays}
       backHref="/dashboard/reports"
@@ -34,7 +34,7 @@ function ProcurementDashboard() {
             label={tx("Overdue POs")}
             value={data ? fmt(data.overdue_po_count) : "—"}
             color={data && data.overdue_po_count > 0 ? "red" : "green"}
-            sub={data && data.overdue_po_count > 0 ? "Needs attention" : "All on time"}
+            sub={data && data.overdue_po_count > 0 ? tx("Needs attention") : tx("All on time")}
             trend={data && data.overdue_po_count > 0 ? "down" : "up"}
           />
           <KpiCard label={tx("Open PO Value")} value={data ? fmtKES(data.open_po_value) : "—"} color="amber" sub="Open orders" />

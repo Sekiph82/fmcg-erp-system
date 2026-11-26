@@ -9,11 +9,11 @@ import { tx } from "@/lib/i18n/core";
 
 const errText = (e: unknown) => {
   const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
-  return typeof d === "string" ? d : Array.isArray(d) ? d.map((x) => (x as { msg?: string }).msg).join("; ") : (e as Error)?.message ?? "Request failed";
+  return typeof d === "string" ? d : Array.isArray(d) ? d.map((x) => (x as { msg?: string }).msg).join("; ") : (e as Error)?.message ?? tx("Request failed");
 };
 const noFixText = (f: Fix) => "error" in f && f.error === "denied"
-  ? "Location permission is blocked for this site. Allow location in the browser settings to check in with GPS."
-  : "Your location could not be found (no GPS signal or timeout). Move to open sky and try again.";
+  ? tx("Location permission is blocked for this site. Allow location in the browser settings to check in with GPS.")
+  : tx("Your location could not be found (no GPS signal or timeout). Move to open sky and try again.");
 
 /** Start / end of the signed-in rep's working day, with GPS (van_rep_day_logs). */
 function DayLog({ today, visitsDone }: { today: string; visitsDone: number }) {
@@ -27,14 +27,14 @@ function DayLog({ today, visitsDone }: { today: string; visitsDone: number }) {
       await vanSalesApi.saveDayLog({ log_date: today, [`${kind}_time`]: new Date().toISOString(), ...gps, ...(kind === "end" ? { total_visits: visitsDone } : {}) });
       return f;
     },
-    onSuccess: (f, kind) => { setMsg("error" in f ? { ok: false, text: `Day ${kind} saved without location. ${noFixText(f)}` } : { ok: true, text: `Day ${kind} saved with location (±${f.accuracy} m).` }); refetch(); },
+    onSuccess: (f, kind) => { setMsg("error" in f ? { ok: false, text: tx("Day {kind} saved without location. {noFixText}", { kind, noFixText: noFixText(f) }) } : { ok: true, text: tx("Day {kind} saved with location (±{accuracy} m).", { kind, accuracy: f.accuracy }) }); refetch(); },
     onError: (e) => setMsg({ ok: false, text: errText(e) }),
   });
   return (
     <div className="glow-card p-4 flex flex-wrap items-center gap-3 text-sm">
       <span className="font-medium text-white">{tx("My day")}</span>
-      <span className="text-slate-400">{log?.start_time ? `Started ${new Date(log.start_time + "Z").toLocaleTimeString()}${log.start_gps_lat != null ? " · GPS" : ""}` : tx("Not started")}
-        {log?.end_time ? ` · Ended ${new Date(log.end_time + "Z").toLocaleTimeString()}` : ""}</span>
+      <span className="text-slate-400">{log?.start_time ? tx("Started {date}{start_gps_lat}", { date: new Date(log.start_time + "Z").toLocaleTimeString(), start_gps_lat: log.start_gps_lat != null ? " · GPS" : "" }) : tx("Not started")}
+        {log?.end_time ? tx(" · Ended {date}", { date: new Date(log.end_time + "Z").toLocaleTimeString() }) : ""}</span>
       {!log?.start_time && <button onClick={() => mut.mutate("start")} disabled={mut.isPending} className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-medium disabled:opacity-50">{tx("Start day")}</button>}
       {log?.start_time && !log.end_time && <button onClick={() => mut.mutate("end")} disabled={mut.isPending} className="px-3 py-1.5 rounded-lg border border-white/[0.15] text-slate-200 text-xs disabled:opacity-50">{tx("End day")}</button>}
       {msg && <p role={msg.ok ? "status" : "alert"} className={`w-full text-xs ${msg.ok ? "text-emerald-400" : "text-amber-300"}`}>{msg.text}</p>}
@@ -64,7 +64,7 @@ export default function RouteExecutionPage() {
       if ("error" in f) { setNoGps(id); throw new Error(noFixText(f)); }
       return vanSalesApi.checkIn(id, { gps_lat: f.lat, gps_lng: f.lng, gps_accuracy_m: f.accuracy });
     },
-    onSuccess: (v) => { setNoGps(null); setMsg({ ok: true, text: v.gps_lat != null ? `Checked in with location (±${v.gps_accuracy_m ?? "?"} m).` : "Checked in without location." }); refetch(); },
+    onSuccess: (v) => { setNoGps(null); setMsg({ ok: true, text: v.gps_lat != null ? tx("Checked in with location (±{gps_accuracy_m} m).", { gps_accuracy_m: v.gps_accuracy_m ?? "?" }) : tx("Checked in without location.") }); refetch(); },
     onError: (e) => setMsg({ ok: false, text: errText(e) }),
   });
   const photoMut = useMutation({
@@ -77,7 +77,7 @@ export default function RouteExecutionPage() {
     onSuccess: () => refetch(),
   });
   const missedMut = useMutation({
-    mutationFn: (id: string) => vanSalesApi.markMissed(id, "Customer unavailable"),
+    mutationFn: (id: string) => vanSalesApi.markMissed(id, tx("Customer unavailable")),
     onSuccess: () => refetch(),
   });
 
@@ -179,7 +179,7 @@ export default function RouteExecutionPage() {
                 {v.check_in_time && (
                   <p className="text-xs text-slate-600 mt-2">
                     {tx("In:")} {new Date(v.check_in_time).toLocaleTimeString()}
-                    {v.check_out_time && ` · Out: ${new Date(v.check_out_time).toLocaleTimeString()}`}
+                    {v.check_out_time && tx(" · Out: {date}", { date: new Date(v.check_out_time).toLocaleTimeString() })}
                   </p>
                 )}
               </div>

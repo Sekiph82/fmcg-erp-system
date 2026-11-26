@@ -46,7 +46,7 @@ export default function WarehouseFloor() {
     <main className="max-w-xl mx-auto p-3 space-y-3">
       <h1 className="text-lg font-bold">{tx("Warehouse floor")}</h1>
       <div className="flex gap-1" role="tablist">
-        {([["pick", "Picking"], ["put", "Put away"]] as const).map(([k, l]) => (
+        {([["pick", "Picking"], ["put", tx("Put away")]] as const).map(([k, l]) => (
           <button key={k} role="tab" aria-selected={tab === k} onClick={() => { setTab(k); setMsg(null); }}
             className={`${btn} flex-1 ${tab === k ? "bg-indigo-600 text-white" : "bg-gray-100"}`}>{l}</button>))}
       </div>
@@ -86,7 +86,7 @@ function Picking({ say }: { say: (ok: boolean, t: string) => void }) {
       </button>
       {open === x.id && (
         <div className="mt-2 border-t pt-2 space-y-2">
-          <ScanInput id={`loc-${x.id}`} label={`1. Scan bin ${x.from_location_code ?? ""}`} onScan={(c) => setScan((s) => ({ ...s, location: c }))} />
+          <ScanInput id={`loc-${x.id}`} label={tx("1. Scan bin {from_location_code}", { from_location_code: x.from_location_code ?? "" })} onScan={(c) => setScan((s) => ({ ...s, location: c }))} />
           {scan.location && <p className="text-xs text-gray-600">{tx("Bin:")} {scan.location}</p>}
           <ScanInput id={`item-${x.id}`} label={tx("2. Scan item")} onScan={(c) => setScan((s) => ({ ...s, item: c }))} />
           {scan.item && <p className="text-xs text-gray-600">{tx("Item:")} {scan.item}</p>}
@@ -126,7 +126,7 @@ function Putaway({ say }: { say: (ok: boolean, t: string) => void }) {
           <div className="mt-2 border-t pt-2 space-y-2">
             <ScanInput id={`pitem-${t.id}`} label={tx("1. Scan item")} onScan={(c) => setScan((s) => ({ ...s, item: c }))} />
             {scan.item && <p className="text-xs text-gray-600">{tx("Item:")} {scan.item}</p>}
-            <ScanInput id={`ploc-${t.id}`} label={`2. Scan bin ${t.suggested_location_code ?? ""}`} onScan={(c) => setScan((s) => ({ ...s, location: c }))} />
+            <ScanInput id={`ploc-${t.id}`} label={tx("2. Scan bin {suggested_location_code}", { suggested_location_code: t.suggested_location_code ?? "" })} onScan={(c) => setScan((s) => ({ ...s, location: c }))} />
             {scan.location && <p className="text-xs text-gray-600">{tx("Bin:")} {scan.location}</p>}
             {offSuggestion && <input aria-label={tx("Reason for another bin")} placeholder={tx("Why a different bin?")} value={scan.reason} onChange={(e) => setScan({ ...scan, reason: e.target.value })} className="w-full border rounded-lg px-2 py-2 text-sm" />}
             <button onClick={() => done(t)} disabled={!scan.item || !scan.location} className={`${btn} w-full bg-emerald-600 text-white`}>{tx("Confirm put away")}</button>

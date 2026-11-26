@@ -37,7 +37,7 @@ export default function ChangeLogsPage() {
       </div>
 
       <div className="flex gap-2">
-        {[["Pending Review", true], ["All", undefined]].map(([label, val]) => (
+        {[[tx("Pending Review"), true], [tx("All"), undefined]].map(([label, val]) => (
           <button key={String(label)} onClick={() => setReviewPending(val as boolean | undefined)} className={`px-3 py-1 text-xs rounded border ${reviewPending === val ? "bg-gray-900 text-white" : "bg-white hover:bg-gray-50"}`}>{label as string}</button>
         ))}
       </div>

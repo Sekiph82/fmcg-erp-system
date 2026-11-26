@@ -9,7 +9,7 @@ import {
 } from "@/lib/marketingApi";
 import { tx, lx } from "@/lib/i18n/core";
 
-const LABEL: Record<AdProvider, string> = { meta: "Meta", google: "Google Ads", linkedin: "LinkedIn", tiktok: "TikTok" };
+const LABEL: Record<AdProvider, string> = lx(() => ({ meta: tx("Meta"), google: tx("Google Ads"), linkedin: tx("LinkedIn"), tiktok: tx("TikTok") }));
 type Field = { k: string; label: string; list?: boolean; lines?: boolean; def?: string; type?: string };
 const FIELDS: Record<AdProvider, Field[]> = lx(() => ({
   meta: [{ k: "page_id", label: tx("Facebook Page id") }, { k: "link", label: tx("Link (https)") }, { k: "message", label: tx("Ad text") },
@@ -22,13 +22,13 @@ const FIELDS: Record<AdProvider, Field[]> = lx(() => ({
   tiktok: [{ k: "location_ids", label: tx("Location ids (comma separated)"), list: true }, { k: "video_id", label: tx("Uploaded video_id") },
     { k: "identity_id", label: tx("Identity id") }, { k: "ad_text", label: tx("Ad text (≤100)") }, { k: "landing_page_url", label: tx("Landing page (https)") }],
 }));
-const ACTION_LABEL: Partial<Record<AdTreeAction, string>> = {
-  validate: "Validate", request_submit: "Request approval", submit: "Submit (paused)", request_resume: "Request resume approval",
-  resume: "Resume", pause: "Pause", request_budget: "Request budget approval", reconcile: "Reconcile",
-};
+const ACTION_LABEL: Partial<Record<AdTreeAction, string>> = lx(() => ({
+  validate: tx("Validate"), request_submit: tx("Request approval"), submit: tx("Submit (paused)"), request_resume: tx("Request resume approval"),
+  resume: tx("Resume"), pause: tx("Pause"), request_budget: tx("Request budget approval"), reconcile: tx("Reconcile"),
+}));
 const err = (e: unknown) => {
   const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
-  return typeof d === "string" ? d : d && typeof d === "object" && "detail" in d ? String((d as { detail: unknown }).detail) : "Request failed.";
+  return typeof d === "string" ? d : d && typeof d === "object" && "detail" in d ? String((d as { detail: unknown }).detail) : tx("Request failed.");
 };
 const newKey = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 const input = "border rounded px-2 py-1 text-xs bg-white text-gray-900";
@@ -111,16 +111,16 @@ function AdminControls({ ctrl, isAdmin, busy, run, aid }: { ctrl: AdAccountContr
   const [daily, setDaily] = useState(String(ctrl.daily_cap ?? ""));
   const [monthly, setMonthly] = useState(String(ctrl.monthly_cap ?? ""));
   const [members, setMembers] = useState(ctrl.members.join(", "));
-  const why = isAdmin ? null : "Admins only.";
+  const why = isAdmin ? null : tx("Admins only.");
   return (
     <form className="flex flex-wrap gap-2 items-end" onSubmit={(e) => { e.preventDefault();
-      run(() => adCampaignsApi.setControls(aid, { daily_cap: daily, monthly_cap: monthly, members: members.split(",").map((m) => m.trim()).filter(Boolean) }), "Controls saved."); }}>
+      run(() => adCampaignsApi.setControls(aid, { daily_cap: daily, monthly_cap: monthly, members: members.split(",").map((m) => m.trim()).filter(Boolean) }), tx("Controls saved.")); }}>
       <label className="text-xs">{tx("Daily cap")}<input aria-label={tx("Daily cap")} type="number" min="0.01" step="0.01" className={`${input} w-24 block`} value={daily} onChange={(e) => setDaily(e.target.value)} disabled={!isAdmin} /></label>
       <label className="text-xs">{tx("Monthly cap")}<input aria-label={tx("Monthly cap")} type="number" min="0.01" step="0.01" className={`${input} w-28 block`} value={monthly} onChange={(e) => setMonthly(e.target.value)} disabled={!isAdmin} /></label>
       <label className="text-xs">{tx("Members (usernames)")}<input aria-label={tx("Members")} className={`${input} w-64 block`} value={members} onChange={(e) => setMembers(e.target.value)} disabled={!isAdmin} /></label>
       <button className="border rounded px-3 py-1 text-xs disabled:opacity-50" disabled={!isAdmin || busy} title={why ?? ""}>{tx("Save controls")}</button>
       <button type="button" className="border rounded px-3 py-1 text-xs disabled:opacity-50" disabled={!isAdmin || busy} title={why ?? ""}
-        onClick={() => run(() => adCampaignsApi.activate(aid, !ctrl.activated), ctrl.activated ? "Account deactivated." : "Account activated (live still needs the global switches).")}>
+        onClick={() => run(() => adCampaignsApi.activate(aid, !ctrl.activated), ctrl.activated ? tx("Account deactivated.") : tx("Account activated (live still needs the global switches)."))}>
         {ctrl.activated ? tx("Deactivate live changes") : tx("Activate live changes")}</button>
       {why && <span className="text-xs text-gray-500">{why}</span>}
     </form>
@@ -153,11 +153,11 @@ function Wizard({ acct, prov, busy, run }: { acct: AdAccountInfo; prov: AdProvid
       <p className="text-xs text-gray-500">{tx("Creates:")} {prov.levels.map((l) => l.label).join(" → ")}{tx(". Only objectives this builder can complete from documented fields are offered.")}
         {!prov.write_tier_ok && tx(" LinkedIn Development tier: provider writes are refused until Standard tier.")}</p>
       {minApplies && <p className="text-xs text-gray-700">{tx("Minimum daily budget:")} {prov.min_daily_budget} {acct.currency}
-        {prov.min_budget_currency ? "" : ` (${LABEL[acct.provider]} documents ${prov.min_daily_budget} USD; applied as ${prov.min_daily_budget} ${acct.currency} because the local-currency minimum is not verified)`}{tx(". Global guardrail:")} {prov.guardrail} {acct.currency}/day.</p>}
+        {prov.min_budget_currency ? "" : tx(" ({LABEL} documents {min_daily_budget} USD; applied as {min_daily_budget} {currency} because the local-currency minimum is not verified)", { LABEL: LABEL[acct.provider], min_daily_budget: prov.min_daily_budget, currency: acct.currency })}{tx(". Global guardrail:")} {prov.guardrail} {acct.currency}/day.</p>}
       {minApplies && (prov.min_daily_budget ?? 0) > prov.guardrail && <p role="alert" className="text-xs text-red-700">{tx("The provider minimum is above the global guardrail ADS_MAX_DAILY_BUDGET (")}{prov.guardrail}{tx("): no")} {LABEL[acct.provider]} {tx("campaign can be valid until the owner raises the guardrail.")}</p>}
       <form className="grid grid-cols-1 md:grid-cols-3 gap-2" onSubmit={(e) => { e.preventDefault();
         run(() => adCampaignsApi.create({ account_id: acct.id, idempotency_key: key, name, objective, daily_budget: budget, spec: toSpec() })
-          .then(() => { setName(""); setSpec(blank); setKey(newKey()); }), "Campaign draft created (paused, not sent).");
+          .then(() => { setName(""); setSpec(blank); setKey(newKey()); }), tx("Campaign draft created (paused, not sent)."));
       }}>
         <label className="text-xs">{tx("Campaign name")}<input required maxLength={150} className={`${input} w-full block`} value={name} onChange={(e) => setName(e.target.value)} /></label>
         <label className="text-xs">{tx("Objective")}<select className={`${input} w-full block`} value={objective} onChange={(e) => setObjective(e.target.value)}>
@@ -197,7 +197,7 @@ function TreeCard({ t, busy, run }: { t: AdCampaignTree; busy: boolean; run: (fn
       {t.pending_unknown > 0 && <p className="text-xs text-red-700">{t.pending_unknown} {tx("provider call(s) with unknown outcome — reconcile before anything else.")}</p>}
       {t.validation && <p className={`text-xs ${t.validation.ok ? "text-emerald-700" : "text-red-700"}`}>
         {t.validation.ok ? (t.validation.provider_checked ? tx("Checked by the platform's validate-only call.") : tx("Passed local checks (no platform validate-only for this provider)."))
-          : `Not valid: ${t.validation.problems.join(" ")}`}</p>}
+          : tx("Not valid: {problems}", { problems: t.validation.problems.join(" ") })}</p>}
 
       <ul className="text-xs space-y-1" aria-label={tx("Campaign tree")}>
         {t.nodes.map((n, i) => (
@@ -211,17 +211,17 @@ function TreeCard({ t, busy, run }: { t: AdCampaignTree; busy: boolean; run: (fn
 
       <div className="flex flex-wrap gap-2 items-start">
         {btn("validate", () => adCampaignsApi.run(t.id, "validate"), "Validated.")}
-        {btn("request_submit", () => adCampaignsApi.requestApproval(t.id, "SUBMIT"), "Approval requested.")}
+        {btn("request_submit", () => adCampaignsApi.requestApproval(t.id, "SUBMIT"), tx("Approval requested."))}
         {btn("submit", () => adCampaignsApi.run(t.id, "submit"), "Submitted.")}
-        {btn("request_resume", () => adCampaignsApi.requestApproval(t.id, "RESUME"), "Resume approval requested.")}
-        {btn("resume", () => adCampaignsApi.run(t.id, "resume"), "Resume sent.")}
+        {btn("request_resume", () => adCampaignsApi.requestApproval(t.id, "RESUME"), tx("Resume approval requested."))}
+        {btn("resume", () => adCampaignsApi.run(t.id, "resume"), tx("Resume sent."))}
         {btn("pause", () => adCampaignsApi.run(t.id, "pause"), "Paused.")}
-        {btn("request_budget", () => adCampaignsApi.requestApproval(t.id, "BUDGET"), "Budget approval requested.")}
-        {btn("reconcile", () => adCampaignsApi.run(t.id, "reconcile"), "Reconciled by read-back.")}
+        {btn("request_budget", () => adCampaignsApi.requestApproval(t.id, "BUDGET"), tx("Budget approval requested."))}
+        {btn("reconcile", () => adCampaignsApi.run(t.id, "reconcile"), tx("Reconciled by read-back."))}
       </div>
 
       <form className="flex flex-wrap gap-2 items-center" onSubmit={(e) => { e.preventDefault();
-        run(() => adCampaignsApi.budget(t.id, budget), "New budget version saved; it needs approval."); }}>
+        run(() => adCampaignsApi.budget(t.id, budget), tx("New budget version saved; it needs approval.")); }}>
         <label className="text-xs">{tx("Daily budget")}<input aria-label={tx("Daily budget for {name}", { name: t.name })} type="number" min="0.01" step="0.01" className={`${input} w-24 ml-1`} value={budget} onChange={(e) => setBudget(e.target.value)} /></label>
         <button className="border rounded px-2 py-1 text-xs disabled:opacity-40" disabled={busy || t.actions.edit_budget !== null} title={t.actions.edit_budget ?? ""}>{tx("Edit budget (new version)")}</button>
         {t.actions.edit_budget && <span className="text-[10px] text-gray-500">{t.actions.edit_budget}</span>}

@@ -59,7 +59,7 @@ export default function DistributorsPage() {
             { header: tx("Region"), accessor: (r) => r.region ?? "—" },
             { header: tx("Contact"), accessor: (r) => r.contact_person ?? "—" },
             { header: tx("Phone"), accessor: (r) => r.phone ?? "—" },
-            { header: tx("Terms"), accessor: (r) => `${r.payment_terms_days} days` },
+            { header: tx("Terms"), accessor: (r) => tx("{payment_terms_days} days", { payment_terms_days: r.payment_terms_days }) },
             { header: tx("Status"), accessor: (r) => (
               <Badge label={r.status} variant={statusVariant[r.status] ?? "gray"} />
             )},

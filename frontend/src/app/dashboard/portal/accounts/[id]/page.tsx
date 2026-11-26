@@ -27,7 +27,7 @@ export default function PortalAccountDetailPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const errText = (e: unknown) => {
     const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
-    return typeof d === "string" ? d : "Request failed.";
+    return typeof d === "string" ? d : tx("Request failed.");
   };
 
   const load = async () => {
@@ -72,7 +72,7 @@ export default function PortalAccountDetailPage() {
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "overview", label: tx("Overview") },
-    { id: "users", label: `Users (${users.length})` },
+    { id: "users", label: tx("Users ({length})", { length: users.length }) },
     { id: "orders", label: tx("Orders") },
     { id: "invoices", label: tx("Invoices") },
     { id: "claims", label: tx("Claims") },

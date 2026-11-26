@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { RequirePermission } from "@/components/PermissionGuard";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 const P = "/api/v1/seo-pro";
 type Json = Record<string, any>;
@@ -13,7 +13,7 @@ const btn = "px-3 py-2 rounded-lg bg-indigo-600 text-sm text-white disabled:opac
 
 function errText(e: any): string {
   const d = e?.response?.data?.detail;
-  return typeof d === "string" ? d : d?.message ?? "Request failed.";
+  return typeof d === "string" ? d : d?.message ?? tx("Request failed.");
 }
 
 function useAction() {
@@ -53,8 +53,8 @@ function Gsc() {
           ? <p className="text-sm text-slate-300">{tx("Connected as")} {state.account}{tx(". Data source:")} {state.source === "LIVE" ? tx("Google (live)") : tx("LOCAL SIMULATOR (not Google data)")}.{state.can_submit_sitemaps ? "" : tx(" Sitemap submission needs the write connection.")}</p>
           : <p role="alert" className="text-sm text-amber-400">NOT_CONFIGURED: {state.reasons.join(" ")}</p>}
         <div className="flex flex-wrap gap-2">
-          <button className={btn} disabled={busy} onClick={() => run(async () => { const r = await apiClient.get(`${P}/gsc/connect-url`); window.location.href = r.data.authorize_url; }, "Redirecting to Google...")}>{tx("Connect (read-only)")}</button>
-          <button className={btn} disabled={busy} onClick={() => run(async () => { const r = await apiClient.get(`${P}/gsc/connect-url`, { params: { write: true } }); window.location.href = r.data.authorize_url; }, "Redirecting to Google...")}>{tx("Connect with sitemap submission")}</button>
+          <button className={btn} disabled={busy} onClick={() => run(async () => { const r = await apiClient.get(`${P}/gsc/connect-url`); window.location.href = r.data.authorize_url; }, tx("Redirecting to Google..."))}>{tx("Connect (read-only)")}</button>
+          <button className={btn} disabled={busy} onClick={() => run(async () => { const r = await apiClient.get(`${P}/gsc/connect-url`, { params: { write: true } }); window.location.href = r.data.authorize_url; }, tx("Redirecting to Google..."))}>{tx("Connect with sitemap submission")}</button>
           <button className={btn} disabled={busy || !connected} onClick={() => run(async () => { const r = await apiClient.get(`${P}/gsc/sites`); setSites(r.data); if (r.data[0] && !site) setSite(r.data[0].site_url); })}>{tx("Load properties")}</button>
         </div>
         {note}
@@ -65,7 +65,7 @@ function Gsc() {
           <select aria-label={tx("Property")} className={inp} value={site} onChange={(e) => setSite(e.target.value)}><option value="">{tx("Property")}</option>{sites.map((s) => <option key={s.site_url}>{s.site_url}</option>)}</select>
           <input aria-label={tx("Start date")} type="date" className={inp} value={range.start} onChange={(e) => setRange({ ...range, start: e.target.value })} />
           <input aria-label={tx("End date")} type="date" className={inp} value={range.end} onChange={(e) => setRange({ ...range, end: e.target.value })} />
-          <select aria-label={tx("Dimensions")} className={inp} value={dims} onChange={(e) => setDims(e.target.value)}>{[tx("query"), tx("page"), tx("country"), tx("device"), tx("date"), tx("query,page")].map((d) => <option key={d}>{d}</option>)}</select>
+          <select aria-label={tx("Dimensions")} className={inp} value={dims} onChange={(e) => setDims(e.target.value)}>{[["query", tx("query")], ["page", tx("page")], ["country", tx("country")], ["device", tx("device")], ["date", tx("date")], ["query,page", tx("query,page")]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
           <input aria-label={tx("Country filter (3-letter code)")} placeholder={tx("Country e.g. ken")} maxLength={3} className={`${inp} w-32`} value={country} onChange={(e) => setCountry(e.target.value)} />
           <button className={btn} disabled={busy || !connected || !site || !range.start || !range.end} onClick={() => run(async () => {
             const r = await apiClient.post(`${P}/gsc/analytics`, { site_url: site, start_date: range.start, end_date: range.end, dimensions: dims.split(","), paginate: true,
@@ -83,14 +83,14 @@ function Gsc() {
         <h3 className="font-medium">{tx("Sitemaps (a second person approves before anything is sent to Google)")}</h3>
         <div className="flex flex-wrap gap-2">
           <input aria-label={tx("Sitemap URL")} className={`${inp} flex-1 min-w-[16rem]`} placeholder="https://.../sitemap.xml" value={feed} onChange={(e) => setFeed(e.target.value)} />
-          <button className={btn} disabled={busy || !site || !feed} onClick={() => run(async () => { await apiClient.post(`${P}/gsc/submissions`, { site_url: site, feedpath: feed }); await loadSubs(); }, "Submission requested; waiting for approval.")}>{tx("Request submission")}</button>
+          <button className={btn} disabled={busy || !site || !feed} onClick={() => run(async () => { await apiClient.post(`${P}/gsc/submissions`, { site_url: site, feedpath: feed }); await loadSubs(); }, tx("Submission requested; waiting for approval."))}>{tx("Request submission")}</button>
         </div>
         <ul className="text-sm space-y-1">{subs.map((s) => <li key={s.id} className="flex flex-wrap gap-2 items-center">
           <span>{s.feedpath}</span><span className="text-slate-400">{s.status}{s.result ? ` · ${s.result}` : ""}</span>
           {s.status === "PENDING" && <>
-            <button className={btn} disabled={busy} onClick={() => run(async () => { await apiClient.post(`${P}/gsc/submissions/${s.id}/decide`, { approve: true }); await loadSubs(); }, "Decision recorded.")}>{tx("Approve and submit")}</button>
+            <button className={btn} disabled={busy} onClick={() => run(async () => { await apiClient.post(`${P}/gsc/submissions/${s.id}/decide`, { approve: true }); await loadSubs(); }, tx("Decision recorded."))}>{tx("Approve and submit")}</button>
             <button className="px-3 py-2 rounded-lg border border-slate-600 text-sm" disabled={busy} onClick={() => run(async () => { await apiClient.post(`${P}/gsc/submissions/${s.id}/decide`, { approve: false }); await loadSubs(); }, "Rejected.")}>{tx("Reject")}</button></>}
-          {s.status === "SUBMITTED" && <button className="underline text-sm" onClick={() => run(async () => { const r = await apiClient.get(`${P}/gsc/sitemaps/status`, { params: { site_url: s.site_url, feedpath: s.feedpath } }); setInspect(r.data); }, "Status read from Search Console.")}>{tx("Read status")}</button>}
+          {s.status === "SUBMITTED" && <button className="underline text-sm" onClick={() => run(async () => { const r = await apiClient.get(`${P}/gsc/sitemaps/status`, { params: { site_url: s.site_url, feedpath: s.feedpath } }); setInspect(r.data); }, tx("Status read from Search Console."))}>{tx("Read status")}</button>}
         </li>)}</ul>
         <div className="flex flex-wrap gap-2">
           <input aria-label={tx("URL to inspect")} className={`${inp} flex-1 min-w-[16rem]`} placeholder={tx("URL to inspect")} value={inspectUrl} onChange={(e) => setInspectUrl(e.target.value)} />
@@ -130,13 +130,13 @@ function Crawler() {
         <div className="flex flex-wrap gap-2 items-center">
           <input aria-label={tx("Site origin")} className={`${inp} w-72`} placeholder="https://www.example.com" value={origin} onChange={(e) => setOrigin(e.target.value)} />
           <label className="text-sm flex gap-1 items-center"><input type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} /> {tx("I own this site or am authorised to audit it")}</label>
-          <button className={btn} disabled={busy || !origin || !confirm} onClick={() => run(async () => { await apiClient.post(`${P}/sites`, { origin, kind: "OWN", confirm_authorized: true }); setOrigin(""); load(); }, "Site authorised.")}>{tx("Add site")}</button>
+          <button className={btn} disabled={busy || !origin || !confirm} onClick={() => run(async () => { await apiClient.post(`${P}/sites`, { origin, kind: "OWN", confirm_authorized: true }); setOrigin(""); load(); }, tx("Site authorised."))}>{tx("Add site")}</button>
         </div>
         {note}
       </div>
       <div className={box}>
         <h2 className="font-semibold">{tx("Crawls")}</h2>
-        <div className="flex flex-wrap gap-2">{own.map((s) => <button key={s.id} className={btn} disabled={busy} onClick={() => run(async () => { const r = await apiClient.post(`${P}/crawl`, { origin: s.origin }); load(); setDetail((await apiClient.get(`${P}/crawls/${r.data.id}`)).data); }, "Crawl finished.")}>{tx("Crawl")} {s.origin}</button>)}
+        <div className="flex flex-wrap gap-2">{own.map((s) => <button key={s.id} className={btn} disabled={busy} onClick={() => run(async () => { const r = await apiClient.post(`${P}/crawl`, { origin: s.origin }); load(); setDetail((await apiClient.get(`${P}/crawls/${r.data.id}`)).data); }, tx("Crawl finished."))}>{tx("Crawl")} {s.origin}</button>)}
           {own.length === 0 && <p className="text-sm text-slate-400">{tx("Authorise a site first.")}</p>}</div>
         <ul className="text-sm space-y-1">{crawls.map((c, i) => <li key={c.id} className="flex flex-wrap gap-2">
           <span>{c.origin} · {c.status} · {c.summary ? tx("{pages} pages, {errors} errors, {warnings} warnings", { pages: c.summary.pages, errors: c.summary.errors, warnings: c.summary.warnings }) : c.error}</span>
@@ -150,8 +150,8 @@ function Crawler() {
         <h2 className="font-semibold">{tx("Core Web Vitals")}</h2>
         <p className="text-sm text-slate-400">{tx("Lab (a local headless browser run) and field (Chrome UX Report, real users) are different measurements and are never mixed.")}</p>
         <div className="flex flex-wrap gap-2">{own.map((s) => <span key={s.id} className="flex gap-2">
-          <button className={btn} disabled={busy} onClick={() => run(async () => { const r = await apiClient.post(`${P}/vitals/lab`, { url: s.origin + "/" }); setVit((v) => [r.data, ...v]); }, "Lab run finished.")}>{tx("Lab:")} {s.origin}</button>
-          <button className={btn} disabled={busy} onClick={() => run(async () => { const r = await apiClient.post(`${P}/vitals/field`, { url: s.origin }); setVit((v) => [{ ...r.data, url: s.origin }, ...v]); }, "Field data requested.")}>{tx("Field:")} {s.origin}</button></span>)}</div>
+          <button className={btn} disabled={busy} onClick={() => run(async () => { const r = await apiClient.post(`${P}/vitals/lab`, { url: s.origin + "/" }); setVit((v) => [r.data, ...v]); }, tx("Lab run finished."))}>{tx("Lab:")} {s.origin}</button>
+          <button className={btn} disabled={busy} onClick={() => run(async () => { const r = await apiClient.post(`${P}/vitals/field`, { url: s.origin }); setVit((v) => [{ ...r.data, url: s.origin }, ...v]); }, tx("Field data requested."))}>{tx("Field:")} {s.origin}</button></span>)}</div>
         <ul className="text-sm space-y-1">{vit.map((v, i) => <li key={i}><b>{v.kind}</b> {v.url ?? ""} · {v.state}{v.reason ? ` · ${v.reason}` : ""}{v.metrics ? ` · ${JSON.stringify(v.kind === "FIELD" ? Object.fromEntries(Object.entries(v.metrics).map(([k, m]: [string, any]) => [k, m.p75])) : v.metrics)}` : ""}</li>)}</ul>
       </div>
       <div className={box}>
@@ -197,14 +197,14 @@ function Aeo() {
           const csvl = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
           await apiClient.post(`${P}/aeo/sets`, { name: form.name, locale: form.locale, prompts: lines(form.prompts), brand_terms: csvl(form.brand), brand_domains: csvl(form.domains), competitor_terms: csvl(form.competitors), provider: form.provider, consent_confirmed: form.consent });
           load();
-        }, "Prompt set saved.")}>{tx("Save prompt set")}</button>
+        }, tx("Prompt set saved."))}>{tx("Save prompt set")}</button>
         {note}
       </div>
       <div className={box}>
         <div className="flex flex-wrap gap-2">{sets.map((s) => <button key={s.id} className={`${btn} ${sel === s.id ? "" : "opacity-70"}`} onClick={() => open(s.id)}>{s.name} ({s.locale})</button>)}</div>
         {st && <>
           <p className={`text-sm ${st.state === "OK" ? "text-emerald-400" : "text-amber-400"}`} role="status">{st.state}{st.reasons.length ? `: ${st.reasons.join(" ")}` : tx(" · source {source} · {calls_this_month}/{monthly_cap} calls this month", { source: st.source, calls_this_month: st.calls_this_month, monthly_cap: st.monthly_cap })}</p>
-          <button className={btn} disabled={busy || st.state !== "OK"} onClick={() => run(async () => { await apiClient.post(`${P}/aeo/sets/${sel}/run`); open(sel); }, "Run finished.")}>{tx("Run now")}</button>
+          <button className={btn} disabled={busy || st.state !== "OK"} onClick={() => run(async () => { await apiClient.post(`${P}/aeo/sets/${sel}/run`); open(sel); }, tx("Run finished."))}>{tx("Run now")}</button>
           <table className="w-full text-sm"><thead><tr className="text-left text-slate-400"><th>{tx("When")}</th><th>{tx("Source")}</th><th>{tx("Model")}</th><th>{tx("Samples")}</th><th>{tx("Brand mention (95% CI)")}</th><th>{tx("Brand cited")}</th></tr></thead>
             <tbody>{trend.map((t) => <tr key={t.run_id} className="border-t border-slate-800"><td>{t.at.slice(0, 16)}</td><td>{t.source}</td><td>{t.model_version}</td><td>{t.samples}{t.low_sample ? tx(" (low)") : ""}</td>
               <td>{(t.brand_mention.rate * 100).toFixed(0)}% ({(t.brand_mention.low * 100).toFixed(0)}-{(t.brand_mention.high * 100).toFixed(0)}%)</td><td>{t.brand_citation.rate === null ? "-" : `${(t.brand_citation.rate * 100).toFixed(0)}%`}</td></tr>)}</tbody></table>
@@ -227,8 +227,8 @@ function Verification() {
       <p className="text-sm text-slate-400">{tx("Local outbox only: messages are never sent to a real mail server. Links work once, for 15 minutes, in the visitor's own browser.")}</p>
       <div className="flex flex-wrap gap-2">
         <input aria-label={tx("Address to revoke")} className={`${inp} w-72`} placeholder="visitor@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <button className={btn} disabled={busy || !email} onClick={() => run(async () => { await apiClient.post("/api/v1/visitor-verification/revoke", { email }); setEmail(""); load(); }, "Verification revoked.")}>{tx("Revoke address")}</button>
-        <button className={btn} disabled={busy} onClick={() => run(async () => { await apiClient.post("/api/v1/visitor-verification/purge"); load(); }, "Old challenges deleted.")}>{tx("Delete old challenges")}</button>
+        <button className={btn} disabled={busy || !email} onClick={() => run(async () => { await apiClient.post("/api/v1/visitor-verification/revoke", { email }); setEmail(""); load(); }, tx("Verification revoked."))}>{tx("Revoke address")}</button>
+        <button className={btn} disabled={busy} onClick={() => run(async () => { await apiClient.post("/api/v1/visitor-verification/purge"); load(); }, tx("Old challenges deleted."))}>{tx("Delete old challenges")}</button>
         <button className="underline text-sm" onClick={load}>{tx("Refresh outbox")}</button>
       </div>
       <ul className="text-sm space-y-2">{box_.map((m, i) => <li key={i} className="border-t border-slate-800 pt-2"><b>{m.subject}</b> {tx("to")} {m.to} ({m.channel})<pre className="whitespace-pre-wrap text-xs text-slate-400">{m.body}</pre></li>)}
@@ -238,7 +238,7 @@ function Verification() {
   );
 }
 
-const TABS = [["gsc", "Search Console"], ["crawl", "Technical SEO"], ["aeo", "AEO measurement"], ["verify", "Visitor verification"]] as const;
+const TABS = lx(() => [["gsc", tx("Search Console")], ["crawl", "Technical SEO"], ["aeo", tx("AEO measurement")], ["verify", tx("Visitor verification")]] as const);
 
 export default function SeoProPage() {
   const [tab, setTab] = useState<(typeof TABS)[number][0]>("gsc");

@@ -80,10 +80,10 @@ export default function FATransferPage() {
 
         <div className="grid grid-cols-2 gap-4">
           {[
-            ["New Location", location, setLocation],
-            ["New Plant", plant, setPlant],
-            ["New Department", department, setDepartment],
-            ["New Cost Center", costCenter, setCostCenter],
+            [tx("New Location"), location, setLocation],
+            [tx("New Plant"), plant, setPlant],
+            [tx("New Department"), department, setDepartment],
+            [tx("New Cost Center"), costCenter, setCostCenter],
           ].map(([label, val, setter]) => (
             <div key={label as string} className="flex flex-col gap-1">
               <label className="text-xs text-gray-500">{label as string}</label>

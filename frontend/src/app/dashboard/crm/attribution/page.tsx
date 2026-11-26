@@ -2,10 +2,10 @@
 // M36.S05.T001 journey attribution: source -> lead -> opportunity -> order -> repeat purchase.
 import { useCallback, useEffect, useState } from "react";
 import { crmApi, type AttributionReport } from "@/lib/crm_pipeline";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
-const MODELS = [["first", "First touch"], ["last", "Last touch"], ["linear", "Linear (equal split)"]] as const;
+const MODELS = lx(() => [["first", tx("First touch")], ["last", tx("Last touch")], ["linear", tx("Linear (equal split)")]] as const);
 
 export default function CRMAttributionPage() {
   const today = new Date();

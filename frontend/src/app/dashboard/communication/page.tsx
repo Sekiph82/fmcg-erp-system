@@ -28,7 +28,7 @@ export default function CommunicationPage() {
   return (
     <ModuleWorkspace
       title={tx("Communication")}
-      description="Messages, chatter, email, calls, calendar, notifications"
+      description={tx("Messages, chatter, email, calls, calendar, notifications")}
       tabs={tabs}
       defaultTab="messages"
     />

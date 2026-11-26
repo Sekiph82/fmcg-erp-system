@@ -74,7 +74,7 @@ export default function ProductionAnalyticsPage() {
         </div>
 
         {/* Plan vs Actual */}
-        <ChartCard title={tx("Plan vs Actual Production")} subtitle={`Last ${days} days`}>
+        <ChartCard title={tx("Plan vs Actual Production")} subtitle={tx("Last {days} days", { days })}>
           <LineChart
             series={[
               { name: "Planned", color: "#6366f1", data: data?.plan_vs_actual ?? [], dashed: true },
@@ -85,16 +85,16 @@ export default function ProductionAnalyticsPage() {
         </ChartCard>
 
         {/* Downtime trend */}
-        <ChartCard title={tx("Downtime Trend")} subtitle="Hours per day">
+        <ChartCard title={tx("Downtime Trend")} subtitle={tx("Hours per day")}>
           <LineChart
-            series={[{ name: "Downtime (h)", color: "#ef4444", data: data?.downtime_trend ?? [] }]}
+            series={[{ name: tx("Downtime (h)"), color: "#ef4444", data: data?.downtime_trend ?? [] }]}
             formatY={(v) => `${fmt(v, 1)}h`}
             showLegend={false}
           />
         </ChartCard>
 
         {/* QC Rejection trend */}
-        <ChartCard title={tx("QC Rejection Trend")} subtitle="Failed inspections per day">
+        <ChartCard title={tx("QC Rejection Trend")} subtitle={tx("Failed inspections per day")}>
           <LineChart
             series={[{ name: "Rejections", color: "#f59e0b", data: data?.rejection_trend ?? [] }]}
             formatY={(v) => fmt(v, 0)}

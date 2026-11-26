@@ -7,7 +7,7 @@ import { tx } from "@/lib/i18n/core";
 type FieldDef = { key: string; label: string; type: string; required: boolean; unique: boolean; options?: string[] };
 type OType = { key: string; label: string; label_plural: string; fields: FieldDef[]; display_field: string };
 type Rec = { id: string; display: string; data: Record<string, unknown>; associations?: { id: string; target_type: string; target_id: string; label: string }[] };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 const TYPES = ["text", "number", "date", "bool", "select", "email", "phone"];
 const inp = "border rounded px-2 py-1 text-xs";
 
@@ -51,7 +51,7 @@ export default function CustomObjectsPage() {
             <label><input type="checkbox" checked={f.required} onChange={(e) => setField(i, { required: e.target.checked })} /> {tx("required")}</label>
             <label><input type="checkbox" checked={f.unique} onChange={(e) => setField(i, { unique: e.target.checked })} /> {tx("unique")}</label></div>)}
           <div className="flex gap-2"><button className="border rounded px-2 text-xs" onClick={() => setDef({ ...def, fields: [...def.fields, { key: "", label: "", type: "text", required: false, unique: false }] })}>{tx("+ Field")}</button>
-            <button className="bg-indigo-600 text-white rounded px-3 py-1 text-xs" onClick={() => act(apiClient.post("/api/v1/custom-objects/types", { ...def, label_plural: def.label + "s" }), "Object type created.", loadTypes)}>{tx("Create type")}</button></div>
+            <button className="bg-indigo-600 text-white rounded px-3 py-1 text-xs" onClick={() => act(apiClient.post("/api/v1/custom-objects/types", { ...def, label_plural: def.label + "s" }), tx("Object type created."), loadTypes)}>{tx("Create type")}</button></div>
         </div></details>
       {cur && <section className="space-y-2">
         <div className="flex flex-wrap gap-2 items-center"><h3 className="font-semibold">{cur.label_plural}</h3>
@@ -70,7 +70,7 @@ export default function CustomObjectsPage() {
             {open && <button className="text-red-600 underline text-xs" onClick={() => act(apiClient.delete(`/api/v1/custom-objects/${cur.key}/records/${open.id}`), "Deleted.", () => { setOpen(null); loadRecs(cur); })}>{tx("Delete")}</button>}</div>
           {open && <div className="text-xs space-y-1"><b>{tx("Associations")}</b>
             <ul>{(open.associations ?? []).map((a) => <li key={a.id}>{a.target_type} {a.target_id} ({a.label}) <button className="underline" onClick={() => act(apiClient.delete(`/api/v1/custom-objects/${cur.key}/records/${open.id}/associations/${a.id}`), "Removed.", () => openRec(open))}>{tx("remove")}</button></li>)}</ul>
-            <div className="flex flex-wrap gap-2"><select aria-label={tx("Associate with")} className={inp} value={assoc.target_type} onChange={(e) => setAssoc({ ...assoc, target_type: e.target.value })}>{[tx("customer"), "crm_record", tx("product"), "sales_order", "co_record"].map((t) => <option key={t}>{t}</option>)}</select>
+            <div className="flex flex-wrap gap-2"><select aria-label={tx("Associate with")} className={inp} value={assoc.target_type} onChange={(e) => setAssoc({ ...assoc, target_type: e.target.value })}>{[["customer", tx("customer")], ["crm_record", "crm_record"], ["product", tx("product")], ["sales_order", "sales_order"], ["co_record", "co_record"]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
               <input aria-label={tx("Target id")} className={inp} placeholder={tx("record id")} value={assoc.target_id} onChange={(e) => setAssoc({ ...assoc, target_id: e.target.value })} />
               <input aria-label={tx("Association label")} className={inp} value={assoc.label} onChange={(e) => setAssoc({ ...assoc, label: e.target.value })} />
               <button className="border rounded px-2" onClick={() => act(apiClient.post(`/api/v1/custom-objects/${cur.key}/records/${open.id}/associations`, assoc), "Associated.", () => openRec(open))}>{tx("Add")}</button></div></div>}

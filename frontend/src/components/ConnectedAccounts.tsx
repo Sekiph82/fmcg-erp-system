@@ -6,7 +6,7 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 interface Provider { provider: "google" | "microsoft"; purposes: string[]; configured: boolean }
 interface Connection {
@@ -16,13 +16,13 @@ interface Connection {
 
 const LABEL: Record<string, string> = { google: "Google", microsoft: "Microsoft 365" };
 const PURPOSE: Record<string, string> = { mail: "Mail", calendar: "Calendar" };
-const REASON: Record<string, string> = {
-  consent_refused: "Permission was not given at the provider; nothing was connected.",
-  scope_missing: "Not every requested permission was allowed; connect again and allow all of them.",
-  state_expired: "The sign-in took too long; start again.",
-  bad_state: "That sign-in link was already used; start again.",
-  not_configured: "This provider is not set up yet.",
-};
+const REASON: Record<string, string> = lx(() => ({
+  consent_refused: tx("Permission was not given at the provider; nothing was connected."),
+  scope_missing: tx("Not every requested permission was allowed; connect again and allow all of them."),
+  state_expired: tx("The sign-in took too long; start again."),
+  bad_state: tx("That sign-in link was already used; start again."),
+  not_configured: tx("This provider is not set up yet."),
+}));
 
 export function ConnectedAccounts({ purposes }: { purposes: ("mail" | "calendar")[] }) {
   const qc = useQueryClient();
@@ -38,8 +38,8 @@ export function ConnectedAccounts({ purposes }: { purposes: ("mail" | "calendar"
 
   useEffect(() => {   // result of the provider round trip (?oauth=connected|error&reason=…)
     const q = new URLSearchParams(window.location.search);
-    if (q.get("oauth") === "connected") setNotice({ ok: true, text: `${LABEL[q.get("provider") ?? ""] ?? "Account"} ${PURPOSE[q.get("purpose") ?? ""] ?? ""} connected.` });
-    if (q.get("oauth") === "error") setNotice({ ok: false, text: REASON[q.get("reason") ?? ""] ?? "The connection failed; nothing was connected." });
+    if (q.get("oauth") === "connected") setNotice({ ok: true, text: tx("{LABEL} {PURPOSE} connected.", { LABEL: LABEL[q.get("provider") ?? ""] ?? "Account", PURPOSE: PURPOSE[q.get("purpose") ?? ""] ?? "" }) });
+    if (q.get("oauth") === "error") setNotice({ ok: false, text: REASON[q.get("reason") ?? ""] ?? tx("The connection failed; nothing was connected.") });
   }, []);
 
   const start = useMutation({

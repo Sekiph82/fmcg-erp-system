@@ -118,7 +118,7 @@ export default function TemplateDetailPage() {
           { label: tx("Next Generation"), value: t.next_generation_date ?? "—" },
           { label: tx("Last Generated"), value: t.last_generation_date ?? "—" },
           { label: tx("Start Date"), value: t.start_date },
-          { label: tx("End Date"), value: t.end_date ?? "No end" },
+          { label: tx("End Date"), value: t.end_date ?? tx("No end") },
           { label: tx("Currency"), value: t.currency },
           { label: tx("Lines"), value: String(t.lines.length) },
         ].map((item) => (

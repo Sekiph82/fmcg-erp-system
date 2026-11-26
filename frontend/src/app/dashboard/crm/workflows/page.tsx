@@ -22,22 +22,22 @@ const ACTIONS = ["create_task", "notify", "set_field", "assign_owner", "enroll_i
 // fixed colours (not theme classes) so the cards stay readable in light and dark mode
 const COLORS: Record<NodeType, [string, string]> = { trigger: ["#6366f1", "#eef2ff"], condition: ["#f59e0b", "#fffbeb"], delay: ["#0ea5e9", "#f0f9ff"],
   approval: ["#d946ef", "#fdf4ff"], action: ["#10b981", "#ecfdf5"], end: ["#9ca3af", "#f9fafb"] };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail; return Array.isArray(d) ? d.join(" ") : typeof d === "string" ? d : "Request failed."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail; return Array.isArray(d) ? d.join(" ") : typeof d === "string" ? d : tx("Request failed."); };
 const newId = (t: string) => `${t}-${Math.random().toString(36).slice(2, 6)}`;
 
 function summary(n: WNode): string {
   const c = n.config ?? {};
   if (n.type === "trigger") {
     const s = (c.schedule ?? {}) as Record<string, unknown>;
-    if (c.event === "scheduled") return s.kind === "relative" ? `${Math.abs(Number(s.offset_days ?? 0))} day(s) ${Number(s.offset_days ?? 0) < 0 ? "before" : "after"} ${String(s.property ?? "")} at ${s.time ?? ""}`
-      : `Every ${s.kind === "weekly" ? DAYS[Number(s.weekday ?? 0)] : "day"} at ${s.time ?? ""}`;
-    if (c.event === "inbound_webhook") return "When another system calls the webhook";
-    if (c.event === "web_event") return `When an identified visitor sends ${String(c.name ?? "?")}`;
-    return `When a CRM record is ${String(c.event ?? "").replace("_", " ")}`;
+    if (c.event === "scheduled") return s.kind === "relative" ? (Number(s.offset_days ?? 0) < 0 ? tx("{offset_days} day(s) before {property} at {time}", { offset_days: Math.abs(Number(s.offset_days ?? 0)), property: String(s.property ?? ""), time: s.time ?? "" }) : tx("{offset_days} day(s) after {property} at {time}", { offset_days: Math.abs(Number(s.offset_days ?? 0)), property: String(s.property ?? ""), time: s.time ?? "" }))
+      : tx("Every {kind} at {time}", { kind: s.kind === "weekly" ? DAYS[Number(s.weekday ?? 0)] : "day", time: s.time ?? "" });
+    if (c.event === "inbound_webhook") return tx("When another system calls the webhook");
+    if (c.event === "web_event") return tx("When an identified visitor sends {name}", { name: String(c.name ?? "?") });
+    return tx("When a CRM record is {event}", { event: String(c.event ?? "").replace("_", " ") });
   }
   if (n.type === "condition") return `If ${c.field ?? "?"} ${c.operator ?? "eq"} ${c.value ?? ""}`;
-  if (n.type === "delay") return `Wait ${c.days ?? 0} day(s)`;
-  if (n.type === "approval") return `Approval: ${c.title ?? ""}`;
+  if (n.type === "delay") return tx("Wait {days} day(s)", { days: c.days ?? 0 });
+  if (n.type === "approval") return tx("Approval: {title}", { title: c.title ?? "" });
   if (n.type === "action") return `Do: ${String(c.action_type ?? "").replace(/_/g, " ")}`;
   return "End";
 }
@@ -209,7 +209,7 @@ export default function WorkflowDesigner() {
               <li key={v.id} className="py-1.5 flex items-center justify-between gap-2">
                 <button onClick={() => setG(v.graph)} className="text-left underline">{tx("v")}{v.version_no}</button>
                 <span className={v.status === "PUBLISHED" ? "text-emerald-700 font-semibold" : "text-gray-500"}>{v.status.toLowerCase()}</span>
-                {v.status !== "PUBLISHED" && <button onClick={async () => { try { await apiClient.post(`/api/v1/crm-workflows/versions/${v.id}/publish`); say(true, `Version ${v.version_no} is live.`); loadWf(wid); loadList(); } catch (e) { say(false, err(e)); } }}
+                {v.status !== "PUBLISHED" && <button onClick={async () => { try { await apiClient.post(`/api/v1/crm-workflows/versions/${v.id}/publish`); say(true, tx("Version {version_no} is live.", { version_no: v.version_no })); loadWf(wid); loadList(); } catch (e) { say(false, err(e)); } }}
                   className="rounded border px-2 py-0.5">{v.status === "ARCHIVED" ? tx("Roll back to this") : tx("Publish")}</button>}
               </li>))}</ul>
           </div>
@@ -217,7 +217,7 @@ export default function WorkflowDesigner() {
           {trigger?.config?.event === "inbound_webhook" && <div className="bg-white border rounded-xl p-3 space-y-2 text-xs">
             <p className="font-medium text-sm">{tx("Inbound webhook")}</p>
             <p className="text-gray-500">{tx("POST JSON with event_id and record_id or email, header Authorization: Bearer token. The same event id enrols once. Approvers only; the live version must use this trigger.")}</p>
-            {hook ? <p>{tx("Path")} <code className="break-all">{hook.path}</code> {tx("· token ending")} {hook.token_hint} · {hook.last_used_at ? `last used ${new Date(hook.last_used_at).toLocaleString()}` : tx("not used yet")}</p> : <p className="text-gray-500">{tx("No token yet.")}</p>}
+            {hook ? <p>{tx("Path")} <code className="break-all">{hook.path}</code> {tx("· token ending")} {hook.token_hint} · {hook.last_used_at ? tx("last used {date}", { date: new Date(hook.last_used_at).toLocaleString() }) : tx("not used yet")}</p> : <p className="text-gray-500">{tx("No token yet.")}</p>}
             {newToken && <p role="status" className="rounded bg-amber-50 p-2 text-amber-900">{tx("Copy this token now; it is not shown again:")} <code className="break-all select-all">{newToken}</code></p>}
             <div className="flex gap-2">
               <button onClick={async () => { try { const r = await apiClient.post(`/api/v1/crm-workflows/${wid}/webhook-token`); setNewToken(r.data.token); loadWf(wid); } catch (e) { say(false, err(e)); } }} className="rounded border px-2 py-1">{hook ? tx("Rotate token") : tx("Create token")}</button>

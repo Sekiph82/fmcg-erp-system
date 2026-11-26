@@ -188,7 +188,7 @@ export default function CustomFieldsForm({
   // Group by section
   const sections: Record<string, CustomFieldDefinition[]> = {};
   fields.forEach(f => {
-    const sec = f.section_label || "Custom Fields";
+    const sec = f.section_label || tx("Custom Fields");
     sections[sec] = sections[sec] ?? [];
     sections[sec].push(f);
   });

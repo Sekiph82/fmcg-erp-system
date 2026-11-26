@@ -93,7 +93,7 @@ export default function NewEventPage() {
     </div>
   );
 
-  const steps = ["Basic Info", "Participants", "Resources", "Recurrence"];
+  const steps = [tx("Basic Info"), tx("Participants"), tx("Resources"), tx("Recurrence")];
 
   return (
     <div className="p-6 max-w-2xl space-y-5">

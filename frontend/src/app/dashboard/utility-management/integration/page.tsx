@@ -186,7 +186,7 @@ export default function UtilityIntegrationHubPage() {
         <IntegrationCard
           icon={<IconBolt />}
           title={tx("Finance / GL Posting")}
-          description="Post approved utility bills to the General Ledger as journal entries. Verified bills can be posted with a debit and credit account to create double-entry journal records in the Finance module."
+          description={tx("Post approved utility bills to the General Ledger as journal entries. Verified bills can be posted with a debit and credit account to create double-entry journal records in the Finance module.")}
           links={[
             { label: tx("Utility Billing →"), href: "/dashboard/utility-management/billing" },
             { label: tx("Finance →"), href: "/dashboard/finance" },
@@ -202,7 +202,7 @@ export default function UtilityIntegrationHubPage() {
         <IntegrationCard
           icon={<IconChartBar />}
           title={tx("Production Integration")}
-          description="Utility consumption is tracked per production order and batch via MachineConsumptionRecord and UtilityTransaction tables. Cost allocations can be posted to production costing for accurate product cost calculations."
+          description={tx("Utility consumption is tracked per production order and batch via MachineConsumptionRecord and UtilityTransaction tables. Cost allocations can be posted to production costing for accurate product cost calculations.")}
           links={[
             { label: tx("Machine Utility →"), href: "/dashboard/utility-management/machine-utility" },
             { label: tx("Production →"), href: "/dashboard/production" },
@@ -218,7 +218,7 @@ export default function UtilityIntegrationHubPage() {
         <IntegrationCard
           icon={<IconCube />}
           title={tx("Inventory / Chemical Stock")}
-          description="Chemical dosing records can be synced to inventory stock movements when a material is linked. Each dosing event issued from a warehouse will generate a corresponding stock movement in the Inventory module."
+          description={tx("Chemical dosing records can be synced to inventory stock movements when a material is linked. Each dosing event issued from a warehouse will generate a corresponding stock movement in the Inventory module.")}
           links={[
             { label: tx("Chemical Treatment →"), href: "/dashboard/utility-management/chemical-treatment" },
             { label: tx("Inventory →"), href: "/dashboard/inventory" },
@@ -234,7 +234,7 @@ export default function UtilityIntegrationHubPage() {
         <IntegrationCard
           icon={<IconWrench />}
           title={tx("Maintenance Integration")}
-          description="Utility assets can be linked to maintenance module assets for PM schedules and breakdown tracking. Alarm events can trigger work orders or breakdown records directly from the Alarm Center."
+          description={tx("Utility assets can be linked to maintenance module assets for PM schedules and breakdown tracking. Alarm events can trigger work orders or breakdown records directly from the Alarm Center.")}
           links={[
             { label: tx("Utility Assets →"), href: "/dashboard/utility-management/assets" },
             { label: tx("Maintenance →"), href: "/dashboard/maintenance" },
@@ -250,7 +250,7 @@ export default function UtilityIntegrationHubPage() {
         <IntegrationCard
           icon={<IconBeaker />}
           title={tx("Quality Integration")}
-          description="Water quality parameters (boiler chemistry, soft water hardness, wastewater compliance) can be linked to QC inspections. Compliance status and lot-level quality decisions are visible from utility assets."
+          description={tx("Water quality parameters (boiler chemistry, soft water hardness, wastewater compliance) can be linked to QC inspections. Compliance status and lot-level quality decisions are visible from utility assets.")}
           links={[
             { label: tx("Wastewater →"), href: "/dashboard/utility-management/wastewater" },
             { label: tx("Quality →"), href: "/dashboard/quality" },
@@ -266,7 +266,7 @@ export default function UtilityIntegrationHubPage() {
         <IntegrationCard
           icon={<IconShield />}
           title={tx("Alarm Center")}
-          description="Monitor real-time utility alarms and anomalies. From the Alarm Center you can acknowledge, resolve, suppress alarms, and create maintenance work orders or breakdown records directly from alarm events."
+          description={tx("Monitor real-time utility alarms and anomalies. From the Alarm Center you can acknowledge, resolve, suppress alarms, and create maintenance work orders or breakdown records directly from alarm events.")}
           links={[
             { label: tx("Alarm Center →"), href: "/dashboard/utility-management/alarm-center" },
             { label: tx("Alarm Rules →"), href: "/dashboard/utility-management/alarm-rules" },

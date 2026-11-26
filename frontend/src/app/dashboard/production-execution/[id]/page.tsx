@@ -433,14 +433,14 @@ export default function ProdExecOrderDetailPage() {
                 <p className="text-xs font-medium text-gray-400 uppercase mb-1">{tx("Order Information")}</p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   {[
-                    ["Order #", order.order_no],
-                    ["Batch No", order.batch_no || "—"],
-                    ["Product", order.product_name || "—"],
-                    ["Status", order.status],
-                    ["Planned Qty", `${Number(order.planned_qty).toLocaleString()} ${order.uom}`],
-                    ["Completed Qty", `${Number(order.completed_qty).toLocaleString()} ${order.uom}`],
-                    ["Scrap Qty", `${Number(order.scrap_qty).toLocaleString()} ${order.uom}`],
-                    ["Total Cost", fmtKES(Number(order.total_actual_cost))],
+                    [tx("Order #"), order.order_no],
+                    [tx("Batch No"), order.batch_no || "—"],
+                    [tx("Product"), order.product_name || "—"],
+                    [tx("Status"), order.status],
+                    [tx("Planned Qty"), `${Number(order.planned_qty).toLocaleString()} ${order.uom}`],
+                    [tx("Completed Qty"), `${Number(order.completed_qty).toLocaleString()} ${order.uom}`],
+                    [tx("Scrap Qty"), `${Number(order.scrap_qty).toLocaleString()} ${order.uom}`],
+                    [tx("Total Cost"), fmtKES(Number(order.total_actual_cost))],
                   ].map(([label, value]) => (
                     <div key={label} className="bg-gray-50 rounded-lg px-3 py-2">
                       <p className="text-xs text-gray-400">{label}</p>

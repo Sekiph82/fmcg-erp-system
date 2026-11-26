@@ -49,7 +49,7 @@ export default function CRMWorkspacePage() {
             <li key={t.id} className="px-3 py-2 flex flex-wrap justify-between gap-2">
               <button className="text-left" onClick={() => sum(t.record_id)}>
                 <span className={t.overdue ? "text-red-600" : ""}>{t.subject}</span>
-                <span className="text-xs text-gray-500"> · {t.type.toLowerCase()}{t.queue ? ` · ${t.queue}` : ""}{t.repeats ? ` · repeats ${t.repeats.toLowerCase()}` : ""}</span>
+                <span className="text-xs text-gray-500"> · {t.type.toLowerCase()}{t.queue ? ` · ${t.queue}` : ""}{t.repeats ? tx(" · repeats {repeats}", { repeats: t.repeats.toLowerCase() }) : ""}</span>
               </button>
               <span className="text-xs text-gray-500">{t.due ? new Date(t.due).toLocaleString() : tx("no due date")}</span>
             </li>))}

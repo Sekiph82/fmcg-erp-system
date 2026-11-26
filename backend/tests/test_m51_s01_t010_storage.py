@@ -169,7 +169,7 @@ async def _flow(monkeypatch, tmp_path, backend: str, part: int, size: int):
         # --- failed upload cleanup: abort frees the parts
         s2 = await _upload(c, "partial.wav", data, part, order=[1], drop_after=1)
         assert (await c.delete(f"{BASE}/storage/uploads/{s2['id']}")).status_code == 200
-        assert (await c.put(f"{BASE}/storage/uploads/{s2['id']}/parts/1", content=data[:part])).status_code == 410
+        assert (await c.put(f"{BASE}/storage/uploads/{s2['id']}/parts/1", content=data[:part])).status_code == 409
         assert (await be.list_parts(await _key(s2["object_id"]), "local" if backend == "local" else await _uid(s2["id"]))) == {}
         # --- expired session is swept
         s3 = await _upload(c, "stale.wav", data, part, order=[1], drop_after=1)
@@ -178,7 +178,7 @@ async def _flow(monkeypatch, tmp_path, backend: str, part: int, size: int):
             sess.expires_at = datetime.now(timezone.utc) - timedelta(hours=1)
             await db.commit()
         assert (await a.post(f"{BASE}/storage/cleanup")).json()["sessions_expired"] >= 1
-        assert (await c.put(f"{BASE}/storage/uploads/{s3['id']}/parts/1", content=data[:part])).status_code == 410
+        assert (await c.put(f"{BASE}/storage/uploads/{s3['id']}/parts/1", content=data[:part])).status_code == 409
         # --- audit trail
         async with AsyncSessionLocal() as db:
             ev = {r for r in (await db.execute(select(AuditLog.event_type).where(AuditLog.event_type.like("media.%")))).scalars()}

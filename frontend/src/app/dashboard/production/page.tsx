@@ -262,7 +262,7 @@ export default function ProductionPage() {
   return (
     <ModuleWorkspace
       title={tx("Production")}
-      description="Plans, work orders, scheduling, OEE, quality, costing"
+      description={tx("Plans, work orders, scheduling, OEE, quality, costing")}
       permission="production.view"
       tabs={tabs}
       defaultTab="plans"

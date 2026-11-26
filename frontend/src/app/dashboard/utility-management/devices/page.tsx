@@ -166,14 +166,14 @@ function DeviceForm({
           type="number"
           value={v.min_alarm_limit ?? ""}
           onChange={(e) => onChange({ min_alarm_limit: e.target.value || null })}
-          placeholder={`Min ${v.unit_of_measure || "value"}`}
+          placeholder={tx("Min {unit_of_measure}", { unit_of_measure: v.unit_of_measure || "value" })}
         />
         <Input
           label={tx("Max Alarm Limit")}
           type="number"
           value={v.max_alarm_limit ?? ""}
           onChange={(e) => onChange({ max_alarm_limit: e.target.value || null })}
-          placeholder={`Max ${v.unit_of_measure || "value"}`}
+          placeholder={tx("Max {unit_of_measure}", { unit_of_measure: v.unit_of_measure || "value" })}
         />
         <Input
           label={tx("Min Engineering Value")}
@@ -473,7 +473,7 @@ export default function UtilityDevicesPage() {
           <Table
             keyField="id"
             data={filtered}
-            emptyMessage={search ? "No devices match your search." : "No devices yet."}
+            emptyMessage={search ? tx("No devices match your search.") : tx("No devices yet.")}
             columns={[
               {
                 header: tx("Code"),

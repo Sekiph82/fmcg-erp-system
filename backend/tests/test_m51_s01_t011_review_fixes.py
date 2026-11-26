@@ -61,53 +61,95 @@ async def test_s1_playwright_route_guard_refuses_private_and_offorigin():
     assert await go("data:text/plain,hi") == "continue"
 
 
+def fake_playwright(monkeypatch, metrics, hang=False):
+    """In-process stand-in for playwright.async_api (the package is optional). Returns what the 'browser' was launched with."""
+    import sys
+    import types
+    seen = {"args": None, "closed": False}
+
+    class Page:
+        async def route(self, *a): pass
+        async def add_init_script(self, *a): pass
+        async def wait_for_timeout(self, ms): pass
+        async def evaluate(self, js): return metrics
+        async def goto(self, url, **k):
+            if hang:
+                await asyncio.sleep(30)
+
+    class Br:
+        async def new_page(self): return Page()
+        async def close(self): seen["closed"] = True
+
+    class Chromium:
+        async def launch(self, args=None):
+            seen["args"] = args
+            return Br()
+
+    class Ctx:
+        async def __aenter__(self): return types.SimpleNamespace(chromium=Chromium())
+        async def __aexit__(self, *a): return False
+    mod = types.ModuleType("playwright.async_api")
+    mod.async_playwright = lambda: Ctx()
+    monkeypatch.setitem(sys.modules, "playwright", types.ModuleType("playwright"))
+    monkeypatch.setitem(sys.modules, "playwright.async_api", mod)
+    return seen
+
+
 def test_s1_lockdown_flags_pin_host_and_kill_other_addresses():
     f = cr.chrome_lockdown_flags("www.povu-demo.test", ["93.184.216.34"])
     assert "--host-resolver-rules=MAP www.povu-demo.test 93.184.216.34, MAP * ~NOTFOUND" in f
     assert "--proxy-server=http://127.0.0.1:9" in f and any(x.startswith("--proxy-bypass-list=<-loopback>;www.povu-demo.test") for x in f)
+    assert "--force-webrtc-ip-handling-policy=disable_non_proxied_udp" in f                    # D
+    v6 = cr.chrome_lockdown_flags("h.test", ["2606:4700::1111", "93.184.216.34"])
+    assert "MAP h.test 93.184.216.34," in v6[0]                                                 # C: IPv4 preferred
+    only6 = cr.chrome_lockdown_flags("h.test", ["2606:4700::1111"])
+    assert "MAP h.test [2606:4700::1111]," in only6[0]                                          # C: brackets
+
+
+@pytest.mark.asyncio
+async def test_s1_pinned_addresses_are_the_validated_ones(monkeypatch):
+    """A: one resolution, EVERY address checked; a name answering public+private is refused, never pinned."""
+    import socket
+    answers = [["93.184.216.34", "10.0.0.5"]]
+
+    class Loop:
+        async def getaddrinfo(self, host, port, **k):
+            return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", (a, 0)) for a in answers[0]]
+    monkeypatch.setattr(cr.asyncio, "get_running_loop", lambda: Loop())
+    async def ok(*a, **k): return None
+    monkeypatch.setattr(cr, "check_url", ok)
+    with pytest.raises(cr.FetchBlocked):
+        await cr._public_ips("https://www.povu-demo.test/", False)
+    answers[0] = ["93.184.216.34", "93.184.216.35"]
+    assert await cr._public_ips("https://www.povu-demo.test/", False) == ["93.184.216.34", "93.184.216.35"]
+
+
+def test_s1_lighthouse_refused(monkeypatch):
+    """B: Lighthouse cannot carry the host-resolver pin, so lab vitals never use it, even when installed."""
+    import shutil
+    monkeypatch.setattr(shutil, "which", lambda n: "/fake/lighthouse")
+    monkeypatch.setitem(__import__("sys").modules, "playwright", None)      # import playwright -> ImportError
+    assert cr.lab_tool() is None
+    assert not hasattr(cr, "parse_lighthouse")
 
 
 @DB
 @pytest.mark.asyncio
-async def test_s1_lab_own_only_and_subprocess_killed_on_timeout(monkeypatch):
+async def test_s1_lab_own_only_and_browser_closed_on_timeout(monkeypatch):
     from tests.test_m51_s01_t004_seo_crawler import _allow, _setup
     from tests.m51_s01_seo_common import SIM, client_for, use_sim
     use_sim(monkeypatch)
     u = await _setup()
-    monkeypatch.setattr(cr, "lab_tool", lambda: "lighthouse")
-    monkeypatch.setattr(cr.shutil, "which", lambda n: "/fake/lighthouse")
-    spawned = []
-
-    class Hung:
-        returncode = None
-
-        def __init__(self):
-            self.killed = False
-
-        async def communicate(self):
-            await asyncio.sleep(30)
-
-        def kill(self):
-            self.killed, self.returncode = True, -9
-
-        async def wait(self):
-            return self.returncode
-
-    async def fake_exec(*a, **k):
-        spawned.append(a)
-        p = Hung()
-        spawned.append(p)
-        return p
-    monkeypatch.setattr(cr.asyncio, "create_subprocess_exec", fake_exec)
+    seen = fake_playwright(monkeypatch, {"lcp": 1, "cls": 0}, hang=True)
     setv(monkeypatch, "SEO_LAB_TIMEOUT", 0.2)
     async with client_for(u) as c:
         await _allow(c, "http://127.0.0.1:8777", kind="AUTHORIZED_SOURCE", note="Partner agreed in writing 2026-11")
         r = await c.post("/api/v1/seo-pro/vitals/lab", json={"url": "http://127.0.0.1:8777/"})
-        assert r.status_code == 403 and not spawned                      # someone else's site: no browser at all
+        assert r.status_code == 403 and seen["args"] is None             # someone else's site: no browser at all
         await _allow(c, SIM)
         lab = (await c.post("/api/v1/seo-pro/vitals/lab", json={"url": SIM + "/"})).json()
-        assert lab["state"] == "ERROR" and spawned[1].killed             # timeout -> process killed in finally
-        assert "--proxy-server=http://127.0.0.1:9" in " ".join(spawned[0])
+        assert lab["state"] == "ERROR" and seen["closed"]                 # timeout -> browser closed in finally
+        assert "--proxy-server=http://127.0.0.1:9" in seen["args"] and any(a.startswith("--force-webrtc") for a in seen["args"])
 
 
 # ── S2 CMS media detach, S3 restore, C1 multipart, C3 streaming ─────────────
@@ -513,3 +555,134 @@ async def test_c2_plain_http_only_to_private_storage_host():
         await guard(req)
     finally:
         ph.set_resolver(None)
+
+
+# ── re-review: N1 unpublish not delete, C1 part vs closed session, C2 *.test names, S1 residuals ──
+
+@DB
+@pytest.mark.asyncio
+async def test_n1_revoke_unpublishes_cms_media_and_keeps_views_and_sales_videos(monkeypatch, tmp_path):
+    from datetime import datetime, timedelta, timezone
+    from sqlalchemy import select
+    from app.db.session import AsyncSessionLocal
+    from app.models.cms import CmsMedia, CmsMediaView
+    from app.models.m47_sales_depth import SalesVideoMessage
+    from tests.test_m51_s01_t010_storage import _key, wav_bytes
+    maker, approver = await _env(monkeypatch, tmp_path)
+    async with media_client(maker) as c, media_client(approver) as a:
+        o = await _wav_upload(c, "tips.wav", wav_bytes(2500), 1000)
+        key = await _key(o["id"])
+        assert (await a.post(f"{BASE}/storage/objects/{o['id']}/approve")).status_code == 200
+        link = await a.post(f"{BASE}/storage/objects/{o['id']}/to-cms-media", json={"title": "POVU AllClean tips", "public": True})
+        mid = uuid.UUID(link.json()["cms_media_id"])
+        async with AsyncSessionLocal() as db:
+            db.add(CmsMediaView(media_id=mid, viewer_hash=uuid.uuid4().hex * 2, seconds=12))
+            db.add(SalesVideoMessage(media_id=mid, title="Hello", contact_email="buyer@povu-demo.test", token_hash=uuid.uuid4().hex * 2,
+                                     expires_at=datetime.now(timezone.utc) + timedelta(days=1)))
+            await db.commit()
+        anon = media_client_anon()
+        assert (await anon.get(f"/api/v1/public/cms/media/{mid}/file")).status_code == 200
+        assert (await a.post(f"{BASE}/storage/objects/{o['id']}/revoke")).status_code == 200
+        async with AsyncSessionLocal() as db:
+            row = await db.get(CmsMedia, mid)
+            assert row is not None and row.public is False and row.access_list_id is None and row.storage_path != key
+            assert (await db.execute(select(CmsMediaView).where(CmsMediaView.media_id == mid))).scalars().all()          # views survive
+            assert (await db.execute(select(SalesVideoMessage).where(SalesVideoMessage.media_id == mid))).scalars().all()   # sales videos survive
+        assert (await anon.get(f"/api/v1/public/cms/media/{mid}/file")).status_code in (401, 403, 404)                    # no longer served
+        assert (await anon.post(f"/api/v1/public/media-files/member/{mid}")).status_code == 404
+
+
+def media_client_anon():
+    from app.main import app
+    return _AnonPost(app)
+
+
+class _AnonPost:
+    def __init__(self, app):
+        self.app = app
+
+    async def get(self, path):
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=self.app), base_url="http://test") as c:
+            return await c.get(path)
+
+    async def post(self, path):
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=self.app), base_url="http://test") as c:
+            return await c.post(path)
+
+
+@DB
+@pytest.mark.asyncio
+async def test_c1_part_after_complete_or_abort_is_409_and_leaves_no_parts_dir(monkeypatch, tmp_path):
+    from pathlib import Path
+    from tests.test_m51_s01_t010_storage import wav_bytes
+    maker, _ = await _env(monkeypatch, tmp_path)
+    data = wav_bytes(2000)
+    async with media_client(maker) as c:
+        s = (await c.post(f"{BASE}/storage/uploads", json={"file_name": "p.wav", "total_size": len(data), "part_size": 1000})).json()
+        for i in (1, 2):
+            assert (await c.put(f"{BASE}/storage/uploads/{s['id']}/parts/{i}", content=data[(i - 1) * 1000:i * 1000])).status_code == 200
+        assert (await c.post(f"{BASE}/storage/uploads/{s['id']}/complete")).status_code == 200
+        assert (await c.put(f"{BASE}/storage/uploads/{s['id']}/parts/1", content=data[:1000])).status_code == 409
+        q = (await c.post(f"{BASE}/storage/uploads", json={"file_name": "q.wav", "total_size": 2000, "part_size": 1000})).json()
+        await c.delete(f"{BASE}/storage/uploads/{q['id']}")
+        assert (await c.put(f"{BASE}/storage/uploads/{q['id']}/parts/1", content=data[:1000])).status_code == 409
+    parts_dir = Path(tmp_path / "media" / ".parts")
+    assert not parts_dir.exists() or not any(parts_dir.iterdir())           # no orphan .parts dir
+
+
+@pytest.mark.asyncio
+async def test_c1_s3_nosuchupload_is_409(monkeypatch):
+    from types import SimpleNamespace
+    sess = SimpleNamespace(status="OPEN", total_size=1000, part_size=1000, parts={}, backend_upload_id="u",
+                           expires_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc) + __import__("datetime").timedelta(hours=1))
+
+    class DB_:
+        async def refresh(self, *a, **k): pass
+
+    class Gone:
+        async def upload_part(self, *a):
+            raise m51_s3.S3Error(404, "NoSuchUpload", "gone")
+    monkeypatch.setattr(st, "get_backend", lambda name=None: Gone())
+    with pytest.raises(st.StorageError) as e:
+        await st.put_part(DB_(), sess, SimpleNamespace(backend="s3", key="a" * 32), 1, b"x" * 1000)
+    assert e.value.status == 409
+
+
+@pytest.mark.asyncio
+async def test_c2_test_names_must_resolve_private_for_plain_http():
+    # plain-http allowed endpoint named *.test: no longer trusted by its name, it must resolve privately
+    provider_http.set_resolver(lambda host, port: asyncio.sleep(0, ["93.184.216.34"]))
+    try:
+        with pytest.raises(provider_http.EgressBlocked):
+            await provider_http._make_guard(provider_http._origin_key("http://minio.test:9000"), True)(httpx.Request("GET", "http://minio.test:9000/x"))
+        provider_http.set_resolver(lambda host, port: asyncio.sleep(0, ["10.0.0.5"]))
+        await provider_http._make_guard(provider_http._origin_key("http://minio.test:9000"), True)(httpx.Request("GET", "http://minio.test:9000/x"))
+    finally:
+        provider_http.set_resolver(None)
+
+
+@pytest.mark.asyncio
+async def test_c2_pinned_backend_http_allow_host_is_private_only():
+    class Inner:
+        async def connect_tcp(self, host, port, **k):
+            return "ok"
+    b = provider_http.PinnedBackend(Inner(), allow_host="minio.lan", private_only=True)
+    provider_http.set_resolver(lambda host, port: asyncio.sleep(0, ["10.0.0.5"]))
+    try:
+        assert await b.connect_tcp("minio.lan", 9000) == "ok"
+        provider_http.set_resolver(lambda host, port: asyncio.sleep(0, ["93.184.216.34"]))        # DNS flip to a public address
+        with pytest.raises(provider_http.EgressBlocked):
+            await b.connect_tcp("minio.lan", 9000)
+        https_ok = provider_http.PinnedBackend(Inner(), allow_host="minio.lan")                     # https: TLS protects, unchanged
+        assert await https_ok.connect_tcp("minio.lan", 9000) == "ok"
+    finally:
+        provider_http.set_resolver(None)
+
+
+def test_error_code_slug_carries_no_interpolated_values():
+    from app.core.exception_handlers import _error_code as code
+    assert code("Not authenticated", 401) == "not_authenticated"
+    assert code("Invoice 'INV-77' not found for customer 1234", 404) == "invoice_not_found_for_customer"
+    assert code("Object 3f2b8c1e-1111-2222-3333-444455556666 missing", 404) == "object_missing"
+    assert code("Part 3 must be exactly 1000 bytes (got 12)", 400) == "part_must_be_exactly_bytes_got"
+    assert code("x" * 100, 400) == "bad_request"                              # long dynamic prose -> generic status code

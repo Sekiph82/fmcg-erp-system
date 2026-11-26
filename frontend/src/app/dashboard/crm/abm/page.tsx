@@ -16,7 +16,7 @@ interface Overview { id: string; name: string; accounts: Account[]; totals: Reco
 interface Contact { id: string; full_name: string; title: string | null; email: string | null; committee_role: string }
 const ROLES = ["DECISION_MAKER", "BUYER", "CHAMPION", "INFLUENCER", "USER", "BLOCKER"];
 const kes = (n: number) => `KES ${Math.round(n).toLocaleString()}`;
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail; return typeof d === "string" ? d : "Request failed."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail; return typeof d === "string" ? d : tx("Request failed."); };
 
 export default function ABMPage() {
   const [groups, setGroups] = useState<Group[]>([]);
@@ -51,7 +51,7 @@ export default function ABMPage() {
           {groups.map((g) => <option key={g.id} value={g.id}>{g.name} ({g.accounts})</option>)}
         </select>
         <input aria-label={tx("New group name")} placeholder={tx("New group name")} value={name} onChange={(e) => setName(e.target.value)} className="border rounded px-3 py-2 text-sm" />
-        <button disabled={name.trim().length < 2} onClick={() => act(async () => { const r = await apiClient.post<{ id: string }>("/api/v1/abm/groups", { name }); setSel(r.data.id); setName(""); }, "Group created.")}
+        <button disabled={name.trim().length < 2} onClick={() => act(async () => { const r = await apiClient.post<{ id: string }>("/api/v1/abm/groups", { name }); setSel(r.data.id); setName(""); }, tx("Group created."))}
           className="rounded bg-blue-600 px-3 py-2 text-sm text-white disabled:opacity-50">{tx("Create group")}</button>
       </div>
 
@@ -61,7 +61,7 @@ export default function ABMPage() {
             <EntityPicker kind="customer" label={tx("Account to add")} value={member.customer_id} onChange={(id) => setMember({ ...member, customer_id: id })} /></div>
           <select aria-label={tx("Tier")} value={member.tier} onChange={(e) => setMember({ ...member, tier: e.target.value })} className="border rounded px-2 py-2 text-sm">
             <option value="1">{tx("Tier 1 — strategic")}</option><option value="2">{tx("Tier 2 — core")}</option><option value="3">{tx("Tier 3 — watch")}</option></select>
-          <button disabled={!member.customer_id} onClick={() => act(() => apiClient.post(`/api/v1/abm/groups/${ov.id}/members`, { customer_id: member.customer_id, tier: Number(member.tier) }).then(() => setMember({ customer_id: "", tier: "2" })), "Account added.")}
+          <button disabled={!member.customer_id} onClick={() => act(() => apiClient.post(`/api/v1/abm/groups/${ov.id}/members`, { customer_id: member.customer_id, tier: Number(member.tier) }).then(() => setMember({ customer_id: "", tier: "2" })), tx("Account added."))}
             className="rounded bg-blue-600 px-3 py-2 text-sm text-white disabled:opacity-50">{tx("Add")}</button>
         </div>
 
@@ -77,7 +77,7 @@ export default function ABMPage() {
                   <td className="px-3 py-2">{a.activities}</td><td className="px-3 py-2">{a.meetings}</td>
                   <td className="px-3 py-2">{a.emails_sent} / {a.emails_received}</td><td className="px-3 py-2">{a.tickets}</td>
                   <td className="px-3 py-2">{a.orders} · {kes(a.order_value)}</td>
-                  <td className="px-3 py-2"><button onClick={() => act(() => apiClient.delete(`/api/v1/abm/groups/${ov.id}/members/${a.customer_id}`), "Account removed.")} className="text-xs text-red-700">{tx("Remove")}</button></td>
+                  <td className="px-3 py-2"><button onClick={() => act(() => apiClient.delete(`/api/v1/abm/groups/${ov.id}/members/${a.customer_id}`), tx("Account removed."))} className="text-xs text-red-700">{tx("Remove")}</button></td>
                 </tr>
                 {open === a.customer_id && <tr key={a.customer_id + "-c"}><td colSpan={9} className="bg-gray-50 px-3 py-3"><Committee customerId={a.customer_id} onChange={() => loadOv(ov.id)} say={say} /></td></tr>}
               </Fragment>))}
@@ -95,10 +95,10 @@ export default function ABMPage() {
           {(() => {
             const activeCompany = getActiveCompanyId();
             const payload = { ...camp, company_id: useActiveCompany ? activeCompany : null };
-            const contentReason = camp.subject.length < 3 ? "Write a subject (3+ characters)." : camp.body.length < 10 ? "Write a message (10+ characters)." : null;
-            const companyReason = useActiveCompany && !activeCompany ? "No active company is selected in the company switcher." : null;
-            const capReason = policy && policy.used_today >= policy.daily_cap ? `Daily limit reached (${policy.used_today} of ${policy.daily_cap} direct marketing sends today).` : null;
-            const approvalReason = policy?.approval_required && !approvalId ? "Approval required: request it, have a second editor approve, then pick the approval below." : null;
+            const contentReason = camp.subject.length < 3 ? tx("Write a subject (3+ characters).") : camp.body.length < 10 ? tx("Write a message (10+ characters).") : null;
+            const companyReason = useActiveCompany && !activeCompany ? tx("No active company is selected in the company switcher.") : null;
+            const capReason = policy && policy.used_today >= policy.daily_cap ? tx("Daily limit reached ({used_today} of {daily_cap} direct marketing sends today).", { used_today: policy.used_today, daily_cap: policy.daily_cap }) : null;
+            const approvalReason = policy?.approval_required && !approvalId ? tx("Approval required: request it, have a second editor approve, then pick the approval below.") : null;
             const sendReason = contentReason ?? companyReason ?? capReason ?? approvalReason;
             const requestReason = contentReason ?? companyReason;
             return (<>
@@ -109,13 +109,13 @@ export default function ABMPage() {
                 <button disabled={!!sendReason} title={sendReason ?? undefined}
                   onClick={async () => {
                     try { const r = await apiClient.post<{ queued: number; suppressed: number }>(`/api/v1/abm/groups/${ov.id}/campaign`, { ...payload, approval_id: approvalId });
-                      say(true, `${r.data.queued} messages queued, ${r.data.suppressed} suppressed (no consent).`); loadOv(ov.id); }
+                      say(true, tx("{queued} messages queued, {suppressed} suppressed (no consent).", { queued: r.data.queued, suppressed: r.data.suppressed })); loadOv(ov.id); }
                     catch (e) { say(false, err(e)); }
                     setApprovalId(null); setApprovalsKey((k) => k + 1);
                   }}
                   className="rounded bg-indigo-600 px-3 py-2 text-sm text-white disabled:opacity-50">{approvalId ? tx("Queue campaign with approval") : tx("Queue campaign")}</button>
                 <button disabled={!!requestReason} title={requestReason ?? undefined}
-                  onClick={() => act(async () => { await sendApprovalsApi.requestAbm(ov.id, payload); setApprovalsKey((k) => k + 1); }, "Approval requested; another editor must approve it.")}
+                  onClick={() => act(async () => { await sendApprovalsApi.requestAbm(ov.id, payload); setApprovalsKey((k) => k + 1); }, tx("Approval requested; another editor must approve it."))}
                   className="rounded border px-3 py-2 text-sm disabled:opacity-50">{tx("Request approval")}</button>
                 {sendReason && <span className="text-xs text-amber-700">{sendReason}</span>}
               </div>
@@ -134,7 +134,7 @@ function Committee({ customerId, onChange, say }: { customerId: string; onChange
   const load = useCallback(() => apiClient.get<{ contacts: Contact[] }>(`/api/v1/abm/accounts/${customerId}/committee`).then((r) => setRows(r.data.contacts)), [customerId]);
   useEffect(() => { load(); }, [load]);
   const add = async () => {
-    try { await apiClient.post(`/api/v1/abm/accounts/${customerId}/committee`, { ...f, email: f.email || null, title: f.title || null }); setF({ full_name: "", title: "", email: "", committee_role: "BUYER" }); load(); onChange(); say(true, "Contact added."); }
+    try { await apiClient.post(`/api/v1/abm/accounts/${customerId}/committee`, { ...f, email: f.email || null, title: f.title || null }); setF({ full_name: "", title: "", email: "", committee_role: "BUYER" }); load(); onChange(); say(true, tx("Contact added.")); }
     catch (e) { say(false, err(e)); }
   };
   return (

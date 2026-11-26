@@ -23,7 +23,7 @@ function DecideRow({ concession, notify }: { concession: Concession; notify: Not
     (approve: boolean) => qaEnterpriseApi.decideConcession(concession.id, approve
       ? { approve, conditions, valid_until: new Date(`${until}T23:59:59`).toISOString() }
       : { approve }),
-    notify, (c) => `Concession ${c.concession_no} ${c.status.toLowerCase()}`, ["qa-concessions"]);
+    notify, (c) => tx("Concession {concession_no} {status}", { concession_no: c.concession_no, status: c.status.toLowerCase() }), ["qa-concessions"]);
   return (
     <div className="flex flex-wrap items-center gap-2">
       <input aria-label={tx("Conditions for {concession_no}", { concession_no: concession.concession_no })} placeholder={tx("Conditions")} value={conditions}
@@ -46,9 +46,9 @@ export function ConcessionsCostsPanel({ notify }: { notify: Notify }) {
     enabled: perms.canView,
   });
   const [req, setReq] = useState({ deviation_id: "", lot_id: "", justification: "", quantity_limit: "", uom: "" });
-  const request = useAction(qaEnterpriseApi.requestConcession, notify, (c) => `Concession ${c.concession_no} requested`, ["qa-concessions"]);
-  const revoke = useAction((c: Concession) => qaEnterpriseApi.revokeConcession(c.id, "Revoked from QA workspace"), notify,
-    (c) => `Concession ${c.concession_no} revoked`, ["qa-concessions"]);
+  const request = useAction(qaEnterpriseApi.requestConcession, notify, (c) => tx("Concession {concession_no} requested", { concession_no: c.concession_no }), ["qa-concessions"]);
+  const revoke = useAction((c: Concession) => qaEnterpriseApi.revokeConcession(c.id, tx("Revoked from QA workspace")), notify,
+    (c) => tx("Concession {concession_no} revoked", { concession_no: c.concession_no }), ["qa-concessions"]);
 
   const [range, setRange] = useState({ date_from: "", date_to: "" });
   const summary = useQuery<QualityCostSummary>({
@@ -58,13 +58,13 @@ export function ConcessionsCostsPanel({ notify }: { notify: Notify }) {
   });
   const [cost, setCost] = useState({ category: "INTERNAL_FAILURE" as CostCategory, amount: "", currency: "KES",
     cost_date: todayIso(), description: "", deviation_id: "", lot_id: "" });
-  const recordCost = useAction(qaEnterpriseApi.recordQualityCost, notify, "Quality cost recorded", ["qa-cost-summary"]);
+  const recordCost = useAction(qaEnterpriseApi.recordQualityCost, notify, tx("Quality cost recorded"), ["qa-cost-summary"]);
 
   if (!perms.canView) return <ReadOnlyNotice>{tx("Concessions and quality cost require quality.view.")}</ReadOnlyNotice>;
 
   return (
     <div className="space-y-4">
-      <Section title={tx("Concessions")} description="Time-limited, conditioned acceptance of a nonconforming lot. Conditional release needs an approved concession on that inspection's deviation."
+      <Section title={tx("Concessions")} description={tx("Time-limited, conditioned acceptance of a nonconforming lot. Conditional release needs an approved concession on that inspection's deviation.")}
         actions={<Input aria-label={tx("Filter concessions by lot ID")} placeholder={tx("Filter by lot ID")} value={lotFilter} onChange={(e) => setLotFilter(e.target.value)} />}>
         {concessions.error ? <LoadError error={concessions.error} /> : (
           <Table<Concession>
@@ -113,7 +113,7 @@ export function ConcessionsCostsPanel({ notify }: { notify: Notify }) {
         )}
       </Section>
 
-      <Section title={tx("Cost of quality")} description="Prevention and appraisal (cost of good quality) versus internal and external failure (cost of poor quality).">
+      <Section title={tx("Cost of quality")} description={tx("Prevention and appraisal (cost of good quality) versus internal and external failure (cost of poor quality).")}>
         <div className="grid gap-3 md:grid-cols-4">
           <Input id="cost-from" label={tx("From")} type="date" value={range.date_from} onChange={(e) => setRange((r) => ({ ...r, date_from: e.target.value }))} />
           <Input id="cost-to" label={tx("To")} type="date" value={range.date_to} onChange={(e) => setRange((r) => ({ ...r, date_to: e.target.value }))} />

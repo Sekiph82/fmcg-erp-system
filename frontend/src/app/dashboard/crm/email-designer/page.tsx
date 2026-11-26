@@ -29,7 +29,7 @@ const err = (e: unknown) => {
   let data = (e as { response?: { data?: unknown } }).response?.data;
   if (typeof data === "string") { try { data = JSON.parse(data); } catch { /* not JSON */ } }  // preview uses responseType text
   const d = (data as { detail?: unknown } | undefined)?.detail;
-  return typeof d === "string" ? d : "Check the design.";
+  return typeof d === "string" ? d : tx("Check the design.");
 };
 
 export default function EmailDesignerPage() {
@@ -111,9 +111,9 @@ export default function EmailDesignerPage() {
           <option value="">{tx("+ Add block…")}</option>{Object.keys(NEW).map((t) => <option key={t}>{t}</option>)}</select>}
         <div className="flex flex-wrap gap-2">
           {!frozen && <button className="bg-indigo-600 text-white rounded px-3 py-1 text-xs" onClick={save}>{tx("Save draft")}</button>}
-          {cur?.status === "DRAFT" && <button className="border rounded px-3 py-1 text-xs" onClick={() => act("publish", "Published; campaigns can use it now.")}>{tx("Publish")}</button>}
-          {cur && cur.status !== "DRAFT" && <button className="border rounded px-3 py-1 text-xs" onClick={() => act("new-version", "New draft version.")}>{tx("New version")}</button>}
-          {cur && <button className="border rounded px-3 py-1 text-xs" onClick={() => act("test-send", "Test queued to your own address.")}>{tx("Send me a test")}</button>}
+          {cur?.status === "DRAFT" && <button className="border rounded px-3 py-1 text-xs" onClick={() => act("publish", tx("Published; campaigns can use it now."))}>{tx("Publish")}</button>}
+          {cur && cur.status !== "DRAFT" && <button className="border rounded px-3 py-1 text-xs" onClick={() => act("new-version", tx("New draft version."))}>{tx("New version")}</button>}
+          {cur && <button className="border rounded px-3 py-1 text-xs" onClick={() => act("test-send", tx("Test queued to your own address."))}>{tx("Send me a test")}</button>}
         </div>
         {cur?.status === "PUBLISHED" && <SingleSend design={cur} />}
         {warn.map((w, i) => <p key={i} className="text-xs text-amber-700">⚠ {w}</p>)}
@@ -139,16 +139,16 @@ function SingleSend({ design }: { design: Design }) {
   if (f.contact_name) { values.contact_name = f.contact_name; values.first_name = f.contact_name.split(" ")[0]; }
   if (f.company_name) values.company_name = f.company_name;
   const body = { to_email: f.to_email.trim(), subject: f.subject, values, track_engagement: f.track_engagement };
-  const contentReason = !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.to_email) ? "Enter the recipient's e-mail address."
-    : !f.subject.trim() ? "Enter a subject." : /[\r\n]/.test(f.subject) ? "The subject must be one line." : null;
-  const capReason = policy && policy.used_today >= policy.daily_cap ? `Daily limit reached (${policy.used_today} of ${policy.daily_cap} direct marketing sends today).` : null;
-  const approvalReason = policy?.approval_required && !approvalId ? "Approval required: request it, have a second editor approve, then pick the approval below." : null;
+  const contentReason = !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.to_email) ? tx("Enter the recipient's e-mail address.")
+    : !f.subject.trim() ? tx("Enter a subject.") : /[\r\n]/.test(f.subject) ? tx("The subject must be one line.") : null;
+  const capReason = policy && policy.used_today >= policy.daily_cap ? tx("Daily limit reached ({used_today} of {daily_cap} direct marketing sends today).", { used_today: policy.used_today, daily_cap: policy.daily_cap }) : null;
+  const approvalReason = policy?.approval_required && !approvalId ? tx("Approval required: request it, have a second editor approve, then pick the approval below.") : null;
   const sendReason = contentReason ?? capReason ?? approvalReason;
   const change = (k: keyof typeof f, v: string | boolean) => { setF({ ...f, [k]: v }); setApprovalId(null); };
   const send = async () => {
     try {
       const r = await apiClient.post<{ status: string; reason: string | null }>(`/api/v1/email-designs/${design.id}/send`, { ...body, approval_id: approvalId });
-      setMsg({ ok: r.data.status !== "SUPPRESSED", text: r.data.status === "SUPPRESSED" ? `Not sent: ${r.data.reason ?? "suppressed"}` : `Queued (${r.data.status.toLowerCase()}).` });
+      setMsg({ ok: r.data.status !== "SUPPRESSED", text: r.data.status === "SUPPRESSED" ? tx("Not sent: {reason}", { reason: r.data.reason ?? "suppressed" }) : tx("Queued ({status}).", { status: r.data.status.toLowerCase() }) });
     } catch (e) { setMsg({ ok: false, text: err(e) }); }
     setApprovalId(null); setKey((k) => k + 1);
   };

@@ -4,13 +4,13 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { tx } from "@/lib/i18n/core";
 
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 
 export function TaskCalendarSync() {
   const [msg, setMsg] = useState<string | null>(null);
   const run = () => apiClient.post("/api/v1/crm-workspace/tasks/calendar-sync").then((r) => {
     const { status, detail, ...counts } = r.data;
-    setMsg(status === "SYNCED" ? `Calendar updated: ${Object.entries(counts).map(([k, v]) => `${v} ${String(k).toLowerCase()}`).join(", ") || "no open tasks with a due time"}.`
+    setMsg(status === "SYNCED" ? tx("Calendar updated: {counts}.", { counts: Object.entries(counts).map(([k, v]) => `${v} ${String(k).toLowerCase()}`).join(", ") || "no open tasks with a due time" })
       : status === "NOT_CONFIGURED" ? tx("Not configured: {detail}", { detail }) : tx("Pending: {detail}", { detail }));
   }).catch((e) => setMsg(err(e)));
   return (
@@ -75,7 +75,7 @@ export function VideoMessages({ recordId }: { recordId?: string | null }) {
       {msg && <p role="status">{msg}</p>}
       {link && <input readOnly className="border rounded px-2 py-1 w-full" value={link} onFocus={(e) => e.target.select()} />}
       <ul className="divide-y">{rows.map((v) => (
-        <li key={v.id} className="py-1 flex justify-between gap-2"><span>{v.title} → {v.contact_email} · {v.views} {tx("view(s)")}{v.revoked ? tx(" · withdrawn") : ` · until ${new Date(v.expires_at).toLocaleDateString()}`}</span>
+        <li key={v.id} className="py-1 flex justify-between gap-2"><span>{v.title} → {v.contact_email} · {v.views} {tx("view(s)")}{v.revoked ? tx(" · withdrawn") : tx(" · until {date}", { date: new Date(v.expires_at).toLocaleDateString() })}</span>
           {!v.revoked && <button className="text-red-600" onClick={() => apiClient.post(`/api/v1/sales-depth/videos/${v.id}/revoke`).then(load).catch((x) => setMsg(err(x)))}>{tx("Withdraw")}</button>}</li>))}</ul>
     </div>
   );

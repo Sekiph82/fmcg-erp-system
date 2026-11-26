@@ -202,8 +202,8 @@ function NewOrderModal({ onClose }: { onClose: () => void }) {
           </select>
           <p className="text-[11px] text-gray-500 mt-1">{tx("Only planned operations can be linked. Existing orders remain unlinked.")}</p>
         </div>
-        {[["Supplier ID","supplier_id"],["Order Date","order_date","date"],["Expected Completion","expected_completion_date","date"],
-          ["Source Warehouse ID","warehouse_id"],["Currency","currency"],["Remarks","remarks"],
+        {[["Supplier ID","supplier_id"],[tx("Order Date"),"order_date","date"],[tx("Expected Completion"),"expected_completion_date","date"],
+          [tx("Source Warehouse ID"),"warehouse_id"],["Currency","currency"],["Remarks","remarks"],
         ].map(([label, key, type = "text"]) => (
           <div key={key}><label className="text-xs text-gray-600">{label}</label>
             <input type={type} value={(form as Record<string,string>)[key]} onChange={(e) => f(key, e.target.value)}

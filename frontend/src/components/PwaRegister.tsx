@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { mobileApi, type MobilePlatform } from "@/lib/mobile_api";
+import { tx } from "@/lib/i18n/core";
 
 function detectPlatform(): MobilePlatform {
   const ua = navigator.userAgent;
@@ -42,7 +43,7 @@ export function PwaRegister() {
         device_id: deviceId(),
         platform,
         token: "",
-        device_name: `POVU app (${platform})`,
+        device_name: tx("POVU app ({platform})", { platform }),
         app_version: "pwa-1",
         os_version: navigator.userAgent.slice(0, 100),
       }).then(() => sessionStorage.setItem(key, "1")).catch(() => undefined);

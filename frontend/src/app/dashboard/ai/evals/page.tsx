@@ -18,7 +18,7 @@ type Run = {
 type Case = { case_id: string; passed: boolean; scores: Record<string, { passed: boolean; score: number; detail: string }>; expected: unknown; actual: { text?: string; citations?: unknown[]; actions?: unknown[]; latency_ms?: number; latency_source?: string }; latency_ms: number; tokens: number; cost: string; error: string | null };
 type Detail = Run & { results: Case[] };
 
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 const B = "/api/v1/ai-agents/evals";
 
 export default function EvalsPage() {
@@ -59,7 +59,7 @@ export default function EvalsPage() {
           <button className="bg-indigo-600 text-white rounded px-3 py-1" onClick={start}>{tx("Run evaluation")}</button>
           <button className="border rounded px-2 py-1" onClick={doVerify}>{tx("Check scorers on this corpus")}</button>
         </div>
-        {adapters[adapter] && <p className="text-xs text-gray-600">{adapters[adapter].provider} {tx("· model")} {adapters[adapter].model_id}{adapters[adapter].tasks ? ` · tasks ${adapters[adapter].tasks!.join(", ")}` : tx(" · all tasks")}{adapters[adapter].unavailable_reason ? ` · unavailable: ${adapters[adapter].unavailable_reason}` : ""}</p>}
+        {adapters[adapter] && <p className="text-xs text-gray-600">{adapters[adapter].provider} {tx("· model")} {adapters[adapter].model_id}{adapters[adapter].tasks ? tx(" · tasks {adapters}", { adapters: adapters[adapter].tasks!.join(", ") }) : tx(" · all tasks")}{adapters[adapter].unavailable_reason ? tx(" · unavailable: {adapters}", { adapters: adapters[adapter].unavailable_reason }) : ""}</p>}
         {verify && (verify.length ? <ul className="text-xs text-red-700 list-disc pl-5">{verify.map((p, i) => <li key={i}>{p}</li>)}</ul> : <p className="text-xs text-green-700">{tx("Every golden answer passes and every adversarial output is caught by the scorers it names.")}</p>)}
       </section>
       <div className="grid lg:grid-cols-[320px_1fr] gap-4">
@@ -78,7 +78,7 @@ export default function EvalsPage() {
             <label className="inline-flex gap-1"><input type="checkbox" checked={failedOnly} onChange={(e) => { setFailedOnly(e.target.checked); open(cur.id, e.target.checked); }} />{tx("Failures only")}</label>
             <select aria-label={tx("Compare with")} className="border rounded" value={other} onChange={(e) => setOther(e.target.value)}><option value="">{tx("Compare with an earlier run…")}</option>{runs.filter((r) => r.corpus_id === cur.corpus_id && r.id !== cur.id).map((r) => <option key={r.id} value={r.id}>{r.adapter} {new Date(r.created_at).toLocaleString()}</option>)}</select>
             <button className="border rounded px-2 py-1 disabled:opacity-50" disabled={!other} onClick={compare}>{tx("Compare")}</button>
-            {cmp && <span>{cmp.same_digest ? tx("identical results") : `regressions: ${cmp.regressions.join(", ") || "none"}; fixed: ${cmp.fixed.join(", ") || "none"}`}{cmp.same_config ? "" : tx(" (different configuration)")}</span>}
+            {cmp && <span>{cmp.same_digest ? tx("identical results") : tx("regressions: {regressions}; fixed: {fixed}", { regressions: cmp.regressions.join(", ") || "none", fixed: cmp.fixed.join(", ") || "none" })}{cmp.same_config ? "" : tx(" (different configuration)")}</span>}
           </div>
           <ul className="space-y-1 text-xs">{cur.results.map((c) => <li key={c.case_id} className={`border rounded p-2 bg-white ${c.passed ? "" : "border-red-300"}`}>
             <b>{c.case_id}</b> · {c.passed ? tx("pass") : "FAIL"} · {c.latency_ms} {tx("ms (")}{c.actual?.latency_source ?? tx("measured")}) · {c.tokens} {tx("tokens · cost")} {c.cost}{c.error ? tx(" · error {error}", { error: c.error }) : ""}

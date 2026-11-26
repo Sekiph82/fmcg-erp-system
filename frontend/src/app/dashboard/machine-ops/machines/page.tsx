@@ -199,7 +199,7 @@ export default function MachinesPage() {
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">{tx("Capacity UOM")}</label>
                 <select value={form.capacity_uom} onChange={(e) => setForm((p) => ({ ...p, capacity_uom: e.target.value }))} className="w-full border rounded px-3 py-2 text-sm">
-                  {["KG", "L", "PCS", "CTN", tx("units/hr")].map((u) => <option key={u}>{u}</option>)}
+                  {[["KG", "KG"], ["L", "L"], ["PCS", "PCS"], ["CTN", "CTN"], ["units/hr", tx("units/hr")]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
             </div>

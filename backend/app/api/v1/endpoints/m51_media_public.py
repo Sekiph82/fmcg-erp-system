@@ -52,7 +52,7 @@ async def serve(token: str, request: Request, db: AsyncSession = Depends(get_db)
 @router.post("/member/{cms_media_id}")
 async def member_url(cms_media_id: uuid.UUID, request: Request, db: AsyncSession = Depends(get_db)):
     m = await db.get(CmsMedia, cms_media_id)
-    if m is None:
+    if m is None or m.storage_path.startswith(st.REVOKED_PREFIX):
         raise HTTPException(404, "Not found")
     user = await media.optional_portal_user(request, db)
     if not m.public:

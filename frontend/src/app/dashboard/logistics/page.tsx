@@ -57,7 +57,7 @@ function LogisticsShipmentsTab() {
         {[
           { label: tx("Active Shipments"), value: active.length, sub: "in planning or transit", color: "text-gray-900", href: "/dashboard/logistics?tab=shipments" },
           { label: tx("In Transit"), value: inTransit.length, sub: "vessels at sea", color: "text-blue-700", href: "/dashboard/logistics?tab=shipments" },
-          { label: tx("At Port / Clearing"), value: atPort.length, sub: "Mombasa port / customs", color: "text-orange-600", href: "/dashboard/logistics?tab=arrivals" },
+          { label: tx("At Port / Clearing"), value: atPort.length, sub: tx("Mombasa port / customs"), color: "text-orange-600", href: "/dashboard/logistics?tab=arrivals" },
           { label: tx("Overdue Documents"), value: overdueDocs.length, sub: "draft or rejected docs", color: overdueDocs.length > 0 ? "text-red-600" : "text-gray-700", href: "/dashboard/logistics?tab=documents" },
         ].map((t) => (
           <button key={t.label} onClick={() => router.push(t.href)} className="bg-white rounded-lg border p-5 text-left hover:border-indigo-300 transition-colors">
@@ -131,7 +131,7 @@ function LogisticsShipmentsTab() {
                   <td className="px-5 py-3 text-right">
                     {r.days_to_eta != null ? (
                       <span className={r.days_to_eta < 0 ? "text-red-600 font-semibold" : r.days_to_eta <= 7 ? "text-orange-500 font-semibold" : "text-gray-600"}>
-                        {r.days_to_eta < 0 ? `${Math.abs(r.days_to_eta)}d late` : tx("{days_to_eta}d", { days_to_eta: r.days_to_eta })}
+                        {r.days_to_eta < 0 ? tx("{days_to_eta}d late", { days_to_eta: Math.abs(r.days_to_eta) }) : tx("{days_to_eta}d", { days_to_eta: r.days_to_eta })}
                       </span>
                     ) : r.ata ? <span className="text-green-600 text-xs">{tx("Arrived")}</span> : "—"}
                   </td>
@@ -187,7 +187,7 @@ export default function LogisticsDashboardPage() {
   return (
     <ModuleWorkspace
       title={tx("Logistics")}
-      description="International shipments, containers, fleet, customs clearance"
+      description={tx("International shipments, containers, fleet, customs clearance")}
       permission="logistics.view"
       tabs={tabs}
       defaultTab="overview"

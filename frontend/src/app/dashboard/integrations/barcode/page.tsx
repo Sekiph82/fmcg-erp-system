@@ -252,12 +252,12 @@ export default function BarcodePage() {
 
               <div className="grid grid-cols-3 gap-3 text-xs">
                 {[
-                  ["Type", genResult.label.entity_type],
-                  ["Format", genResult.label.barcode_format],
-                  ["Template", genResult.label.label_template],
-                  ["Print count", genResult.label.print_count],
-                  ["Created", new Date(genResult.label.created_at).toLocaleDateString()],
-                  ["Last printed", genResult.label.last_printed_at
+                  [tx("Type"), genResult.label.entity_type],
+                  [tx("Format"), genResult.label.barcode_format],
+                  [tx("Template"), genResult.label.label_template],
+                  [tx("Print count"), genResult.label.print_count],
+                  [tx("Created"), new Date(genResult.label.created_at).toLocaleDateString()],
+                  [tx("Last printed"), genResult.label.last_printed_at
                     ? new Date(genResult.label.last_printed_at).toLocaleDateString()
                     : "Never"],
                 ].map(([k, v]) => (

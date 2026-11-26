@@ -82,14 +82,14 @@ export default function FALegacyImportPage() {
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
-                ["asset_code","Asset Code","text"],
-                ["asset_name","Asset Name","text"],
-                ["original_cost","Original Cost","number"],
-                ["accumulated_depreciation_to_date","Accum. Depr.","number"],
-                ["in_service_date","In-Service Date","date"],
-                ["salvage_value","Salvage Value","number"],
-                ["useful_life_months","Useful Life (months)","number"],
-                ["cost_center","Cost Center","text"],
+                ["asset_code",tx("Asset Code"),"text"],
+                ["asset_name",tx("Asset Name"),"text"],
+                ["original_cost",tx("Original Cost"),"number"],
+                ["accumulated_depreciation_to_date",tx("Accum. Depr."),"number"],
+                ["in_service_date",tx("In-Service Date"),"date"],
+                ["salvage_value",tx("Salvage Value"),"number"],
+                ["useful_life_months",tx("Useful Life (months)"),"number"],
+                ["cost_center",tx("Cost Center"),"text"],
                 ["location","Location","text"],
               ].map(([key, label, type]) => (
                 <div key={key} className="flex flex-col gap-1">
@@ -126,7 +126,7 @@ export default function FALegacyImportPage() {
         disabled={importMut.isPending || rows.some(r => !r.asset_code || !r.asset_name || !r.asset_category_id)}
         className="glow-button"
       >
-        {importMut.isPending ? tx("Importing…") : `Import ${rows.length} Asset${rows.length > 1 ? "s" : ""}`}
+        {importMut.isPending ? tx("Importing…") : ((rows.length > 1) ? tx("Import {length} Assets", { length: rows.length }) : tx("Import {length} Asset", { length: rows.length }))}
       </button>
 
       {result && (

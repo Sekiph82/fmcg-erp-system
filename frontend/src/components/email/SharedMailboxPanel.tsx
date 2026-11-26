@@ -6,7 +6,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { EntityPicker } from "@/components/EntityPicker";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 interface Mailbox {
   id: string; provider: string; address: string; display_name: string | null; kind: string; status: string; member: boolean;
@@ -17,9 +17,9 @@ interface Msg { id: string; from_email: string; from_name?: string | null; subje
 interface Thread { id: string; subject: string; snippet?: string | null; message_count: number; last_message_at?: string | null; participants?: string[] | null; messages: Msg[] }
 interface Member { user_id: string; email: string; name: string | null; can_send: boolean; send_mode: string; active: boolean }
 
-const MODE: Record<string, string> = { send_as: "Send as the mailbox", on_behalf: "Send on behalf of the mailbox" };
+const MODE: Record<string, string> = lx(() => ({ send_as: tx("Send as the mailbox"), on_behalf: tx("Send on behalf of the mailbox") }));
 const STATUS_STYLE: Record<string, string> = { ACTIVE: "bg-green-100 text-green-700", ACCESS_LOST: "bg-red-100 text-red-700", REVOKED: "bg-gray-100 text-gray-500" };
-function errorText(e: unknown, fallback = "The request failed.") {
+function errorText(e: unknown, fallback = tx("The request failed.")) {
   const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
   if (typeof d === "string") return d;
   if (Array.isArray(d)) return d.map((x) => (x as { msg?: string }).msg).join("; ");
@@ -71,7 +71,7 @@ export function SharedMailboxPanel() {
 
   const mode = box?.my_access?.send_mode ?? "send_as";
   const canSend = !!box?.my_access?.can_send && box.status === "ACTIVE";
-  const sendReason = !box ? "" : box.status !== "ACTIVE" ? "This mailbox is not active." : !box.my_access?.can_send ? "You have read-only access to this mailbox." : "";
+  const sendReason = !box ? "" : box.status !== "ACTIVE" ? tx("This mailbox is not active.") : !box.my_access?.can_send ? tx("You have read-only access to this mailbox.") : "";
 
   return (
     <div className="border rounded-lg bg-white p-3 space-y-2" data-testid="shared-mailbox-panel">
@@ -97,7 +97,7 @@ export function SharedMailboxPanel() {
               {box.last_error && <div className="text-red-600">{box.last_error}</div>}</div>
             <div className="flex gap-2">
               <button className="rounded border px-2 py-1 disabled:opacity-50" disabled={busy || box.status !== "ACTIVE"}
-                onClick={() => run(async () => { const r = await apiClient.post<{ imported: number }>(`/api/v1/shared-mailboxes/${box.id}/sync`); return `Imported ${r.data.imported} new message(s).`; })}>{tx("Sync now")}</button>
+                onClick={() => run(async () => { const r = await apiClient.post<{ imported: number }>(`/api/v1/shared-mailboxes/${box.id}/sync`); return tx("Imported {imported} new message(s).", { imported: r.data.imported }); })}>{tx("Sync now")}</button>
               <button className="rounded bg-blue-600 text-white px-2 py-1 disabled:opacity-50" disabled={!canSend || busy} title={sendReason}
                 onClick={() => { setOpen(null); setCompose({ to: "", subject: "", body: "" }); }}>{tx("New message")}</button>
             </div>
@@ -165,7 +165,7 @@ export function SharedMailboxPanel() {
             <input className="border rounded px-2 py-1" placeholder={tx("Display name")} value={reg.display_name} onChange={(e) => setReg({ ...reg, display_name: e.target.value })} />
             <select className="border rounded px-2 py-1" value={reg.kind} onChange={(e) => setReg({ ...reg, kind: e.target.value })}><option value="shared">{tx("Shared")}</option><option value="delegated">{tx("Delegated")}</option></select>
             <button className="rounded bg-blue-600 text-white px-3 py-1 disabled:opacity-50" disabled={busy || !reg.address}
-              onClick={() => run(async () => { await apiClient.post("/api/v1/shared-mailboxes", { ...reg, display_name: reg.display_name || null }); setReg({ ...reg, address: "", display_name: "" }); return "Mailbox registered."; })}>{tx("Register")}</button>
+              onClick={() => run(async () => { await apiClient.post("/api/v1/shared-mailboxes", { ...reg, display_name: reg.display_name || null }); setReg({ ...reg, address: "", display_name: "" }); return tx("Mailbox registered."); })}>{tx("Register")}</button>
           </div>
           {boxes.length > 0 && (
             <>
@@ -175,7 +175,7 @@ export function SharedMailboxPanel() {
                   <span>{b.address} <span className={`px-1.5 py-0.5 rounded ${STATUS_STYLE[b.status] ?? ""}`}>{b.status}</span>{b.last_error && <span className="text-red-600"> {b.last_error}</span>}</span>
                   <span className="flex gap-3">
                     <button className="text-indigo-600 hover:underline" onClick={() => { setAdminId(b.id); setMembers([]); loadMembers(b.id); }}>{tx("Members")}</button>
-                    {b.status !== "REVOKED" && <button className="text-red-600 hover:underline" onClick={() => { if (confirm(tx("Close {address}? Nobody can read or send from it until it is registered again; stored mail is kept.", { address: b.address }))) run(async () => { await apiClient.post(`/api/v1/shared-mailboxes/${b.id}/revoke`); return "Mailbox closed."; }); }}>{tx("Close mailbox")}</button>}
+                    {b.status !== "REVOKED" && <button className="text-red-600 hover:underline" onClick={() => { if (confirm(tx("Close {address}? Nobody can read or send from it until it is registered again; stored mail is kept.", { address: b.address }))) run(async () => { await apiClient.post(`/api/v1/shared-mailboxes/${b.id}/revoke`); return tx("Mailbox closed."); }); }}>{tx("Close mailbox")}</button>}
                   </span>
                 </div>))}
             </>)}
@@ -193,7 +193,7 @@ export function SharedMailboxPanel() {
                 <select className="border rounded px-2 py-1" value={grant.send_mode} onChange={(e) => setGrant({ ...grant, send_mode: e.target.value })} disabled={!grant.can_send}>
                   {adminBox.send_modes.map((m) => <option key={m} value={m}>{MODE[m]}</option>)}</select>
                 <button className="rounded bg-blue-600 text-white px-3 py-1 disabled:opacity-50" disabled={busy || !grant.user_id}
-                  onClick={() => run(async () => { await apiClient.put(`/api/v1/shared-mailboxes/${adminBox.id}/members`, grant); await loadMembers(adminBox.id); return "Access granted."; })}>{tx("Grant")}</button>
+                  onClick={() => run(async () => { await apiClient.put(`/api/v1/shared-mailboxes/${adminBox.id}/members`, grant); await loadMembers(adminBox.id); return tx("Access granted."); })}>{tx("Grant")}</button>
               </div>
             </div>)}
         </div>)}

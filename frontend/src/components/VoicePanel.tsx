@@ -33,7 +33,7 @@ export function VoicePanel() {
   useEffect(() => { load(); }, [load]);
 
   async function run(fn: () => Promise<unknown>, ok?: string) {
-    try { await fn(); if (ok) setMsg(ok); load(); } catch (e) { setMsg(detail(e, "That did not work.")); }
+    try { await fn(); if (ok) setMsg(ok); load(); } catch (e) { setMsg(detail(e, tx("That did not work."))); }
   }
   async function next(d: Dialer) {
     try {
@@ -42,7 +42,7 @@ export function VoicePanel() {
       else if (r.call) setMsg(tx("Your phone will ring; answer it to be connected."));
       else setMsg(tx("The list is finished."));
       load();
-    } catch (e) { setMsg(detail(e, "Could not start the next call.")); }
+    } catch (e) { setMsg(detail(e, tx("Could not start the next call."))); }
   }
   const box = "border rounded-lg bg-white p-3 space-y-2";
   return (
@@ -70,7 +70,7 @@ export function VoicePanel() {
         <form className="space-y-1" onSubmit={(e) => {
           e.preventDefault();
           const items = list.split("\n").map((l) => l.trim()).filter(Boolean).map((l) => { const [p, ...rest] = l.split(","); return { phone: p.trim(), label: rest.join(",").trim() || null }; });
-          run(() => apiClient.post("/api/v1/calls/dialer", { name: `Call list ${new Date().toLocaleDateString()}`, items }), "Call list created.");
+          run(() => apiClient.post("/api/v1/calls/dialer", { name: `Call list ${new Date().toLocaleDateString()}`, items }), tx("Call list created."));
           setList("");
         }}>
           <textarea aria-label={tx("Numbers, one per line")} rows={3} className="border rounded w-full text-xs p-1" placeholder={tx("+254700000001, POVU Synthetic Outlet\n+254700000002")} value={list} onChange={(e) => setList(e.target.value)} />
@@ -124,7 +124,7 @@ function IvrForm({ onSaved, onError }: { onSaved: () => void; onError: (t: strin
     const options = f.options.split("\n").map((l) => l.split(",").map((x) => x.trim())).filter((p) => p[0])
       .map(([digit, label, ...nums]) => ({ digit, label, user_ids: [], phone_numbers: nums.filter(Boolean) }));
     try { await apiClient.post("/api/v1/calls/ivr", { ...f, options, consent_text: f.consent_text || null }); setOpen(false); onSaved(); }
-    catch (x) { onError(detail(x, "Check the menu (only CRM managers can change it).")); }
+    catch (x) { onError(detail(x, tx("Check the menu (only CRM managers can change it)."))); }
   }
   const i = "border rounded px-2 py-1 text-xs w-full";
   return (
@@ -148,13 +148,13 @@ export function CallTranscript({ callId }: { callId: string }) {
   const load = useCallback(() => { apiClient.get(`/api/v1/calls/logs/${callId}/transcript`).then((r) => setT(r.data)).catch(() => setT(null)); }, [callId]);
   useEffect(() => { load(); }, [load]);
   const act = async (path: string, ok: string) => {
-    try { await apiClient.post(`/api/v1/calls/logs/${callId}/${path}`); setMsg(ok); load(); } catch (e) { setMsg(detail(e, "Not possible.")); }
+    try { await apiClient.post(`/api/v1/calls/logs/${callId}/${path}`); setMsg(ok); load(); } catch (e) { setMsg(detail(e, tx("Not possible."))); }
   };
   return (
     <div className="text-xs space-y-1">
       <div className="flex gap-2">
-        <button className="underline" onClick={() => act("transcribe", "Transcription queued.")}>{tx("Transcribe")}</button>
-        <button className="underline text-red-600" onClick={() => { if (confirm(tx("Customer withdrew consent? The recording, transcript and coaching notes are deleted."))) act("withdraw-consent", "Recording and transcript deleted."); }}>{tx("Consent withdrawn")}</button>
+        <button className="underline" onClick={() => act("transcribe", tx("Transcription queued."))}>{tx("Transcribe")}</button>
+        <button className="underline text-red-600" onClick={() => { if (confirm(tx("Customer withdrew consent? The recording, transcript and coaching notes are deleted."))) act("withdraw-consent", tx("Recording and transcript deleted.")); }}>{tx("Consent withdrawn")}</button>
         {t?.status && <span className="text-gray-500">{tx("Transcript:")} {t.status}</span>}
       </div>
       {msg && <p role="status">{msg}</p>}
@@ -178,7 +178,7 @@ export function CoachingPanel() {
   const [msg, setMsg] = useState<string | null>(null);
   const load = useCallback(() => { apiClient.get("/api/v1/calls/playlists").then((r) => setLists(r.data)).catch(() => setLists([])); }, []);
   useEffect(() => { load(); }, [load]);
-  const run = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); setMsg(ok); load(); } catch (e) { setMsg(detail(e, "Managers only.")); } };
+  const run = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); setMsg(ok); load(); } catch (e) { setMsg(detail(e, tx("Managers only."))); } };
   return (
     <div className="border rounded-lg bg-white p-3 space-y-2 text-xs">
       <div className="text-sm font-semibold">{tx("Coaching playlists")}</div>
@@ -188,15 +188,15 @@ export function CoachingPanel() {
           {p.clips.map((c) => (
             <div key={c.id} className="border-t pt-1 mt-1">
               <div className="text-gray-500">{tx("Call")} {c.call_id.slice(0, 8)} · {c.start_s}{tx("s–")}{c.end_s}{tx("s")}{c.note ? ` · ${c.note}` : ""}
-                <button className="ml-2 text-red-600" onClick={() => run(() => apiClient.delete(`/api/v1/calls/playlists/${p.id}/clips/${c.id}`), "Clip removed.")}>×</button></div>
+                <button className="ml-2 text-red-600" onClick={() => run(() => apiClient.delete(`/api/v1/calls/playlists/${p.id}/clips/${c.id}`), tx("Clip removed."))}>×</button></div>
               {c.segments.map((s, i) => <p key={i}>{s.speaker && <b>{s.speaker}: </b>}{s.text}</p>)}
             </div>))}
         </details>))}
-      <form className="flex gap-1" onSubmit={(e) => { e.preventDefault(); run(() => apiClient.post("/api/v1/calls/playlists", { name }), "Playlist created."); setName(""); }}>
+      <form className="flex gap-1" onSubmit={(e) => { e.preventDefault(); run(() => apiClient.post("/api/v1/calls/playlists", { name }), tx("Playlist created.")); setName(""); }}>
         <input required className="border rounded px-2 py-1 flex-1" placeholder={tx("New playlist (managers)")} value={name} onChange={(e) => setName(e.target.value)} />
         <button className="border rounded px-2">{tx("Create")}</button></form>
       <form className="grid grid-cols-2 gap-1" onSubmit={(e) => { e.preventDefault();
-        run(() => apiClient.post(`/api/v1/calls/playlists/${clip.playlist_id}/clips`, { call_id: clip.call_id, start_s: clip.start_s, end_s: clip.end_s, note: clip.note || null }), "Clip added."); }}>
+        run(() => apiClient.post(`/api/v1/calls/playlists/${clip.playlist_id}/clips`, { call_id: clip.call_id, start_s: clip.start_s, end_s: clip.end_s, note: clip.note || null }), tx("Clip added.")); }}>
         <select required className="border rounded px-1 col-span-2" value={clip.playlist_id} onChange={(e) => setClip({ ...clip, playlist_id: e.target.value })}>
           <option value="">{tx("Playlist…")}</option>{lists.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select>
         <input required className="border rounded px-1 col-span-2" placeholder={tx("Call id (consented, transcribed)")} value={clip.call_id} onChange={(e) => setClip({ ...clip, call_id: e.target.value })} />

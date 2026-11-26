@@ -63,12 +63,12 @@ const DECIDE: Record<string, { approve: Call; reject?: Call }> = {
 const err = (e: unknown) => {
   const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
   const inner = (d as { detail?: unknown })?.detail;
-  return typeof d === "string" ? d : typeof inner === "string" ? inner : "Something went wrong.";
+  return typeof d === "string" ? d : typeof inner === "string" ? inner : tx("Something went wrong.");
 };
 const age = (s: string | null) => {
   if (!s) return "";
   const days = Math.floor((Date.now() - new Date(s).getTime()) / 86400000);
-  return days <= 0 ? "today" : days === 1 ? "1 day" : `${days} days`;
+  return days <= 0 ? "today" : days === 1 ? "1 day" : tx("{days} days", { days });
 };
 
 export default function MyApprovals() {

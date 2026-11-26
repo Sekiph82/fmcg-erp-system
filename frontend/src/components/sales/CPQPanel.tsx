@@ -7,7 +7,7 @@ import { tx } from "@/lib/i18n/core";
 
 type Approvals = { discount_pct: string; complete: boolean; levels: { level: number; above_pct: number; permission: string; approved_by: string | null }[] };
 type Ready = { ready: boolean; credit: { limit: string | null; open_invoices: string; after_order: string; ok: boolean }; stock: { line_no: number; needed: string; available: string; ok: boolean }[] };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 
 export function CPQPanel({ quoteId, status, onChanged }: { quoteId: string; status: string; onChanged?: () => void }) {
   const [appr, setAppr] = useState<Approvals | null>(null);
@@ -28,16 +28,16 @@ export function CPQPanel({ quoteId, status, onChanged }: { quoteId: string; stat
       <h3 className="font-semibold text-sm">{tx("Pricing & approval")}</h3>
       {msg && <p role="status">{msg}</p>}
       {draft && <div className="flex flex-wrap gap-2">
-        <button className="border rounded px-2 py-1" onClick={() => act(apiClient.post(`/api/v1/cpq/quotes/${quoteId}/price-book`), "Prices taken from the customer's price book.")}>{tx("Use price book")}</button>
+        <button className="border rounded px-2 py-1" onClick={() => act(apiClient.post(`/api/v1/cpq/quotes/${quoteId}/price-book`), tx("Prices taken from the customer's price book."))}>{tx("Use price book")}</button>
         <button className="border rounded px-2 py-1" onClick={() => apiClient.post(`/api/v1/cpq/quotes/${quoteId}/promotions`).then((r) => setPromos(r.data)).catch((e) => setMsg(err(e)))}>{tx("Check promotions")}</button>
-        {promos && promos.applied.length > 0 && <button className="border rounded px-2 py-1" onClick={() => act(apiClient.post(`/api/v1/cpq/quotes/${quoteId}/promotions?apply=true`), "Promotions applied.")}>{tx("Apply promotions")}</button>}</div>}
-      {promos && <p>{promos.applied.length === 0 ? tx("No promotion applies.") : promos.applied.map((a) => `${a.scheme_name} (benefit ${a.benefit})`).join("; ")}</p>}
+        {promos && promos.applied.length > 0 && <button className="border rounded px-2 py-1" onClick={() => act(apiClient.post(`/api/v1/cpq/quotes/${quoteId}/promotions?apply=true`), tx("Promotions applied."))}>{tx("Apply promotions")}</button>}</div>}
+      {promos && <p>{promos.applied.length === 0 ? tx("No promotion applies.") : promos.applied.map((a) => tx("{scheme_name} (benefit {benefit})", { scheme_name: a.scheme_name, benefit: a.benefit })).join("; ")}</p>}
       {appr && <div><p>{tx("Discount")} {appr.discount_pct}% · {appr.levels.length === 0 ? tx("no extra approval needed") : appr.complete ? tx("all approval levels done") : tx("approval needed")}</p>
         <ul>{appr.levels.map((l) => <li key={l.level}>{tx("Level")} {l.level} {tx("(over")} {l.above_pct}%, {l.permission}): {l.approved_by ?? tx("waiting")}</li>)}</ul>
         {!appr.complete && <button className="border rounded px-2 py-1" onClick={() => act(apiClient.post(`/api/v1/cpq/quotes/${quoteId}/approvals`), "Approved.")}>{tx("Approve next level")}</button>}</div>}
-      {ready && <p>{tx("Credit:")} {ready.credit.ok ? "OK" : tx("over limit")} {tx("(open")} {ready.credit.open_invoices}{tx(", after this")} {ready.credit.after_order}{ready.credit.limit ? tx(" of {limit}", { limit: ready.credit.limit }) : ""}{tx(") · Stock:")} {ready.stock.every((s) => s.ok) ? tx("available") : `short on ${ready.stock.filter((s) => !s.ok).map((s) => `line ${s.line_no}`).join(", ")}`}</p>}
+      {ready && <p>{tx("Credit:")} {ready.credit.ok ? "OK" : tx("over limit")} {tx("(open")} {ready.credit.open_invoices}{tx(", after this")} {ready.credit.after_order}{ready.credit.limit ? tx(" of {limit}", { limit: ready.credit.limit }) : ""}{tx(") · Stock:")} {ready.stock.every((s) => s.ok) ? tx("available") : tx("short on {stock}", { stock: ready.stock.filter((s) => !s.ok).map((s) => `line ${s.line_no}`).join(", ") })}</p>}
       {["ACCEPTED", "CONVERTED"].includes(status) && templates.length > 0 && <div className="flex gap-2 items-center">{tx("Contract:")}
-        {templates.map((t) => <button key={t.id} className="border rounded px-2 py-1" onClick={() => act(apiClient.post(`/api/v1/cpq/quotes/${quoteId}/contract`, { template_id: t.id }), "Contract created.")}>{t.name}</button>)}</div>}
+        {templates.map((t) => <button key={t.id} className="border rounded px-2 py-1" onClick={() => act(apiClient.post(`/api/v1/cpq/quotes/${quoteId}/contract`, { template_id: t.id }), tx("Contract created."))}>{t.name}</button>)}</div>}
       {/* M48.S01.T009 DocuSign / Adobe Acrobat Sign for the approved (sent) quotation */}
       <ProviderSignaturePanel sourceType="QUOTATION" sourceId={quoteId} sourceStatus={status} />
     </div>

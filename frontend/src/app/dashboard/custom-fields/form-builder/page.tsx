@@ -275,7 +275,7 @@ export default function FormBuilderPage() {
                       {f.required_flag && <span className="text-red-400 ml-0.5">*</span>}
                     </label>
                     <div className="border rounded px-3 py-2 text-sm text-gray-400 bg-gray-50">
-                      {f.placeholder ?? `Enter ${f.field_label.toLowerCase()}…`}
+                      {f.placeholder ?? tx("Enter {field_label}…", { field_label: f.field_label.toLowerCase() })}
                     </div>
                     {f.help_text && (
                       <p className="text-xs text-gray-400">{f.help_text}</p>

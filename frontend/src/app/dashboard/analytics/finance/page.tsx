@@ -78,7 +78,7 @@ export default function FinanceAnalyticsPage() {
         </div>
 
         {/* Cash flow trend */}
-        <ChartCard title={tx("Cash Flow")} subtitle={`Last ${days} days`}>
+        <ChartCard title={tx("Cash Flow")} subtitle={tx("Last {days} days", { days })}>
           <LineChart
             series={[
               { name: "Receipts", color: "#10b981", data: data?.cash_receipts_trend ?? [] },

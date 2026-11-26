@@ -9,7 +9,7 @@ function errorText(e: unknown) {
   if (typeof detail === "string") return detail;
   if (Array.isArray(detail)) return detail.map((d) => (d as { msg?: string }).msg).join("; ");
   if (detail && typeof detail === "object" && "detail" in detail) return String((detail as { detail: unknown }).detail);
-  return "Request failed.";
+  return tx("Request failed.");
 }
 
 const STATUS_STYLE: Record<string, string> = {
@@ -59,7 +59,7 @@ export default function CRMOutboxPage() {
       {info && !error && <p className="rounded-lg p-3 text-sm bg-emerald-50 border border-emerald-200 text-emerald-800">{info}</p>}
 
       <form aria-label={tx("Compose e-mail")} className="bg-white rounded-xl border shadow-sm p-4 grid md:grid-cols-3 gap-2"
-        onSubmit={(e) => { e.preventDefault(); act(() => crmApi.queueEmail(mail), "E-mail queued."); setMail({ to_email: "", subject: "", body: "", track_engagement: false }); }}>
+        onSubmit={(e) => { e.preventDefault(); act(() => crmApi.queueEmail(mail), tx("E-mail queued.")); setMail({ to_email: "", subject: "", body: "", track_engagement: false }); }}>
         <h2 className="font-semibold text-gray-800 md:col-span-3">{tx("Compose one-to-one e-mail")}</h2>
         <input aria-label={tx("To")} required type="email" placeholder="to@example.com" value={mail.to_email} onChange={(e) => setMail({ ...mail, to_email: e.target.value })} className={input} />
         <input aria-label={tx("Subject")} required placeholder={tx("Subject")} value={mail.subject} onChange={(e) => setMail({ ...mail, subject: e.target.value })} className={`${input} md:col-span-2`} />
@@ -89,7 +89,7 @@ export default function CRMOutboxPage() {
       {canConfig && <div className="bg-white rounded-xl border shadow-sm p-4 overflow-x-auto">
         <h2 className="font-semibold text-gray-800 mb-2">{tx("Consent register")}</h2>
         <form aria-label={tx("Record consent")} className="flex flex-wrap gap-2 mb-3"
-          onSubmit={(e) => { e.preventDefault(); act(() => crmApi.setConsent(block), "Consent recorded."); setBlock({ ...block, email: "" }); }}>
+          onSubmit={(e) => { e.preventDefault(); act(() => crmApi.setConsent(block), tx("Consent recorded.")); setBlock({ ...block, email: "" }); }}>
           <input aria-label={tx("E-mail address")} required type="email" placeholder={tx("address")} value={block.email} onChange={(e) => setBlock({ ...block, email: e.target.value })} className={input} />
           <select aria-label={tx("Consent status")} value={block.status} onChange={(e) => setBlock({ ...block, status: e.target.value })} className={input}>
             {["UNSUBSCRIBED", "BOUNCED", "COMPLAINED", "SUBSCRIBED"].map((s) => <option key={s} value={s}>{s}</option>)}

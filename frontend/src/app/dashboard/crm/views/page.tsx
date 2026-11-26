@@ -33,7 +33,7 @@ export default function CRMViewsPage() {
     apiClient.get("/api/v1/crm-teams/views").then((r) => setViews(r.data)).catch(() => setViews([]));
   }, []);
   useEffect(() => { load(); }, [load]);
-  const act = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); setMsg(ok); load(); } catch (e) { setMsg(err(e, "Not allowed.")); } };
+  const act = async (fn: () => Promise<unknown>, ok: string) => { try { await fn(); setMsg(ok); load(); } catch (e) { setMsg(err(e, tx("Not allowed."))); } };
   const open = async (v: View) => { setActive(v); try { setRows((await apiClient.get(`/api/v1/crm-teams/views/${v.id}/records`)).data); } catch { setRows([]); } };
   const tree = (parent: string | null, depth = 0): React.ReactNode[] => teams.filter((t) => t.parent_id === parent).flatMap((t) => [
     <div key={t.id} className="text-xs" style={{ paddingLeft: depth * 12 }}>{t.name} <span className="text-gray-400">({t.code}) · {t.members?.length ?? 0} {tx("people")}</span></div>,
@@ -45,7 +45,7 @@ export default function CRMViewsPage() {
       <section className="border rounded bg-white p-3 space-y-2">
         <h3 className="text-sm font-semibold">{tx("Sales teams")}</h3>
         {tree(null)}
-        <form className="space-y-1 text-xs" onSubmit={(e) => { e.preventDefault(); act(() => apiClient.post("/api/v1/crm-teams/teams", { ...team, parent_id: team.parent_id || null }), "Team added."); setTeam({ code: "", name: "", parent_id: "" }); }}>
+        <form className="space-y-1 text-xs" onSubmit={(e) => { e.preventDefault(); act(() => apiClient.post("/api/v1/crm-teams/teams", { ...team, parent_id: team.parent_id || null }), tx("Team added.")); setTeam({ code: "", name: "", parent_id: "" }); }}>
           <div className="flex gap-1"><input required className="border rounded px-2 py-1 w-1/3" placeholder={tx("Code")} value={team.code} onChange={(e) => setTeam({ ...team, code: e.target.value })} />
             <input required className="border rounded px-2 py-1 flex-1" placeholder={tx("Name")} value={team.name} onChange={(e) => setTeam({ ...team, name: e.target.value })} /></div>
           <select className="border rounded px-2 py-1 w-full" value={team.parent_id} onChange={(e) => setTeam({ ...team, parent_id: e.target.value })}>
@@ -57,13 +57,13 @@ export default function CRMViewsPage() {
             <option value="">{tx("Team…")}</option>{teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select>
           <EntityPicker kind="user" value={member.user_id} onChange={(id) => setMember({ ...member, user_id: id })} placeholder={tx("Person…")} />
           <button className="border rounded px-2 py-1" disabled={!member.team_id || !member.user_id}
-                  onClick={() => act(() => apiClient.put(`/api/v1/crm-teams/teams/${member.team_id}/members`, { user_id: member.user_id }), "Member added.")}>{tx("Add member")}</button>
+                  onClick={() => act(() => apiClient.put(`/api/v1/crm-teams/teams/${member.team_id}/members`, { user_id: member.user_id }), tx("Member added."))}>{tx("Add member")}</button>
         </div>
       </section>
       <section className="border rounded bg-white p-3 space-y-2">
         <h3 className="text-sm font-semibold">{tx("Tags")}</h3>
         <div className="flex flex-wrap gap-1">{tags.map((t) => <span key={t.id} className="text-xs bg-gray-100 rounded px-2 py-0.5">{t.name}</span>)}</div>
-        <form className="flex gap-1 text-xs" onSubmit={(e) => { e.preventDefault(); act(() => apiClient.post("/api/v1/crm-teams/tags", { name: tagName }), "Tag added."); setTagName(""); }}>
+        <form className="flex gap-1 text-xs" onSubmit={(e) => { e.preventDefault(); act(() => apiClient.post("/api/v1/crm-teams/tags", { name: tagName }), tx("Tag added.")); setTagName(""); }}>
           <input required className="border rounded px-2 py-1 flex-1" placeholder={tx("New tag")} value={tagName} onChange={(e) => setTagName(e.target.value)} />
           <button className="border rounded px-2">{tx("Add")}</button></form>
         <h3 className="text-sm font-semibold pt-2">{tx("New saved view")}</h3>
@@ -74,7 +74,7 @@ export default function CRMViewsPage() {
           if (draft.tag) filters.tag = draft.tag;
           if (draft.status) filters.status = draft.status;
           act(() => apiClient.post("/api/v1/crm-teams/views", { name: draft.name, view_type: draft.view_type, filters, team_id: draft.team_id || null,
-            calendar_field: draft.view_type === "calendar" ? draft.calendar_field : null }), "View saved.");
+            calendar_field: draft.view_type === "calendar" ? draft.calendar_field : null }), tx("View saved."));
         }}>
           <input required className="border rounded px-2 py-1 w-full" placeholder={tx("View name")} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
           <PipelineSelect value={draft.pipeline_id} onChange={(id) => setDraft((d) => ({ ...d, pipeline_id: id }))} />

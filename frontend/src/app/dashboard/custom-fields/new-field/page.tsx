@@ -94,7 +94,7 @@ export default function NewFieldPage() {
     </div>
   );
 
-  const steps = ["Core Info", "Settings & Flags", "Options & Rules"];
+  const steps = [tx("Core Info"), tx("Settings & Flags"), tx("Options & Rules")];
 
   return (
     <div className="p-6 max-w-2xl space-y-5">

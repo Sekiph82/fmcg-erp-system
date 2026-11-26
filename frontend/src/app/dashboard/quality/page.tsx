@@ -264,7 +264,7 @@ export default function QualityPage() {
   return (
     <ModuleWorkspace
       title={tx("Quality")}
-      description="QC inspections, certificates, parameters, quality gates, allergen, brand assets"
+      description={tx("QC inspections, certificates, parameters, quality gates, allergen, brand assets")}
       permission="quality.view"
       tabs={tabs}
       defaultTab="inspections"

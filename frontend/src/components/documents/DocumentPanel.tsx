@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { docsApi, CATEGORY_LABELS, DocumentShort, DocumentStatus } from "@/lib/documents";
 import { Badge } from "@/components/ui/Badge";
+import { tx } from "@/lib/i18n/core";
 
 const STATUS_VARIANT: Record<DocumentStatus, "yellow" | "green" | "gray" | "red"> = {
   DRAFT: "yellow",
@@ -74,7 +75,7 @@ export function DocumentPanel({
             onClick={(e) => e.stopPropagation()}
             className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
           >
-            + Add
+            {tx("+ Add")}
           </Link>
           {collapsible && (
             <svg
@@ -91,15 +92,15 @@ export function DocumentPanel({
       {open && (
         <div>
           {isLoading ? (
-            <p className="p-4 text-xs text-gray-400 text-center">Loading documents…</p>
+            <p className="p-4 text-xs text-gray-400 text-center">{tx("Loading documents…")}</p>
           ) : docs.length === 0 ? (
             <div className="p-4 text-center">
-              <p className="text-xs text-gray-400">No documents attached</p>
+              <p className="text-xs text-gray-400">{tx("No documents attached")}</p>
               <Link
                 href={addUrl}
                 className="mt-2 inline-block text-xs text-indigo-600 hover:underline"
               >
-                Attach a document →
+                {tx("Attach a document →")}
               </Link>
             </div>
           ) : (

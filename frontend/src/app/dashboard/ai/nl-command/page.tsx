@@ -10,7 +10,7 @@ import {
 } from "@/lib/aiApi";
 import { useState } from "react";
 import { RequirePermission } from "@/components/PermissionGuard";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 const RISK_PILL: Record<NLRiskLevel, string> = {
   LOW: "bg-green-100 text-green-700 border-green-200",
@@ -26,15 +26,15 @@ const STATUS_PILL: Record<string, string> = {
   FAILED: "bg-red-100 text-red-700 border-red-200",
 };
 
-const EXAMPLES = [
-  "Approve all POs under 50,000 KES",
-  "Run MRP for next 30 days",
-  "Send dunning emails to overdue customers",
-  "Trigger reorder for low stock items",
-  "Initiate recall for batch LOT-2026-05",
-  "Generate monthly sales report",
-  "Run payroll for April 2026",
-];
+const EXAMPLES = lx(() => [
+  tx("Approve all POs under 50,000 KES"),
+  tx("Run MRP for next 30 days"),
+  tx("Send dunning emails to overdue customers"),
+  tx("Trigger reorder for low stock items"),
+  tx("Initiate recall for batch LOT-2026-05"),
+  tx("Generate monthly sales report"),
+  tx("Run payroll for April 2026"),
+]);
 
 function label(value?: string | null) {
   return value ? value.replace(/_/g, " ") : "-";

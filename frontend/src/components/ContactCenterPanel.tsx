@@ -3,7 +3,7 @@
 // Only SUPPORTED capabilities are enabled; everything else is disabled with the carrier's reason.
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 type Cap = { state: "SUPPORTED" | "UNSUPPORTED" | "UNVERIFIED"; reason: string | null };
 interface Caps { provider: string | null; matrix: Record<string, Cap> }
@@ -13,10 +13,10 @@ interface Callback { id: string; phone_number: string; missed_count: number; att
 interface Live { id: string; call_ref: string; phone_number: string; direction: string; status: string | null; provider: string | null }
 interface Transfer { id: string; kind: string; state: string; to_number: string; error: string | null }
 
-const LABELS: Record<string, string> = {
-  outbound_call: "Outbound calls", inbound_ivr: "Inbound IVR", queue_hold: "Hold in queue", recording: "Recording (with consent)",
-  voicemail: "Voicemail", cold_transfer: "Cold transfer", warm_transfer: "Warm transfer", signature_verification: "Webhook signature",
-};
+const LABELS: Record<string, string> = lx(() => ({
+  outbound_call: tx("Outbound calls"), inbound_ivr: tx("Inbound IVR"), queue_hold: tx("Hold in queue"), recording: tx("Recording (with consent)"),
+  voicemail: tx("Voicemail"), cold_transfer: tx("Cold transfer"), warm_transfer: tx("Warm transfer"), signature_verification: tx("Webhook signature"),
+}));
 const DISPOSITIONS = ["SALE", "QUOTE_REQUESTED", "COMPLAINT", "WRONG_NUMBER", "NO_INTEREST", "CALLBACK_REQUESTED", "ESCALATED"];
 const PRESENCE_STYLE: Record<string, string> = { AVAILABLE: "bg-green-100 text-green-700", BUSY: "bg-red-100 text-red-700", AWAY: "bg-amber-100 text-amber-700", OFFLINE: "bg-gray-100 text-gray-600" };
 
@@ -50,9 +50,9 @@ export function ContactCenterPanel() {
   }, [tr.call, msg]);
 
   async function run(fn: () => Promise<unknown>, ok?: string) {
-    try { await fn(); if (ok) setMsg(ok); load(); } catch (e) { setMsg(detail(e, "That did not work.")); }
+    try { await fn(); if (ok) setMsg(ok); load(); } catch (e) { setMsg(detail(e, tx("That did not work."))); }
   }
-  const cap = (k: string): Cap => caps?.matrix[k] ?? { state: "UNSUPPORTED", reason: "Loading carrier capabilities." };
+  const cap = (k: string): Cap => caps?.matrix[k] ?? { state: "UNSUPPORTED", reason: tx("Loading carrier capabilities.") };
   const ok = (k: string) => cap(k).state === "SUPPORTED";
   const why = (k: string) => (ok(k) ? undefined : cap(k).reason ?? cap(k).state);
   const box = "border rounded-lg bg-white p-3 space-y-2";
@@ -106,7 +106,7 @@ export function ContactCenterPanel() {
           {board.queues.length === 0 && <p className="text-xs text-gray-500">{tx("No queues yet.")}</p>}
           <details className="text-xs">
             <summary className="cursor-pointer underline">{tx("New queue (managers)")}</summary>
-            <form className="space-y-1 mt-1" onSubmit={(e) => { e.preventDefault(); run(() => apiClient.post("/api/v1/calls/cc/queues", { ...q, member_user_ids: q.members }), "Queue saved."); }}>
+            <form className="space-y-1 mt-1" onSubmit={(e) => { e.preventDefault(); run(() => apiClient.post("/api/v1/calls/cc/queues", { ...q, member_user_ids: q.members }), tx("Queue saved.")); }}>
               <input className="border rounded px-2 py-1 w-full" placeholder={tx("Queue name")} value={q.name} onChange={(e) => setQ({ ...q, name: e.target.value })} required />
               <div className="flex gap-1 flex-wrap">
                 <select className="border rounded px-1" value={q.direction} onChange={(e) => setQ({ ...q, direction: e.target.value })}><option>INBOUND</option><option>OUTBOUND</option></select>
@@ -167,19 +167,19 @@ export function ContactCenterPanel() {
             <input className="border rounded px-1 w-32" placeholder={tx("or number")} value={tr.number} onChange={(e) => setTr({ ...tr, number: e.target.value })} />
             <button className={btn} disabled={!tr.call || !ok(tr.kind === "COLD" ? "cold_transfer" : "warm_transfer")}
               title={why(tr.kind === "COLD" ? "cold_transfer" : "warm_transfer")}
-              onClick={() => run(() => apiClient.post(`/api/v1/calls/cc/calls/${tr.call}/transfer`, { kind: tr.kind, to_user_id: tr.user || null, to_number: tr.user ? null : tr.number || null }), "Transfer requested.")}>{tx("Transfer")}</button>
+              onClick={() => run(() => apiClient.post(`/api/v1/calls/cc/calls/${tr.call}/transfer`, { kind: tr.kind, to_user_id: tr.user || null, to_number: tr.user ? null : tr.number || null }), tx("Transfer requested."))}>{tx("Transfer")}</button>
           </div>
           {!ok("cold_transfer") && <p className="text-xs text-gray-500">{tx("Transfer is disabled:")} {cap("cold_transfer").reason}</p>}
           {transfers.map((t) => (
             <div key={t.id} className="text-xs flex gap-2 items-center">
               <span>{t.kind} {tx("to")} {t.to_number}: <b>{t.state}</b>{t.error && ` (${t.error})`}</span>
-              {t.kind === "WARM" && t.state === "READY" && <button className={btn} onClick={() => run(() => apiClient.post(`/api/v1/calls/cc/transfers/${t.id}/complete`), "Customer moved.")}>{tx("Complete transfer")}</button>}
+              {t.kind === "WARM" && t.state === "READY" && <button className={btn} onClick={() => run(() => apiClient.post(`/api/v1/calls/cc/transfers/${t.id}/complete`), tx("Customer moved."))}>{tx("Complete transfer")}</button>}
             </div>
           ))}
           <div className="flex gap-1 items-center text-xs border-t pt-2">
             <select className="border rounded px-1" value={disp.code} onChange={(e) => setDisp({ ...disp, code: e.target.value })}>{DISPOSITIONS.map((d) => <option key={d}>{d}</option>)}</select>
             <input className="border rounded px-1 flex-1" placeholder={tx("note")} maxLength={500} value={disp.note} onChange={(e) => setDisp({ ...disp, note: e.target.value })} />
-            <button className={btn} disabled={!disp.call} onClick={() => run(() => apiClient.put(`/api/v1/calls/cc/calls/${disp.call}/disposition`, { code: disp.code, note: disp.note || null }), "Outcome saved.")}>{tx("Save outcome")}</button>
+            <button className={btn} disabled={!disp.call} onClick={() => run(() => apiClient.put(`/api/v1/calls/cc/calls/${disp.call}/disposition`, { code: disp.code, note: disp.note || null }), tx("Outcome saved."))}>{tx("Save outcome")}</button>
           </div>
         </div>
       </div>

@@ -209,20 +209,20 @@ export default function SchedulePage() {
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
               {[
-                ["Product", viewOp.product_name || "—"],
-                ["Code", viewOp.product_code || "—"],
-                ["Work Center", viewOp.work_center_name || "—"],
-                ["Step", viewOp.step_name || "—"],
-                ["Qty", Number(viewOp.planned_qty).toLocaleString()],
-                ["Rate/hr", viewOp.rate_per_hour ? `${viewOp.rate_per_hour} units/hr` : "—"],
-                ["Setup", fmtMins(viewOp.setup_minutes)],
-                ["Run", fmtMins(viewOp.run_minutes)],
-                ["Changeover", fmtMins(viewOp.changeover_minutes)],
-                ["Total", fmtMins(viewOp.total_minutes)],
-                ["Sched Start", viewOp.scheduled_start ? new Date(viewOp.scheduled_start).toLocaleString() : "—"],
-                ["Sched End", viewOp.scheduled_end ? new Date(viewOp.scheduled_end).toLocaleString() : "—"],
-                ["Priority", String(viewOp.priority)],
-                ["Critical Path", viewOp.is_critical_path ? "Yes" : "No"],
+                [tx("Product"), viewOp.product_name || "—"],
+                [tx("Code"), viewOp.product_code || "—"],
+                [tx("Work Center"), viewOp.work_center_name || "—"],
+                [tx("Step"), viewOp.step_name || "—"],
+                [tx("Qty"), Number(viewOp.planned_qty).toLocaleString()],
+                [tx("Rate/hr"), viewOp.rate_per_hour ? tx("{rate_per_hour} units/hr", { rate_per_hour: viewOp.rate_per_hour }) : "—"],
+                [tx("Setup"), fmtMins(viewOp.setup_minutes)],
+                [tx("Run"), fmtMins(viewOp.run_minutes)],
+                [tx("Changeover"), fmtMins(viewOp.changeover_minutes)],
+                [tx("Total"), fmtMins(viewOp.total_minutes)],
+                [tx("Sched Start"), viewOp.scheduled_start ? new Date(viewOp.scheduled_start).toLocaleString() : "—"],
+                [tx("Sched End"), viewOp.scheduled_end ? new Date(viewOp.scheduled_end).toLocaleString() : "—"],
+                [tx("Priority"), String(viewOp.priority)],
+                [tx("Critical Path"), viewOp.is_critical_path ? "Yes" : "No"],
               ].map(([k, v]) => (
                 <div key={k}>
                   <p className="text-xs text-gray-400">{k}</p>

@@ -41,7 +41,7 @@ export default function MaterialProfilesPage() {
 
       {/* Filter */}
       <div className="flex gap-2">
-        {[["All", undefined], ["Has Allergens", true], ["Allergen-Free", false]].map(([label, val]) => (
+        {[[tx("All"), undefined], [tx("Has Allergens"), true], [tx("Allergen-Free"), false]].map(([label, val]) => (
           <button key={String(label)} onClick={() => setFilter(val as boolean | undefined)} className={`px-3 py-1 text-xs rounded border ${filter === val ? "bg-gray-900 text-white border-gray-900" : "bg-white hover:bg-gray-50"}`}>{label as string}</button>
         ))}
       </div>

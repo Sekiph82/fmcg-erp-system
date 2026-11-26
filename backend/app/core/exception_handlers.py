@@ -150,8 +150,9 @@ def _error_code(detail, status_code: int) -> str:
         own = detail.get("code") or detail.get("error")
         if isinstance(own, str) and own:
             return own[:80]
-    if isinstance(detail, str):
-        slug = re.sub(r"[^a-z0-9]+", "_", detail.lower()).strip("_")[:80]
+    if isinstance(detail, str) and len(detail) <= 80:        # a long message is dynamic prose: generic status code instead
+        static = re.sub(r'\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b|([\x27\x22`]).*?\1|\d+', ' ', detail.lower())   # no ids/quoted values/numbers
+        slug = re.sub(r"[^a-z]+", "_", static).strip("_")
         if slug:
             return slug
     return _status_label(status_code)

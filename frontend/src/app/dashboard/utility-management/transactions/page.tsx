@@ -21,6 +21,7 @@ import {
 import { UTILITY_TYPE_LABELS } from "@/lib/utilityManagement";
 import type { UtilityType } from "@/lib/utilityManagement";
 import type { TxReferenceType, SourceMethod, DataQuality } from "@/lib/utilityTransactions";
+import { tx as xlate } from "@/lib/i18n/core";
 
 // ── Badge helpers ─────────────────────────────────────────────────────────────
 
@@ -137,10 +138,10 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
     >
       {/* Core */}
       <div>
-        <SectionTitle>Transaction Details</SectionTitle>
+        <SectionTitle>{xlate("Transaction Details")}</SectionTitle>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-400">Utility Type *</label>
+            <label className="text-[11px] text-slate-400">{xlate("Utility Type *")}</label>
             <select
               required
               value={form.utility_type}
@@ -153,7 +154,7 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-400">Transaction Date *</label>
+            <label className="text-[11px] text-slate-400">{xlate("Transaction Date *")}</label>
             <input
               required
               type="date"
@@ -163,7 +164,7 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-400">Transaction Time</label>
+            <label className="text-[11px] text-slate-400">{xlate("Transaction Time")}</label>
             <input
               type="datetime-local"
               value={form.transaction_time?.slice(0, 16) ?? ""}
@@ -172,7 +173,7 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-400">Quantity *</label>
+            <label className="text-[11px] text-slate-400">{xlate("Quantity *")}</label>
             <input
               required
               type="number"
@@ -184,18 +185,18 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-400">Unit of Measure *</label>
+            <label className="text-[11px] text-slate-400">{xlate("Unit of Measure *")}</label>
             <input
               required
               type="text"
               value={form.uom}
               onChange={(e) => set("uom", e.target.value)}
-              placeholder="kWh, m³, kg…"
+              placeholder={xlate("kWh, m³, kg…")}
               className="bg-slate-800 border border-slate-700 rounded px-2.5 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500"
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-400">Source Method</label>
+            <label className="text-[11px] text-slate-400">{xlate("Source Method")}</label>
             <select
               value={form.source_method}
               onChange={(e) => set("source_method", e.target.value as SourceMethod)}
@@ -211,10 +212,10 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
 
       {/* Cost */}
       <div>
-        <SectionTitle>Cost</SectionTitle>
+        <SectionTitle>{xlate("Cost")}</SectionTitle>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-400">Cost Rate</label>
+            <label className="text-[11px] text-slate-400">{xlate("Cost Rate")}</label>
             <input
               type="number"
               step="any"
@@ -225,7 +226,7 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-400">Total Cost</label>
+            <label className="text-[11px] text-slate-400">{xlate("Total Cost")}</label>
             <input
               type="number"
               step="any"
@@ -236,7 +237,7 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-400">Currency</label>
+            <label className="text-[11px] text-slate-400">{xlate("Currency")}</label>
             <input
               type="text"
               value={form.currency_code ?? "USD"}
@@ -246,7 +247,7 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-400">Variance from Standard</label>
+            <label className="text-[11px] text-slate-400">{xlate("Variance from Standard")}</label>
             <input
               type="number"
               step="any"
@@ -260,10 +261,10 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
 
       {/* Allocation */}
       <div>
-        <SectionTitle>Allocation</SectionTitle>
+        <SectionTitle>{xlate("Allocation")}</SectionTitle>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-400">Department</label>
+            <label className="text-[11px] text-slate-400">{xlate("Department")}</label>
             <input
               type="text"
               value={form.department ?? ""}
@@ -272,7 +273,7 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-400">Building / Area</label>
+            <label className="text-[11px] text-slate-400">{xlate("Building / Area")}</label>
             <input
               type="text"
               value={form.building_area ?? ""}
@@ -281,7 +282,7 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-400">Production Line</label>
+            <label className="text-[11px] text-slate-400">{xlate("Production Line")}</label>
             <input
               type="text"
               value={form.line_id ?? ""}
@@ -290,7 +291,7 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-400">Machine</label>
+            <label className="text-[11px] text-slate-400">{xlate("Machine")}</label>
             <input
               type="text"
               value={form.machine_id ?? ""}
@@ -299,7 +300,7 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-400">Shift</label>
+            <label className="text-[11px] text-slate-400">{xlate("Shift")}</label>
             <input
               type="text"
               value={form.shift_id ?? ""}
@@ -308,7 +309,7 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
             />
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-400">Batch ID</label>
+            <label className="text-[11px] text-slate-400">{xlate("Batch ID")}</label>
             <input
               type="text"
               value={form.batch_id ?? ""}
@@ -321,28 +322,28 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
 
       {/* Reference linkage */}
       <div>
-        <SectionTitle>Reference Linkage</SectionTitle>
+        <SectionTitle>{xlate("Reference Linkage")}</SectionTitle>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-400">Reference Type</label>
+            <label className="text-[11px] text-slate-400">{xlate("Reference Type")}</label>
             <select
               value={form.reference_type ?? ""}
               onChange={(e) => set("reference_type", (e.target.value as TxReferenceType) || null)}
               className="bg-slate-800 border border-slate-700 rounded px-2.5 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500"
             >
-              <option value="">— None —</option>
+              <option value="">{xlate("— None —")}</option>
               {TX_REFERENCE_TYPE_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
           </div>
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-400">Reference ID</label>
+            <label className="text-[11px] text-slate-400">{xlate("Reference ID")}</label>
             <input
               type="text"
               value={form.reference_id ?? ""}
               onChange={(e) => set("reference_id", e.target.value || null)}
-              placeholder="UUID or external reference"
+              placeholder={xlate("UUID or external reference")}
               className="bg-slate-800 border border-slate-700 rounded px-2.5 py-2 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500"
             />
           </div>
@@ -351,10 +352,10 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
 
       {/* Quality / flags */}
       <div>
-        <SectionTitle>Quality & Flags</SectionTitle>
+        <SectionTitle>{xlate("Quality & Flags")}</SectionTitle>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div className="flex flex-col gap-1">
-            <label className="text-[11px] text-slate-400">Data Quality</label>
+            <label className="text-[11px] text-slate-400">{xlate("Data Quality")}</label>
             <select
               value={form.quality}
               onChange={(e) => set("quality", e.target.value as DataQuality)}
@@ -373,7 +374,7 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
                 onChange={(e) => set("estimated_or_actual", e.target.checked)}
                 className="accent-amber-500"
               />
-              Estimated (not actual)
+              {xlate("Estimated (not actual)")}
             </label>
             <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
               <input
@@ -382,12 +383,12 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
                 onChange={(e) => set("anomaly_flag", e.target.checked)}
                 className="accent-red-500"
               />
-              Anomaly
+              {xlate("Anomaly")}
             </label>
           </div>
           {form.anomaly_flag && (
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] text-slate-400">Anomaly Note</label>
+              <label className="text-[11px] text-slate-400">{xlate("Anomaly Note")}</label>
               <input
                 type="text"
                 value={form.anomaly_note ?? ""}
@@ -401,7 +402,7 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
 
       {/* Notes */}
       <div className="flex flex-col gap-1">
-        <label className="text-[11px] text-slate-400">Notes</label>
+        <label className="text-[11px] text-slate-400">{xlate("Notes")}</label>
         <textarea
           rows={2}
           value={form.notes ?? ""}
@@ -418,7 +419,7 @@ function TransactionForm({ initial, onSubmit, isLoading, error, submitLabel = "S
           disabled={isLoading}
           className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm rounded font-medium transition-colors"
         >
-          {isLoading ? "Saving…" : submitLabel}
+          {isLoading ? xlate("Saving…") : submitLabel}
         </button>
       </div>
     </form>
@@ -448,15 +449,15 @@ function ViewModal({ tx, onClose }: { tx: UtilityTransaction; onClose: () => voi
         <div className="overflow-y-auto flex-1 px-5 py-4 flex flex-col gap-5">
           {/* Classification */}
           <div>
-            <SectionTitle>Classification</SectionTitle>
+            <SectionTitle>{xlate("Classification")}</SectionTitle>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <Row label="Utility Type" value={<UtilityTypeBadge t={tx.utility_type} />} />
-              <Row label="Source Method" value={<SourceBadge s={tx.source_method} />} />
-              <Row label="Quality" value={<QualityBadge q={tx.quality} />} />
-              <Row label="Estimated?" value={tx.estimated_or_actual ? "Yes" : "No"} />
-              <Row label="Anomaly?" value={
+              <Row label={xlate("Utility Type")} value={<UtilityTypeBadge t={tx.utility_type} />} />
+              <Row label={xlate("Source Method")} value={<SourceBadge s={tx.source_method} />} />
+              <Row label={xlate("Quality")} value={<QualityBadge q={tx.quality} />} />
+              <Row label={xlate("Estimated?")} value={tx.estimated_or_actual ? "Yes" : "No"} />
+              <Row label={xlate("Anomaly?")} value={
                 tx.anomaly_flag
-                  ? <span className="text-red-400 font-medium">Yes{tx.anomaly_note ? ` — ${tx.anomaly_note}` : ""}</span>
+                  ? <span className="text-red-400 font-medium">{xlate("Yes")}{tx.anomaly_note ? ` — ${tx.anomaly_note}` : ""}</span>
                   : "No"
               } />
             </div>
@@ -464,10 +465,10 @@ function ViewModal({ tx, onClose }: { tx: UtilityTransaction; onClose: () => voi
 
           {/* Consumption */}
           <div>
-            <SectionTitle>Consumption</SectionTitle>
+            <SectionTitle>{xlate("Consumption")}</SectionTitle>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <Row label="Quantity" value={`${Number(tx.quantity).toLocaleString()} ${tx.uom}`} />
-              <Row label="Variance from Std" value={
+              <Row label={xlate("Quantity")} value={`${Number(tx.quantity).toLocaleString()} ${tx.uom}`} />
+              <Row label={xlate("Variance from Std")} value={
                 tx.variance_from_standard
                   ? <span className={parseFloat(tx.variance_from_standard) > 0 ? "text-red-400" : "text-emerald-400"}>
                       {parseFloat(tx.variance_from_standard) > 0 ? "▲" : "▼"} {Math.abs(parseFloat(tx.variance_from_standard)).toFixed(4)}
@@ -479,50 +480,50 @@ function ViewModal({ tx, onClose }: { tx: UtilityTransaction; onClose: () => voi
 
           {/* Cost */}
           <div>
-            <SectionTitle>Cost</SectionTitle>
+            <SectionTitle>{xlate("Cost")}</SectionTitle>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <Row label="Cost Rate" value={tx.cost_rate ? `${tx.currency_code} ${parseFloat(tx.cost_rate).toFixed(4)}` : null} />
-              <Row label="Total Cost" value={
+              <Row label={xlate("Cost Rate")} value={tx.cost_rate ? `${tx.currency_code} ${parseFloat(tx.cost_rate).toFixed(4)}` : null} />
+              <Row label={xlate("Total Cost")} value={
                 tx.total_cost
                   ? `${tx.currency_code} ${Number(tx.total_cost).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
                   : null
               } />
-              <Row label="Currency" value={tx.currency_code} />
+              <Row label={xlate("Currency")} value={tx.currency_code} />
             </div>
           </div>
 
           {/* Allocation */}
           <div>
-            <SectionTitle>Allocation</SectionTitle>
+            <SectionTitle>{xlate("Allocation")}</SectionTitle>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <Row label="Department" value={tx.department} />
-              <Row label="Building / Area" value={tx.building_area} />
-              <Row label="Production Line" value={tx.line_id} />
-              <Row label="Machine" value={tx.machine_id} />
-              <Row label="Shift" value={tx.shift_id} />
-              <Row label="Batch ID" value={tx.batch_id} />
+              <Row label={xlate("Department")} value={tx.department} />
+              <Row label={xlate("Building / Area")} value={tx.building_area} />
+              <Row label={xlate("Production Line")} value={tx.line_id} />
+              <Row label={xlate("Machine")} value={tx.machine_id} />
+              <Row label={xlate("Shift")} value={tx.shift_id} />
+              <Row label={xlate("Batch ID")} value={tx.batch_id} />
             </div>
           </div>
 
           {/* Reference */}
           <div>
-            <SectionTitle>Reference</SectionTitle>
+            <SectionTitle>{xlate("Reference")}</SectionTitle>
             <div className="grid grid-cols-2 gap-3">
-              <Row label="Reference Type" value={tx.reference_type ? TX_REFERENCE_TYPE_LABELS[tx.reference_type] : null} />
-              <Row label="Reference ID" value={<span className="font-mono text-[11px]">{tx.reference_id}</span>} />
-              <Row label="Device" value={tx.device_code ? `${tx.device_code} — ${tx.device_name}` : null} />
-              <Row label="Asset" value={tx.asset_no ? `${tx.asset_no} — ${tx.asset_name}` : null} />
+              <Row label={xlate("Reference Type")} value={tx.reference_type ? TX_REFERENCE_TYPE_LABELS[tx.reference_type] : null} />
+              <Row label={xlate("Reference ID")} value={<span className="font-mono text-[11px]">{tx.reference_id}</span>} />
+              <Row label={xlate("Device")} value={tx.device_code ? `${tx.device_code} — ${tx.device_name}` : null} />
+              <Row label={xlate("Asset")} value={tx.asset_no ? `${tx.asset_no} — ${tx.asset_name}` : null} />
             </div>
           </div>
 
           {tx.notes && (
             <div>
-              <SectionTitle>Notes</SectionTitle>
+              <SectionTitle>{xlate("Notes")}</SectionTitle>
               <p className="text-xs text-slate-300 whitespace-pre-wrap">{tx.notes}</p>
             </div>
           )}
 
-          <div className="text-[10px] text-slate-600">Created: {tx.created_at ? new Date(tx.created_at).toLocaleString() : "—"}</div>
+          <div className="text-[10px] text-slate-600">{xlate("Created:")} {tx.created_at ? new Date(tx.created_at).toLocaleString() : "—"}</div>
         </div>
       </div>
     </div>
@@ -537,11 +538,11 @@ function SummaryCards({ summary }: { summary: UtilityTransactionSummary }) {
       {/* KPI strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-lg p-3">
-          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Total Transactions</div>
+          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{xlate("Total Transactions")}</div>
           <div className="text-xl font-bold text-slate-200">{summary.grand_total_tx.toLocaleString()}</div>
         </div>
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-lg p-3">
-          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Total Cost</div>
+          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{xlate("Total Cost")}</div>
           <div className="text-xl font-bold text-emerald-400">
             {summary.grand_total_cost
               ? Number(summary.grand_total_cost).toLocaleString(undefined, { minimumFractionDigits: 2 })
@@ -549,11 +550,11 @@ function SummaryCards({ summary }: { summary: UtilityTransactionSummary }) {
           </div>
         </div>
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-lg p-3">
-          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Utility Types</div>
+          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{xlate("Utility Types")}</div>
           <div className="text-xl font-bold text-slate-200">{summary.by_utility_type.length}</div>
         </div>
         <div className="bg-slate-800/60 border border-slate-700/50 rounded-lg p-3">
-          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Anomalies</div>
+          <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{xlate("Anomalies")}</div>
           <div className={`text-xl font-bold ${summary.by_utility_type.reduce((a, r) => a + r.anomaly_count, 0) > 0 ? "text-red-400" : "text-slate-200"}`}>
             {summary.by_utility_type.reduce((a, r) => a + r.anomaly_count, 0)}
           </div>
@@ -574,7 +575,7 @@ function SummaryCards({ summary }: { summary: UtilityTransactionSummary }) {
                   {Number(row.total_cost).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </div>
               )}
-              <div className="text-[10px] text-slate-600 mt-0.5">{row.tx_count} tx</div>
+              <div className="text-[10px] text-slate-600 mt-0.5">{row.tx_count} {xlate("tx")}</div>
             </div>
           ))}
         </div>
@@ -618,14 +619,14 @@ export default function TransactionsPage() {
   const createMut = useMutation({
     mutationFn: utilityTransactionsApi.create,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["utility-transactions"] }); qc.invalidateQueries({ queryKey: ["utility-tx-summary"] }); setModal({ type: "none" }); setFormError(null); },
-    onError: (e: unknown) => setFormError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Failed to create transaction."),
+    onError: (e: unknown) => setFormError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? xlate("Failed to create transaction.")),
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UtilityTransactionUpdate }) =>
       utilityTransactionsApi.update(id, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["utility-transactions"] }); qc.invalidateQueries({ queryKey: ["utility-tx-summary"] }); setModal({ type: "none" }); setFormError(null); },
-    onError: (e: unknown) => setFormError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? "Failed to update transaction."),
+    onError: (e: unknown) => setFormError((e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? xlate("Failed to update transaction.")),
   });
 
   const deleteMut = useMutation({
@@ -659,14 +660,14 @@ export default function TransactionsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold text-slate-200">Utility Transactions</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Unified consumption & cost event log</p>
+          <h1 className="text-lg font-semibold text-slate-200">{xlate("Utility Transactions")}</h1>
+          <p className="text-xs text-slate-500 mt-0.5">{xlate("Unified consumption & cost event log")}</p>
         </div>
         <button
           onClick={() => { setFormError(null); setModal({ type: "create" }); }}
           className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded font-medium transition-colors"
         >
-          <span className="text-base leading-none">+</span> Record Transaction
+          <span className="text-base leading-none">+</span> {xlate("Record Transaction")}
         </button>
       </div>
 
@@ -675,9 +676,9 @@ export default function TransactionsPage() {
 
       {/* Stats bar */}
       <div className="flex items-center gap-4 text-xs text-slate-500">
-        <span>{rows.length} transaction{rows.length !== 1 ? "s" : ""}</span>
+        <span>{rows.length} {xlate("transaction")}{rows.length !== 1 ? xlate("s") : ""}</span>
         {anomalyCount > 0 && (
-          <span className="text-red-400 font-medium">{anomalyCount} anomal{anomalyCount === 1 ? "y" : "ies"}</span>
+          <span className="text-red-400 font-medium">{anomalyCount} {xlate("anomal")}{anomalyCount === 1 ? xlate("y") : xlate("ies")}</span>
         )}
       </div>
 
@@ -688,7 +689,7 @@ export default function TransactionsPage() {
           onChange={(e) => setFilter("utility_type", e.target.value as UtilityType || undefined)}
           className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
         >
-          <option value="">All utilities</option>
+          <option value="">{xlate("All utilities")}</option>
           {UTILITY_TYPE_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
@@ -699,7 +700,7 @@ export default function TransactionsPage() {
           onChange={(e) => setFilter("source_method", e.target.value as SourceMethod || undefined)}
           className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
         >
-          <option value="">All sources</option>
+          <option value="">{xlate("All sources")}</option>
           {SOURCE_METHOD_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
@@ -710,7 +711,7 @@ export default function TransactionsPage() {
           onChange={(e) => setFilter("reference_type", e.target.value as TxReferenceType || undefined)}
           className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
         >
-          <option value="">All ref. types</option>
+          <option value="">{xlate("All ref. types")}</option>
           {TX_REFERENCE_TYPE_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
@@ -721,7 +722,7 @@ export default function TransactionsPage() {
           onChange={(e) => setFilter("quality", e.target.value as DataQuality || undefined)}
           className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-blue-500"
         >
-          <option value="">All quality</option>
+          <option value="">{xlate("All quality")}</option>
           {DATA_QUALITY_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
@@ -734,7 +735,7 @@ export default function TransactionsPage() {
             onChange={(e) => setFilter("is_anomaly", e.target.checked ? true : undefined)}
             className="accent-red-500"
           />
-          Anomalies
+          {xlate("Anomalies")}
         </label>
 
         <input
@@ -753,21 +754,21 @@ export default function TransactionsPage() {
 
         <input
           type="text"
-          placeholder="Department…"
+          placeholder={xlate("Department…")}
           value={filters.department ?? ""}
           onChange={(e) => setFilter("department", e.target.value || undefined)}
           className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 w-28"
         />
         <input
           type="text"
-          placeholder="Line…"
+          placeholder={xlate("Line…")}
           value={filters.line_id ?? ""}
           onChange={(e) => setFilter("line_id", e.target.value || undefined)}
           className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 w-20"
         />
         <input
           type="text"
-          placeholder="Batch…"
+          placeholder={xlate("Batch…")}
           value={filters.batch_id ?? ""}
           onChange={(e) => setFilter("batch_id", e.target.value || undefined)}
           className="bg-slate-800 border border-slate-700 rounded px-2 py-1.5 text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-blue-500 w-20"
@@ -777,7 +778,7 @@ export default function TransactionsPage() {
           onClick={handleExport}
           className="ml-auto px-2.5 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors"
         >
-          Export CSV
+          {xlate("Export CSV")}
         </button>
       </div>
 
@@ -786,28 +787,28 @@ export default function TransactionsPage() {
         <table className="w-full text-left">
           <thead>
             <tr className="border-b border-slate-700/60 bg-slate-800/60">
-              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Tx No.</th>
-              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Date</th>
-              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Utility</th>
-              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Qty / UOM</th>
-              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Cost</th>
-              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Source</th>
-              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Dept / Line</th>
-              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Ref.</th>
-              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Quality</th>
-              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Actions</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{xlate("Tx No.")}</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{xlate("Date")}</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{xlate("Utility")}</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{xlate("Qty / UOM")}</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{xlate("Cost")}</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{xlate("Source")}</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{xlate("Dept / Line")}</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{xlate("Ref.")}</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{xlate("Quality")}</th>
+              <th className="px-4 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">{xlate("Actions")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-700/30">
             {isLoading && (
               <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-xs text-slate-500">Loading…</td>
+                <td colSpan={10} className="px-4 py-8 text-center text-xs text-slate-500">{xlate("Loading…")}</td>
               </tr>
             )}
             {!isLoading && rows.length === 0 && (
               <tr>
                 <td colSpan={10} className="px-4 py-8 text-center text-xs text-slate-500">
-                  No transactions found.
+                  {xlate("No transactions found.")}
                 </td>
               </tr>
             )}
@@ -858,7 +859,7 @@ export default function TransactionsPage() {
                 <td className="px-4 py-2.5 text-xs text-slate-300 whitespace-nowrap">
                   <div className="flex flex-col gap-0.5">
                     {tx.department && <span>{tx.department}</span>}
-                    {tx.line_id && <span className="text-slate-500 text-[10px]">Line: {tx.line_id}</span>}
+                    {tx.line_id && <span className="text-slate-500 text-[10px]">{xlate("Line:")} {tx.line_id}</span>}
                     {!tx.department && !tx.line_id && <span className="text-slate-600">—</span>}
                   </div>
                 </td>
@@ -874,19 +875,19 @@ export default function TransactionsPage() {
                       onClick={() => setModal({ type: "view", tx })}
                       className="text-slate-400 hover:text-slate-200 transition-colors text-[11px]"
                     >
-                      View
+                      {xlate("View")}
                     </button>
                     <button
                       onClick={() => { setFormError(null); setModal({ type: "edit", tx }); }}
                       className="text-blue-400 hover:text-blue-300 transition-colors text-[11px]"
                     >
-                      Edit
+                      {xlate("Edit")}
                     </button>
                     <button
                       onClick={() => setModal({ type: "delete", tx })}
                       className="text-red-400 hover:text-red-300 transition-colors text-[11px]"
                     >
-                      Del
+                      {xlate("Del")}
                     </button>
                   </div>
                 </td>
@@ -901,7 +902,7 @@ export default function TransactionsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
-              <h2 className="text-sm font-semibold text-slate-200">Record Transaction</h2>
+              <h2 className="text-sm font-semibold text-slate-200">{xlate("Record Transaction")}</h2>
               <button onClick={() => setModal({ type: "none" })} className="text-slate-500 hover:text-slate-300 text-lg leading-none">×</button>
             </div>
             <div className="overflow-y-auto flex-1 px-5 py-4">
@@ -921,7 +922,7 @@ export default function TransactionsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col">
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-700">
-              <h2 className="text-sm font-semibold text-slate-200">Edit Transaction</h2>
+              <h2 className="text-sm font-semibold text-slate-200">{xlate("Edit Transaction")}</h2>
               <button onClick={() => setModal({ type: "none" })} className="text-slate-500 hover:text-slate-300 text-lg leading-none">×</button>
             </div>
             <div className="overflow-y-auto flex-1 px-5 py-4">
@@ -946,23 +947,23 @@ export default function TransactionsPage() {
       {modal.type === "delete" && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
           <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-sm p-5 flex flex-col gap-4">
-            <h2 className="text-sm font-semibold text-slate-200">Delete Transaction</h2>
+            <h2 className="text-sm font-semibold text-slate-200">{xlate("Delete Transaction")}</h2>
             <p className="text-xs text-slate-400">
-              Delete <span className="font-mono text-slate-200">{modal.tx.transaction_no}</span>? This action cannot be undone.
+              {xlate("Delete")} <span className="font-mono text-slate-200">{modal.tx.transaction_no}</span>{xlate("? This action cannot be undone.")}
             </p>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setModal({ type: "none" })}
                 className="px-3 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors"
               >
-                Cancel
+                {xlate("Cancel")}
               </button>
               <button
                 onClick={() => deleteMut.mutate(modal.tx.id)}
                 disabled={deleteMut.isPending}
                 className="px-3 py-1.5 text-xs bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white rounded transition-colors"
               >
-                {deleteMut.isPending ? "Deleting…" : "Delete"}
+                {deleteMut.isPending ? xlate("Deleting…") : xlate("Delete")}
               </button>
             </div>
           </div>

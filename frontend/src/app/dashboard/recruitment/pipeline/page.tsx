@@ -69,7 +69,7 @@ export default function PipelineBoardPage() {
                   <p className="text-xs font-medium text-slate-300">{p.candidate_id.slice(-8)}</p>
                   <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${PIPELINE_STATUS_COLOR[p.status]}`}>{p.status}</span>
                   <p className="text-[10px] text-slate-600">{p.application_date}</p>
-                  <button onClick={() => recruitmentApi.rejectCandidate(p.pipeline_id, "Rejected from board").then(loadPipeline)}
+                  <button onClick={() => recruitmentApi.rejectCandidate(p.pipeline_id, tx("Rejected from board")).then(loadPipeline)}
                     className="text-[10px] text-red-400 hover:text-red-300">{tx("Reject")}</button>
                 </div>
               ))}

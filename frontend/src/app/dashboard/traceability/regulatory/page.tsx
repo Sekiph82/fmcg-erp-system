@@ -74,12 +74,12 @@ function RegulatoryContent() {
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
               {[
-                ["Recall Type", report.recall_type.replace("_"," ")],
-                ["Trigger", report.trigger_source.replace("_"," ")],
-                ["Status", report.status.replace("_"," ")],
-                ["Source Lot", report.source_lot_number || "Multiple"],
-                ["Markets", report.affected_markets],
-                ["Lots Affected", report.affected_lots.length],
+                [tx("Recall Type"), report.recall_type.replace("_"," ")],
+                [tx("Trigger"), report.trigger_source.replace("_"," ")],
+                [tx("Status"), report.status.replace("_"," ")],
+                [tx("Source Lot"), report.source_lot_number || "Multiple"],
+                [tx("Markets"), report.affected_markets],
+                [tx("Lots Affected"), report.affected_lots.length],
               ].map(([k, v]) => (
                 <div key={k} className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs text-gray-500 uppercase">{k}</p>

@@ -126,7 +126,7 @@ export default function QMSReportsPage() {
               <p className="text-sm text-green-700">{tx("No CCP violations recorded")}</p>
             ) : (
               Object.entries(ccpReport.violations_by_ccp).map(([ccp_id, count]) => (
-                <StatRow key={ccp_id} label={`CCP ${ccp_id.slice(0, 8)}…`} value={count} color="bg-red-500" />
+                <StatRow key={ccp_id} label={tx("CCP {ccp_id}…", { ccp_id: ccp_id.slice(0, 8) })} value={count} color="bg-red-500" />
               ))
             )}
             {ccpReport.recent_violations.length > 0 && (

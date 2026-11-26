@@ -51,7 +51,7 @@ export function CopilotPanel({ customerId }: { customerId: string }) {
           {brief.follow_ups.length > 0 && (
             <ul className="text-sm space-y-1 list-disc ml-5">
               {brief.follow_ups.map((f, i) => (
-                <li key={i}>{f.due_in_days === 0 ? tx("Today") : `In ${f.due_in_days} day${f.due_in_days > 1 ? "s" : ""}`}: {f.action}<Cite ids={f.evidence} /></li>
+                <li key={i}>{f.due_in_days === 0 ? tx("Today") : ((f.due_in_days > 1) ? tx("In {due_in_days} days", { due_in_days: f.due_in_days }) : tx("In {due_in_days} day", { due_in_days: f.due_in_days }))}: {f.action}<Cite ids={f.evidence} /></li>
               ))}
             </ul>
           )}

@@ -4,11 +4,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { providerSignApi, type ProviderEnvelope, type ProviderReadiness } from "@/lib/esign";
 import { useAuth } from "@/context/AuthContext";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 const errText = (e: unknown) => {
   const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
-  return typeof d === "string" ? d : Array.isArray(d) ? "Check the fields: " + d.map((x: { loc?: string[] }) => x.loc?.slice(-1)[0]).join(", ") : "Something went wrong.";
+  return typeof d === "string" ? d : Array.isArray(d) ? tx("Check the fields: {fields}", { fields: d.map((x: { loc?: string[] }) => x.loc?.slice(-1)[0]).join(", ") }) : tx("Something went wrong.");
 };
 const newKey = () => `povu-ui-${crypto.randomUUID()}`;
 const tone: Record<string, string> = {
@@ -28,7 +28,7 @@ export function EnvelopeCard({ env, onChanged }: { env: ProviderEnvelope; onChan
   };
   const file = (kind: "snapshot" | "signed" | "evidence") =>
     providerSignApi.download(env.id, kind, `${env.source_ref.replace(/ /g, "_")}-${kind}.pdf`)
-      .then((r) => setMsg(`Downloaded ${kind} (SHA-256 ${r.sha256.slice(0, 16)}…, ${r.evidence}).`)).catch((e) => setMsg(errText(e)));
+      .then((r) => setMsg(tx("Downloaded {kind} (SHA-256 {sha256}…, {evidence}).", { kind, sha256: r.sha256.slice(0, 16), evidence: r.evidence }))).catch((e) => setMsg(errText(e)));
   const canReconcile = hasPermission("esign.request");
   const canCancel = hasPermission("esign.cancel");
   return (
@@ -53,12 +53,12 @@ export function EnvelopeCard({ env, onChanged }: { env: ProviderEnvelope; onChan
         <button className="border rounded px-2 disabled:opacity-50" disabled={!env.signed_sha256} title={env.signed_sha256 ? "" : tx("Available once the provider completed and the signed copy was downloaded")} onClick={() => file("signed")}>{tx("Download signed document")}</button>
         <button className="border rounded px-2 disabled:opacity-50" disabled={!env.evidence_sha256} title={env.evidence_sha256 ? "" : tx("Available after completion")} onClick={() => file("evidence")}>{tx("Download evidence")}</button>
         {env.can_reconcile && <button className="border rounded px-2 disabled:opacity-50" disabled={busy || !canReconcile} title={canReconcile ? "" : tx("Needs esign.request")}
-          onClick={() => run(providerSignApi.reconcile(env.id), "Status read back from the provider.")}>{tx("Refresh / reconcile")}</button>}
+          onClick={() => run(providerSignApi.reconcile(env.id), tx("Status read back from the provider."))}>{tx("Refresh / reconcile")}</button>}
         {env.can_cancel && <>
           <input aria-label={tx("Cancel reason")} className="border rounded px-1" placeholder={tx("Reason to cancel")} value={reason} onChange={(e) => setReason(e.target.value)} />
           <button className="border rounded px-2 disabled:opacity-50" disabled={busy || !canCancel || reason.trim().length < 3}
             title={!canCancel ? tx("Needs esign.cancel (requester or e-signature admin)") : reason.trim().length < 3 ? tx("Give a reason") : ""}
-            onClick={() => run(providerSignApi.cancel(env.id, reason.trim()), "Cancelled at the provider.")}>{tx("Cancel request")}</button></>}
+            onClick={() => run(providerSignApi.cancel(env.id, reason.trim()), tx("Cancelled at the provider."))}>{tx("Cancel request")}</button></>}
       </div>
     </div>
   );
@@ -82,11 +82,11 @@ export function ProviderSignaturePanel({ sourceType, sourceId, sourceStatus }: {
   const chosen = ready.find((r) => r.provider === provider);
   const open = envs.find((e) => e.can_reconcile);
   const approved = sourceType === "QUOTATION" ? sourceStatus === "SENT" : ["APPROVED", "ACTIVE"].includes(sourceStatus);
-  const why = !hasPermission("esign.request") ? "You need the esign.request right to send for signature."
-    : !approved ? (sourceType === "QUOTATION" ? "Only a sent (approved) quotation can go out for signature." : "Only an approved or active contract can go out for signature.")
-    : open ? "Already out for signature: reconcile or cancel that request first."
-    : !chosen ? "Choose a provider." : !chosen.ready ? chosen.reasons.join(" ")
-    : !form.signer_name.trim() || !form.signer_email.includes("@") ? "Enter the signer's name and e-mail." : null;
+  const why = !hasPermission("esign.request") ? tx("You need the esign.request right to send for signature.")
+    : !approved ? (sourceType === "QUOTATION" ? tx("Only a sent (approved) quotation can go out for signature.") : tx("Only an approved or active contract can go out for signature."))
+    : open ? tx("Already out for signature: reconcile or cancel that request first.")
+    : !chosen ? tx("Choose a provider.") : !chosen.ready ? chosen.reasons.join(" ")
+    : !form.signer_name.trim() || !form.signer_email.includes("@") ? tx("Enter the signer's name and e-mail.") : null;
   const send = () => {
     if (!provider) return;
     setBusy(true);
@@ -121,12 +121,12 @@ export function ProviderSignaturePanel({ sourceType, sourceId, sourceStatus }: {
   );
 }
 
-const FIELDS: Record<string, { settings: [string, string][]; secrets: [string, string][] }> = {
-  DOCUSIGN: { settings: [["integration_key", "Integration key"], ["user_id", "User ID (GUID)"], ["auth_base", "Auth server (https://account-d.docusign.com)"], ["account_id", "Account ID (optional)"]],
-    secrets: [["private_key_pem", "RSA private key (PEM)"], ["connect_hmac_key", "Connect HMAC key"]] },
-  ADOBE_SIGN: { settings: [["client_id", "Application (client) ID"], ["api_base", "API access point (https://api.na1.adobesign.com)"]],
-    secrets: [["client_secret", "Client secret"], ["refresh_token", "Refresh token"]] },
-};
+const FIELDS: Record<string, { settings: [string, string][]; secrets: [string, string][] }> = lx(() => ({
+  DOCUSIGN: { settings: [["integration_key", tx("Integration key")], ["user_id", "User ID (GUID)"], ["auth_base", tx("Auth server (https://account-d.docusign.com)")], ["account_id", tx("Account ID (optional)")]],
+    secrets: [["private_key_pem", tx("RSA private key (PEM)")], ["connect_hmac_key", tx("Connect HMAC key")]] },
+  ADOBE_SIGN: { settings: [["client_id", tx("Application (client) ID")], ["api_base", tx("API access point (https://api.na1.adobesign.com)")]],
+    secrets: [["client_secret", tx("Client secret")], ["refresh_token", tx("Refresh token")]] },
+}));
 
 function ProviderConfig({ r, onSaved }: { r: ProviderReadiness; onSaved: () => void }) {
   const [s, setS] = useState<Record<string, string>>(() => Object.fromEntries(Object.entries(r.settings).map(([k, v]) => [k, v ?? ""])));

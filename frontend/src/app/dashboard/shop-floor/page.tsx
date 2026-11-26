@@ -202,7 +202,7 @@ export default function ShopFloorPage() {
   return (
     <ModuleWorkspace
       title={tx("Shop Floor")}
-      description="Operator terminal, supervisor console, queue board, downtime, handover"
+      description={tx("Operator terminal, supervisor console, queue board, downtime, handover")}
       permission="production.view"
       tabs={tabs}
       defaultTab={broadView ? "overview" : "terminal"}

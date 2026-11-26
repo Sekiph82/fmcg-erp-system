@@ -50,7 +50,7 @@ export function BookingPagesPanel() {
           <div>
             <div className="font-medium">{p.title} {!p.is_active && <span className="text-gray-500">{tx("(off)")}</span>}</div>
             <a className="text-indigo-600 break-all" href={p.public_url} target="_blank" rel="noreferrer">{p.public_url}</a>
-            <div className="text-gray-500">{p.duration_minutes} {tx("min ·")} {p.host_ids.length > 1 ? `${p.host_ids.length} hosts, ${p.routing.replace("_", " ")}` : tx("you")}</div>
+            <div className="text-gray-500">{p.duration_minutes} {tx("min ·")} {p.host_ids.length > 1 ? tx("{length} hosts, {routing}", { length: p.host_ids.length, routing: p.routing.replace("_", " ") }) : tx("you")}</div>
           </div>
           <div className="flex gap-2">
             <button className="text-gray-700 hover:underline" onClick={() => navigator.clipboard?.writeText(p.public_url)}>{tx("Copy link")}</button>

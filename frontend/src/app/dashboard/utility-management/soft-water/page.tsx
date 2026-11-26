@@ -124,14 +124,14 @@ function RecordForm({
       <p className="text-xs text-gray-500 border-t border-white/5 pt-3">{tx("Water Quality")}</p>
       <div className="grid grid-cols-3 gap-3">
         {([
-          ["feed_water_hardness_ppm",    "Feed Hardness (ppm)"],
-          ["product_water_hardness_ppm", "Product Hardness (ppm)"],
-          ["feed_water_tds_ppm",         "Feed TDS (ppm)"],
-          ["product_water_tds_ppm",      "Product TDS (ppm)"],
-          ["conductivity_feed_uscm",     "Feed Cond. (µS/cm)"],
-          ["conductivity_product_uscm",  "Product Cond. (µS/cm)"],
-          ["feed_ph",                    "Feed pH"],
-          ["product_ph",                 "Product pH"],
+          ["feed_water_hardness_ppm",    tx("Feed Hardness (ppm)")],
+          ["product_water_hardness_ppm", tx("Product Hardness (ppm)")],
+          ["feed_water_tds_ppm",         tx("Feed TDS (ppm)")],
+          ["product_water_tds_ppm",      tx("Product TDS (ppm)")],
+          ["conductivity_feed_uscm",     tx("Feed Cond. (µS/cm)")],
+          ["conductivity_product_uscm",  tx("Product Cond. (µS/cm)")],
+          ["feed_ph",                    tx("Feed pH")],
+          ["product_ph",                 tx("Product pH")],
         ] as [keyof SoftWaterRecordCreate, string][]).map(([k, label]) => (
           <label key={k} className="flex flex-col gap-1">
             <span className="text-xs text-gray-400">{label}</span>
@@ -147,11 +147,11 @@ function RecordForm({
       <p className="text-xs text-gray-500 border-t border-white/5 pt-3">{tx("Volume & Flow")}</p>
       <div className="grid grid-cols-3 gap-3">
         {([
-          ["raw_water_input_m3",  "Raw Input (m³)"],
-          ["volume_treated_m3",   "Treated Output (m³)"],
-          ["flow_rate_lpm",       "Flow Rate (L/min)"],
-          ["salt_consumed_kg",    "Salt Consumed (kg)"],
-          ["resin_volume_litres", "Resin Volume (L)"],
+          ["raw_water_input_m3",  tx("Raw Input (m³)")],
+          ["volume_treated_m3",   tx("Treated Output (m³)")],
+          ["flow_rate_lpm",       tx("Flow Rate (L/min)")],
+          ["salt_consumed_kg",    tx("Salt Consumed (kg)")],
+          ["resin_volume_litres", tx("Resin Volume (L)")],
           ["efficiency_pct",      "Efficiency (%)"],
         ] as [keyof SoftWaterRecordCreate, string][]).map(([k, label]) => (
           <label key={k} className="flex flex-col gap-1">
@@ -666,26 +666,26 @@ export default function SoftWaterPage() {
             </div>
             <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
               {([
-                ["Asset",     modal.rec.asset_name ?? modal.rec.asset_no],
-                ["DateTime",  fmtDt(modal.rec.record_datetime)],
-                ["Status",    modal.rec.status],
-                ["Volume Treated", modal.rec.volume_treated_m3 != null ? `${fmt(modal.rec.volume_treated_m3)} m³` : "—"],
-                ["Raw Input", modal.rec.raw_water_input_m3 != null ? `${fmt(modal.rec.raw_water_input_m3)} m³` : "—"],
-                ["Salt Consumed", modal.rec.salt_consumed_kg != null ? `${fmt(modal.rec.salt_consumed_kg)} kg` : "—"],
-                ["Feed Hardness", modal.rec.feed_water_hardness_ppm != null ? `${fmt(modal.rec.feed_water_hardness_ppm, 0)} ppm` : "—"],
-                ["Product Hardness", modal.rec.product_water_hardness_ppm != null ? `${fmt(modal.rec.product_water_hardness_ppm, 0)} ppm` : "—"],
-                ["Feed TDS",    modal.rec.feed_water_tds_ppm != null ? `${fmt(modal.rec.feed_water_tds_ppm, 0)} ppm` : "—"],
-                ["Product TDS", modal.rec.product_water_tds_ppm != null ? `${fmt(modal.rec.product_water_tds_ppm, 0)} ppm` : "—"],
-                ["Feed Cond.",    modal.rec.conductivity_feed_uscm != null ? `${fmt(modal.rec.conductivity_feed_uscm)} µS/cm` : "—"],
-                ["Product Cond.", modal.rec.conductivity_product_uscm != null ? `${fmt(modal.rec.conductivity_product_uscm)} µS/cm` : "—"],
-                ["Efficiency", modal.rec.efficiency_pct != null ? `${fmt(modal.rec.efficiency_pct, 1)}%` : "—"],
-                ["Regen Count", modal.rec.regeneration_count ?? "—"],
-                ["Regen Start", fmtDt(modal.rec.regen_start)],
-                ["Regen End",   fmtDt(modal.rec.regen_end)],
-                ["Downtime",    modal.rec.downtime_minutes != null ? `${modal.rec.downtime_minutes} min` : "—"],
-                ["Destination", modal.rec.destination_tag ?? "—"],
-                ["Department",  modal.rec.department ?? "—"],
-                ["Shift",       modal.rec.shift_ref ?? "—"],
+                [tx("Asset"),     modal.rec.asset_name ?? modal.rec.asset_no],
+                [tx("DateTime"),  fmtDt(modal.rec.record_datetime)],
+                [tx("Status"),    modal.rec.status],
+                [tx("Volume Treated"), modal.rec.volume_treated_m3 != null ? `${fmt(modal.rec.volume_treated_m3)} m³` : "—"],
+                [tx("Raw Input"), modal.rec.raw_water_input_m3 != null ? `${fmt(modal.rec.raw_water_input_m3)} m³` : "—"],
+                [tx("Salt Consumed"), modal.rec.salt_consumed_kg != null ? `${fmt(modal.rec.salt_consumed_kg)} kg` : "—"],
+                [tx("Feed Hardness"), modal.rec.feed_water_hardness_ppm != null ? tx("{fmt} ppm", { fmt: fmt(modal.rec.feed_water_hardness_ppm, 0) }) : "—"],
+                [tx("Product Hardness"), modal.rec.product_water_hardness_ppm != null ? tx("{fmt} ppm", { fmt: fmt(modal.rec.product_water_hardness_ppm, 0) }) : "—"],
+                [tx("Feed TDS"),    modal.rec.feed_water_tds_ppm != null ? tx("{fmt} ppm", { fmt: fmt(modal.rec.feed_water_tds_ppm, 0) }) : "—"],
+                [tx("Product TDS"), modal.rec.product_water_tds_ppm != null ? tx("{fmt} ppm", { fmt: fmt(modal.rec.product_water_tds_ppm, 0) }) : "—"],
+                [tx("Feed Cond."),    modal.rec.conductivity_feed_uscm != null ? `${fmt(modal.rec.conductivity_feed_uscm)} µS/cm` : "—"],
+                [tx("Product Cond."), modal.rec.conductivity_product_uscm != null ? `${fmt(modal.rec.conductivity_product_uscm)} µS/cm` : "—"],
+                [tx("Efficiency"), modal.rec.efficiency_pct != null ? `${fmt(modal.rec.efficiency_pct, 1)}%` : "—"],
+                [tx("Regen Count"), modal.rec.regeneration_count ?? "—"],
+                [tx("Regen Start"), fmtDt(modal.rec.regen_start)],
+                [tx("Regen End"),   fmtDt(modal.rec.regen_end)],
+                [tx("Downtime"),    modal.rec.downtime_minutes != null ? `${modal.rec.downtime_minutes} min` : "—"],
+                [tx("Destination"), modal.rec.destination_tag ?? "—"],
+                [tx("Department"),  modal.rec.department ?? "—"],
+                [tx("Shift"),       modal.rec.shift_ref ?? "—"],
               ] as [string, unknown][]).map(([k, v]) => (
                 <div key={k} className="flex gap-2">
                   <span className="text-gray-500 w-32 shrink-0">{k}</span>

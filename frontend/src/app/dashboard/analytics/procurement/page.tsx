@@ -66,16 +66,16 @@ export default function ProcurementAnalyticsPage() {
         </div>
 
         {/* PO Value trend */}
-        <ChartCard title={tx("PO Value Trend")} subtitle={`Last ${days} days`}>
+        <ChartCard title={tx("PO Value Trend")} subtitle={tx("Last {days} days", { days })}>
           <LineChart
-            series={[{ name: "PO Value", color: "#8b5cf6", data: data?.po_value_trend ?? [] }]}
+            series={[{ name: tx("PO Value"), color: "#8b5cf6", data: data?.po_value_trend ?? [] }]}
             formatY={(v) => fmtKES(v)}
             showLegend={false}
           />
         </ChartCard>
 
         {/* GRN trend */}
-        <ChartCard title={tx("Goods Receipts")} subtitle={`Last ${days} days`}>
+        <ChartCard title={tx("Goods Receipts")} subtitle={tx("Last {days} days", { days })}>
           <BarChart
             data={data?.grn_trend ?? []}
             color="#10b981"

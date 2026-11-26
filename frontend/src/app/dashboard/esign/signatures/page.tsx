@@ -9,7 +9,7 @@ import { tx } from "@/lib/i18n/core";
 function errorText(e: unknown) {
   const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
   if (typeof detail === "string") return detail;
-  return "Request failed.";
+  return tx("Request failed.");
 }
 
 function DrawPad({ onDone }: { onDone: (dataUrl: string) => void }) {
@@ -56,7 +56,7 @@ function SignaturesAdmin() {
     setError(null);
     try {
       await esignApi.register(user.user_id, dataUrl);
-      setInfo(`Signature saved for ${user.full_name ?? user.username}. Only they can see it.`);
+      setInfo(tx("Signature saved for {full_name}. Only they can see it.", { full_name: user.full_name ?? user.username }));
       setEditing(null);
       await load();
     } catch (e) { setError(errorText(e)); }
@@ -99,7 +99,7 @@ function SignaturesAdmin() {
                 </button>
                 {r.has_signature && (
                   <button className="text-xs underline text-red-700" onClick={async () => {
-                    try { await esignApi.revoke(r.user_id, "revoked by IT"); setInfo("Signature revoked."); await load(); } catch (e) { setError(errorText(e)); }
+                    try { await esignApi.revoke(r.user_id, "revoked by IT"); setInfo(tx("Signature revoked.")); await load(); } catch (e) { setError(errorText(e)); }
                   }}>{tx("Revoke")}</button>
                 )}
               </td>

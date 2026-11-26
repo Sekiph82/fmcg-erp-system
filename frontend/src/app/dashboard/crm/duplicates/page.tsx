@@ -7,7 +7,7 @@ import { tx } from "@/lib/i18n/core";
 type Pair = { a_id: string; b_id: string; a: string; b: string; score: number; reasons: string[] };
 type Preview = { survivor: string; merged: string; moves: { table: string; column: string; rows: number }[]; fills: Record<string, string>; consent: { email: string; before: string | null; after: string } | null; merged_record: string };
 type Merge = { id: string; entity: string; merged_by: string; merged_at: string; reason: string | null; moved: { table: string; rows: number }[]; undone_by: string | null };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 
 export default function DuplicatesPage() {
   const [entity, setEntity] = useState<"customer" | "contact">("customer");

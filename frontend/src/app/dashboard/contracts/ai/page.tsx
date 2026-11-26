@@ -1,13 +1,13 @@
 "use client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { contractsApi, SEVERITY_COLORS } from "@/lib/contracts";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
-const AGENT_LABELS: Record<string, string> = {
-  RISK_MONITOR:       "Contract Risk Monitor",
-  RENEWAL_ADVISOR:    "Renewal Advisor",
-  COMPLIANCE_MONITOR: "Compliance Monitor",
-};
+const AGENT_LABELS: Record<string, string> = lx(() => ({
+  RISK_MONITOR:       tx("Contract Risk Monitor"),
+  RENEWAL_ADVISOR:    tx("Renewal Advisor"),
+  COMPLIANCE_MONITOR: tx("Compliance Monitor"),
+}));
 
 export default function ContractAIPage() {
   const qc = useQueryClient();

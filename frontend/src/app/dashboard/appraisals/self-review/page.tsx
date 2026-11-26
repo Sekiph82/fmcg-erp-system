@@ -143,7 +143,7 @@ export default function SelfReviewPage() {
                         onChange={(e) => setCompRatings({ ...compRatings, [l.competency_line_id]: e.target.value })}
                       >
                         <option value="">{tx("Select…")}</option>
-                        {[1,2,3,4,5].map(v => <option key={v} value={v}>{v} — {["Unsatisfactory","Below Expectations","Meets Expectations","Exceeds Expectations","Outstanding"][v-1]}</option>)}
+                        {[1,2,3,4,5].map(v => <option key={v} value={v}>{v} — {[tx("Unsatisfactory"),tx("Below Expectations"),tx("Meets Expectations"),tx("Exceeds Expectations"),tx("Outstanding")][v-1]}</option>)}
                       </select>
                     </div>
                   ))}

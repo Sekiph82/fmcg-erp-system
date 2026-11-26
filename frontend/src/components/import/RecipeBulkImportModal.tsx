@@ -23,7 +23,7 @@
 import { useRef, useState } from "react";
 import { importApi, type ImportMode, type ImportResult } from "@/lib/importApi";
 import { ImportResultView } from "./ImportResultView";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 type Tab = "headers" | "items" | "steps";
 type Step = "idle" | "validating" | "validated" | "importing" | "done";
@@ -40,35 +40,35 @@ const EMPTY_TAB: TabState = {
   step: "idle", file: null, result: null, error: null, mode: "import_valid_only",
 };
 
-const TAB_CONFIG = {
+const TAB_CONFIG = lx(() => ({
   headers: {
-    label:       "Recipe Headers",
+    label:       tx("Recipe Headers"),
     module:      "recipes",
     filename:    "recipe_headers_template.csv",
-    description: "Create or identify recipes. Each row is one recipe for a finished product.",
+    description: tx("Create or identify recipes. Each row is one recipe for a finished product."),
     fields:      "*product_sku, *version, *name, description, is_active, valid_from, valid_to",
     example:     "product_sku: HH-001 · version: v1.0 · name: Hand-Wash Powder 20g",
     note:        null,
   },
   items: {
-    label:       "BOM Items",
+    label:       tx("BOM Items"),
     module:      "recipe_items",
     filename:    "recipe_items_template.csv",
-    description: "Add or update BOM / Formulation Items for DRAFT recipes.",
+    description: tx("Add or update BOM / Formulation Items for DRAFT recipes."),
     fields:      "*product_sku, *version, *line_no, *material_code, *quantity, *unit, loss_percent, optional, alternative_group, notes",
     example:     "product_sku: HH-001 · version: v1.0 · line_no: 1 · material_code: MAT001 · quantity: 120 · unit: KG",
-    note:        "Recipe headers must be imported (or already exist as DRAFT) before BOM items.",
+    note:        tx("Recipe headers must be imported (or already exist as DRAFT) before BOM items."),
   },
   steps: {
-    label:       "Process Steps",
+    label:       tx("Process Steps"),
     module:      "recipe_steps",
     filename:    "recipe_steps_template.csv",
-    description: "Add or update Process Parameters / steps for DRAFT recipes.",
+    description: tx("Add or update Process Parameters / steps for DRAFT recipes."),
     fields:      "*product_sku, *version, *step_no, *step_name, temperature_c, target_ph, viscosity_cp, mix_time_min, rpm, notes",
     example:     "product_sku: HH-001 · version: v1.0 · step_no: 1 · step_name: Dry Premix · mix_time_min: 15 · rpm: 120",
-    note:        "Recipe headers must be imported (or already exist as DRAFT) before process steps.",
+    note:        tx("Recipe headers must be imported (or already exist as DRAFT) before process steps."),
   },
-} as const;
+} as const));
 
 interface Props {
   onSuccess?: () => void;
@@ -114,7 +114,7 @@ export function RecipeBulkImportModal({ onSuccess }: Props) {
     } catch (e: any) {
       setTabState(t, {
         step:  "idle",
-        error: e?.response?.data?.detail ?? "Validation failed",
+        error: e?.response?.data?.detail ?? tx("Validation failed"),
       });
     }
   }
@@ -130,7 +130,7 @@ export function RecipeBulkImportModal({ onSuccess }: Props) {
     } catch (e: any) {
       setTabState(t, {
         step:  "validated",
-        error: e?.response?.data?.detail ?? "Import failed",
+        error: e?.response?.data?.detail ?? tx("Import failed"),
       });
     }
   }
@@ -325,7 +325,7 @@ export function RecipeBulkImportModal({ onSuccess }: Props) {
                       >
                         {s.step === "importing"
                           ? tx("Importing…")
-                          : `Import ${s.result.valid_rows} row${s.result.valid_rows !== 1 ? "s" : ""}`}
+                          : ((s.result.valid_rows !== 1) ? tx("Import {valid_rows} rows", { valid_rows: s.result.valid_rows }) : tx("Import {valid_rows} row", { valid_rows: s.result.valid_rows }))}
                       </button>
                     )}
                   </div>

@@ -14,7 +14,7 @@ type Obj = { id: string; backend: string; file_name: string; mime: string; size:
 type Status = { images: { status: string; detail?: string; mode?: string; provider?: string; budget_usd: number; spent_this_month: number; calls_this_month: number };
   tools: { ffmpeg: { status: string; detail: string | null }; presets: Record<string, { available: boolean }>; tts: { status: string; engine?: string; detail?: string; voices: Record<string, { supported: boolean; note: string | null }> } };
   storage: { backend: string; status: string; used_bytes: number; quota_bytes: number; scanner: string; require_scan: boolean } };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : d && typeof d === "object" ? JSON.stringify(d).slice(0, 200) : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : d && typeof d === "object" ? JSON.stringify(d).slice(0, 200) : tx("Something went wrong."); };
 const mb = (n: number) => `${(n / 1048576).toFixed(n < 1048576 ? 2 : 1)} MiB`;
 const badge = (s: string) => ({ GENERATED: "bg-amber-100", APPROVED: "bg-green-100", SUCCEEDED: "bg-green-100", READY: "bg-green-100", REJECTED: "bg-red-100", FAILED: "bg-red-100", TIMEOUT: "bg-red-100", UNAVAILABLE: "bg-gray-200", QUARANTINED: "bg-red-100" } as Record<string, string>)[s] ?? "bg-gray-100";
 
@@ -44,7 +44,7 @@ export default function MediaStudioPage() {
     setBusy(true);
     try {
       const r = await apiClient.post(`${B}/images`, { title: img.title, prompt: img.prompt, size: img.size, overlay_text: img.overlay || null, product_skus: img.skus.split(",").map((s) => s.trim()).filter(Boolean) });
-      say(r.data.status === "GENERATED" ? "Image created as a draft. A second person must approve it." : `${r.data.status}: ${r.data.error ?? ""}`);
+      say(r.data.status === "GENERATED" ? tx("Image created as a draft. A second person must approve it.") : `${r.data.status}: ${r.data.error ?? ""}`);
       await load();
     } catch (e) { say(err(e)); } finally { setBusy(false); }
   };
@@ -53,7 +53,7 @@ export default function MediaStudioPage() {
     const k = job.kind;
     const params = k === "NARRATION" ? { text: job.text, locale: job.locale } : k === "CAPTIONS" ? { text: job.text, locale: job.locale }
       : k === "TRIM" ? { start: +job.start, end: +job.end, reencode: true } : k === "POSTER" ? { at: +job.at } : { preset: job.preset };
-    return act(apiClient.post(`${B}/jobs`, { kind: k, source_object_id: k === "NARRATION" ? null : job.source || null, params }), "Job queued.");
+    return act(apiClient.post(`${B}/jobs`, { kind: k, source_object_id: k === "NARRATION" ? null : job.source || null, params }), tx("Job queued."));
   };
 
   // Resumable multipart upload: ask the server which parts it really holds, send only the missing ones.
@@ -75,9 +75,9 @@ export default function MediaStudioPage() {
       }
       await apiClient.post(`${B}/storage/uploads/${sid}/complete`);
       setUp(null);
-      say("Upload complete: scanned and stored.");
+      say(tx("Upload complete: scanned and stored."));
       await load();
-    } catch (e) { say(`${err(e)} ${up ? "You can resume the upload." : ""}`); }
+    } catch (e) { say(`${err(e)} ${up ? tx("You can resume the upload.") : ""}`); }
   };
 
   // captions need the signed-in session, so fetch them and hand the browser a file
@@ -112,7 +112,7 @@ export default function MediaStudioPage() {
       <div className="grid gap-2 sm:grid-cols-3">
         <input aria-label={tx("Text on the image")} placeholder={tx("Text on the image (claims need approved evidence)")} className="border rounded px-1" value={img.overlay} onChange={(e) => setImg({ ...img, overlay: e.target.value })} />
         <input aria-label={tx("Product SKUs")} placeholder={tx("Product SKUs, comma separated")} className="border rounded px-1" value={img.skus} onChange={(e) => setImg({ ...img, skus: e.target.value })} />
-        <select aria-label={tx("Image size")} className="border rounded px-1" value={img.size} onChange={(e) => setImg({ ...img, size: e.target.value })}><option>{tx("1024x1024")}</option><option>{tx("1536x1024")}</option><option>{tx("1024x1536")}</option></select>
+        <select aria-label={tx("Image size")} className="border rounded px-1" value={img.size} onChange={(e) => setImg({ ...img, size: e.target.value })}><option value="1024x1024">{tx("1024x1024")}</option><option value="1536x1024">{tx("1536x1024")}</option><option value="1024x1536">{tx("1024x1536")}</option></select>
       </div>
       <button className="bg-indigo-600 text-white rounded px-3 py-1 disabled:opacity-50" disabled={busy || img.title.length < 1 || img.prompt.length < 10 || st?.images.status !== "AVAILABLE"} onClick={() => void makeImage()}>{tx("Generate image")}</button>
       {st?.images.status !== "AVAILABLE" && <span className="ml-2 text-gray-500">{tx("Disabled:")} {st?.images.detail ?? tx("no image provider")}</span>}
@@ -123,7 +123,7 @@ export default function MediaStudioPage() {
         {i.provenance.prompt_sha256 && <div className="text-gray-500">{tx("Provenance: prompt hash")} {i.provenance.prompt_sha256.slice(0, 12)}…, {i.provenance.generated_at}</div>}
         {i.document_id && <div>{tx("Asset library document")} {i.document_id}</div>}
         {i.status === "GENERATED" && <div className="space-x-2 pt-1">
-          <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/images/${i.id}/review`, { approve: true }), "Approved: usable in e-mail, social, CMS and ads.")}>{tx("Approve")}</button>
+          <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/images/${i.id}/review`, { approve: true }), tx("Approved: usable in e-mail, social, CMS and ads."))}>{tx("Approve")}</button>
           <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/images/${i.id}/review`, { approve: false }), "Discarded.")}>{tx("Discard")}</button></div>}
       </li>)}</ul>
     </section>
@@ -157,7 +157,7 @@ export default function MediaStudioPage() {
       <h2 className="font-semibold text-sm">{tx("Media files")}</h2>
       <div className="space-x-2"><input ref={fileRef} aria-label={tx("Choose media file")} type="file" accept=".mp4,.m4v,.webm,.m4a,.mp3,.ogg,.wav,.png,.jpg,.jpeg,.webp" onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); }} />
         {up && <span>{up.name}: {up.done}/{up.total} {tx("parts")} <progress aria-label={tx("Upload progress")} max={up.total} value={up.done} /> {up.session && up.file && <button className="border rounded px-2" onClick={() => void upload(up.file!, up.session)}>{tx("Resume")}</button>}
-          {up.session && <button className="border rounded px-2" onClick={() => void act(apiClient.delete(`${B}/storage/uploads/${up.session}`).then(() => setUp(null)), "Upload cancelled and cleaned up.")}>{tx("Cancel upload")}</button>}</span>}</div>
+          {up.session && <button className="border rounded px-2" onClick={() => void act(apiClient.delete(`${B}/storage/uploads/${up.session}`).then(() => setUp(null)), tx("Upload cancelled and cleaned up."))}>{tx("Cancel upload")}</button>}</span>}</div>
       {preview && <div className="border rounded p-2">{preview.mime.startsWith("video/") ? <video controls className="max-h-64" src={preview.url} /> : preview.mime.startsWith("audio/") ? <audio controls src={preview.url} /> : <img alt={tx("Preview")} className="max-h-64" src={preview.url} />}
         <button className="underline ml-2" onClick={() => setPreview(null)}>{tx("Close preview")}</button></div>}
       <ul className="space-y-1">{objs.map((o) => <li key={o.id} className="border rounded p-2">
@@ -165,12 +165,12 @@ export default function MediaStudioPage() {
         <span className="space-x-2 ml-2">
           <button className="border rounded px-2 disabled:opacity-40" disabled={o.status !== "READY"} title={o.status !== "READY" ? tx("Only clean, ready files can be played") : ""} onClick={() => void play(o)}>{tx("Play")}</button>
           {o.approval === "DRAFT" && o.status === "READY" && <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/storage/objects/${o.id}/approve`), "Approved.")}>{tx("Approve")}</button>}
-          <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/storage/objects/${o.id}/revoke`), "All issued links revoked.")}>{tx("Revoke links")}</button>
+          <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/storage/objects/${o.id}/revoke`), tx("All issued links revoked."))}>{tx("Revoke links")}</button>
           <button className="border rounded px-2" onClick={() => { if (confirm(tx("Delete {file_name}? This removes the stored file.", { file_name: o.file_name }))) void act(apiClient.delete(`${B}/storage/objects/${o.id}`), "Deleted."); }}>{tx("Delete")}</button></span>
       </li>)}</ul>
       <div className="space-x-2 pt-1">
-        <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/storage/backups`), "Backup finished.")}>{tx("Back up now")}</button>
-        <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/storage/cleanup`).then((r) => say(`Cleanup: ${JSON.stringify(r.data)}`)), "Cleanup done.")}>{tx("Clean up expired uploads")}</button></div>
+        <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/storage/backups`), tx("Backup finished."))}>{tx("Back up now")}</button>
+        <button className="border rounded px-2" onClick={() => void act(apiClient.post(`${B}/storage/cleanup`).then((r) => say(tx("Cleanup: {data}", { data: JSON.stringify(r.data) }))), tx("Cleanup done."))}>{tx("Clean up expired uploads")}</button></div>
     </section>
   </main>;
 }

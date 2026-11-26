@@ -37,7 +37,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import AsyncIterator, Optional
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -341,15 +341,24 @@ def expected_part_size(sess: M51UploadSession, n: int) -> int:
 
 
 async def put_part(db: AsyncSession, sess: M51UploadSession, obj: M51StorageObject, n: int, data: bytes) -> dict:
-    if sess.status != "OPEN" or sess.expires_at < datetime.now(timezone.utc):
-        raise StorageError("This upload session is closed or expired", 410)
+    """The session row is locked BEFORE the upload and stays locked until the caller commits: complete/abort/cleanup take the same
+    lock, so they wait for an in-flight part and a part can never land after them (409 instead, no orphan .parts dir, no 500 from
+    S3 NoSuchUpload). ponytail: parts of one session upload one at a time; per-part locks if a client needs parallel parts."""
     want = expected_part_size(sess, n)
     if len(data) != want:
         raise StorageError(f"Part {n} must be exactly {want} bytes (got {len(data)})")
-    etag = await get_backend(obj.backend).upload_part(obj.key, sess.backend_upload_id, n, data)   # outside the lock: parts upload in parallel
-    await db.refresh(sess, with_for_update=True)     # serialise the read-modify-write of the parts JSON (parallel PUTs must not lose parts)
+    await db.refresh(sess, with_for_update=True)
     if sess.status != "OPEN":
-        raise StorageError("This upload session is closed or expired", 410)
+        raise StorageError("This upload session is closed", 409)
+    if sess.expires_at < datetime.now(timezone.utc):
+        raise StorageError("This upload session is expired", 410)
+    from app.services.m51_s3 import S3Error
+    try:
+        etag = await get_backend(obj.backend).upload_part(obj.key, sess.backend_upload_id, n, data)
+    except S3Error as e:
+        if e.code == "NoSuchUpload":
+            raise StorageError("This upload session is closed", 409) from None
+        raise
     parts = dict(sess.parts or {})
     parts[str(n)] = {"size": len(data), "etag": etag, "sha256": hashlib.sha256(data).hexdigest()}
     sess.parts = parts                       # reassign: JSON column change tracking
@@ -449,6 +458,7 @@ async def run_hooks(db: AsyncSession, obj: M51StorageObject, user) -> None:
 
 
 async def abort_upload(db: AsyncSession, sess: M51UploadSession, obj: M51StorageObject) -> None:
+    await db.refresh(sess, with_for_update=True)     # waits for an in-flight put_part; a later part then sees ABORTED -> 409
     if sess.status == "OPEN":
         try:
             await get_backend(obj.backend).abort(obj.key, sess.backend_upload_id)
@@ -459,11 +469,17 @@ async def abort_upload(db: AsyncSession, sess: M51UploadSession, obj: M51Storage
         obj.status, obj.deleted_at = "DELETED", datetime.now(timezone.utc)
 
 
+REVOKED_PREFIX = "revoked:"
+
+
 async def detach_cms(db: AsyncSession, obj: M51StorageObject) -> int:
-    """Remove the CMS media rows registered from this object (to-cms-media). The CMS file routes serve by storage_path alone and
-    know nothing of M51 approval/status, so revoke, delete and quarantine must unpublish them; re-approve and register again."""
+    """Unpublish (never delete) the CMS media rows registered from this object (to-cms-media). The CMS file routes serve by storage_path
+    alone and know nothing of M51 approval/status, so the row's storage_path becomes a non-key marker (file_path() 404s), public is
+    cleared and the poster dropped. Views and sales video messages hang off the row and survive; re-approve and register again."""
     from app.models.cms import CmsMedia
-    return (await db.execute(delete(CmsMedia).where(CmsMedia.storage_path == obj.key))).rowcount or 0
+    res = await db.execute(update(CmsMedia).where(CmsMedia.storage_path == obj.key)
+                           .values(storage_path=REVOKED_PREFIX + obj.key, public=False, access_list_id=None, poster_path=None))
+    return res.rowcount or 0
 
 
 async def revoke_object(db: AsyncSession, obj: M51StorageObject) -> int:

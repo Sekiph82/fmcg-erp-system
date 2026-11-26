@@ -3,15 +3,15 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { crmApi, type InboxItem } from "@/lib/crm_pipeline";
 import { useAuth } from "@/context/AuthContext";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 function errorText(e: unknown) {
   const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
-  return typeof detail === "string" ? detail : "Request failed.";
+  return typeof detail === "string" ? detail : tx("Request failed.");
 }
 
-const CHANNEL_LABEL: Record<string, string> = { EMAIL: "E-mail", WHATSAPP: "WhatsApp", TICKET: "Ticket", CHAT: "Website chat", MESSENGER: "Messenger", INSTAGRAM: "Instagram DM", CUSTOM: "Custom channel" };
-const VIEWS = [["all", "All open"], ["mine", "Mine"], ["unassigned", "Unassigned"], ["unread", "Unread"]] as const;
+const CHANNEL_LABEL: Record<string, string> = lx(() => ({ EMAIL: tx("E-mail"), WHATSAPP: tx("WhatsApp"), TICKET: tx("Ticket"), CHAT: tx("Website chat"), MESSENGER: tx("Messenger"), INSTAGRAM: tx("Instagram DM"), CUSTOM: tx("Custom channel") }));
+const VIEWS = lx(() => [["all", tx("All open")], ["mine", "Mine"], ["unassigned", "Unassigned"], ["unread", "Unread"]] as const);
 
 export default function CRMInboxPage() {
   const { user, hasAnyPermission } = useAuth();

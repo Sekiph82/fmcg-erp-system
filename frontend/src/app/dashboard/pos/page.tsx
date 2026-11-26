@@ -433,7 +433,7 @@ export default function POSPage() {
   return (
     <ModuleWorkspace
       title="POS"
-      description="Point of sale terminal, daily sales, session management"
+      description={tx("Point of sale terminal, daily sales, session management")}
       permission="sales.view"
       tabs={tabs}
       defaultTab="pos"

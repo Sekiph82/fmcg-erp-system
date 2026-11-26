@@ -36,7 +36,7 @@ export default function CompliancePage() {
   return (
     <ModuleWorkspace
       title={tx("Compliance")}
-      description="GS1 labels, barcodes, regulatory certificates"
+      description={tx("GS1 labels, barcodes, regulatory certificates")}
       permission="gs1.view"
       tabs={tabs}
       defaultTab="gs1"

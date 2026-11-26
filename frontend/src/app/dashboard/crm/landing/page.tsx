@@ -8,7 +8,7 @@ interface Page { id: string; slug: string; name: string; status: string; lead_fo
 interface Variant { id: string; key: string; headline: string; weight: number; active: boolean; views: number; conversions: number; rate_pct: number | null; ci95_pct: [number, number] | null; p_value?: number | null }
 interface Stats { page: { id: string; slug: string; status: string; min_sample: number }; variants: Variant[]; enough_data: boolean; verdict: string }
 interface Form { id: string; name: string; slug: string }
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail; return typeof d === "string" ? d : "Request failed."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail; return typeof d === "string" ? d : tx("Request failed."); };
 
 export default function LandingPages() {
   const [pages, setPages] = useState<Page[]>([]);
@@ -38,7 +38,7 @@ export default function LandingPages() {
         <select aria-label={tx("Lead form")} value={np.lead_form_id} onChange={(e) => setNp({ ...np, lead_form_id: e.target.value })} className={input}>
           <option value="">{tx("Lead form…")}</option>{forms.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}</select>
         <input aria-label={tx("Minimum views per variant")} type="number" min={10} value={np.min_sample} onChange={(e) => setNp({ ...np, min_sample: e.target.value })} className={input} />
-        <button disabled={!np.slug || !np.name || !np.lead_form_id} onClick={() => act(async () => { const r = await apiClient.post<{ id: string }>("/api/v1/landing/pages", { ...np, min_sample: Number(np.min_sample) }); setSel(r.data.id); }, "Page created.")}
+        <button disabled={!np.slug || !np.name || !np.lead_form_id} onClick={() => act(async () => { const r = await apiClient.post<{ id: string }>("/api/v1/landing/pages", { ...np, min_sample: Number(np.min_sample) }); setSel(r.data.id); }, tx("Page created."))}
           className="rounded bg-blue-600 text-white text-sm disabled:opacity-50">{tx("Create page")}</button>
       </div>
 
@@ -66,7 +66,7 @@ export default function LandingPages() {
           <input aria-label={tx("Headline")} placeholder={tx("Headline")} value={v.headline} onChange={(e) => setV({ ...v, headline: e.target.value })} className={`${input} sm:col-span-2`} />
           <input aria-label={tx("Button text")} placeholder={tx("Button text")} value={v.cta_label} onChange={(e) => setV({ ...v, cta_label: e.target.value })} className={input} />
           <input aria-label={tx("Weight")} type="number" min={0} max={100} value={v.weight} onChange={(e) => setV({ ...v, weight: e.target.value })} className={input} />
-          <button disabled={v.headline.length < 3} onClick={() => act(() => apiClient.put(`/api/v1/landing/pages/${st.page.id}/variants`, { ...v, weight: Number(v.weight), body: v.body || null }), `Variant ${v.key} saved.`)}
+          <button disabled={v.headline.length < 3} onClick={() => act(() => apiClient.put(`/api/v1/landing/pages/${st.page.id}/variants`, { ...v, weight: Number(v.weight), body: v.body || null }), tx("Variant {key} saved.", { key: v.key }))}
             className="rounded bg-blue-600 text-white disabled:opacity-50">{tx("Save variant")}</button>
           <textarea aria-label={tx("Variant text")} placeholder={tx("Text under the headline")} rows={3} value={v.body} onChange={(e) => setV({ ...v, body: e.target.value })} className={`${input} sm:col-span-6`} />
         </div>

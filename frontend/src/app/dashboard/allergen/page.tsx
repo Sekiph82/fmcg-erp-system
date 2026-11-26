@@ -88,16 +88,16 @@ export default function AllergenDashboardPage() {
         <h2 className="text-sm font-medium text-gray-700 mb-3">{tx("Quick Navigation")}</h2>
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-2">
           {[
-            ["Allergen Master", "/dashboard/allergen/allergens"],
-            ["Material Profiles", "/dashboard/allergen/material-profiles"],
-            ["Nutrition Profiles", "/dashboard/allergen/nutrition"],
-            ["Product Allergens", "/dashboard/allergen/product-allergens"],
-            ["Product Nutrition", "/dashboard/allergen/product-nutrition"],
-            ["Roll-Up Viewer", "/dashboard/allergen/rollup"],
-            ["Label Readiness", "/dashboard/allergen/label-readiness"],
-            ["Change Logs", "/dashboard/allergen/change-logs"],
+            [tx("Allergen Master"), "/dashboard/allergen/allergens"],
+            [tx("Material Profiles"), "/dashboard/allergen/material-profiles"],
+            [tx("Nutrition Profiles"), "/dashboard/allergen/nutrition"],
+            [tx("Product Allergens"), "/dashboard/allergen/product-allergens"],
+            [tx("Product Nutrition"), "/dashboard/allergen/product-nutrition"],
+            [tx("Roll-Up Viewer"), "/dashboard/allergen/rollup"],
+            [tx("Label Readiness"), "/dashboard/allergen/label-readiness"],
+            [tx("Change Logs"), "/dashboard/allergen/change-logs"],
             ["Reports", "/dashboard/allergen/reports"],
-            ["AI Agents", "/dashboard/allergen/ai"],
+            [tx("AI Agents"), "/dashboard/allergen/ai"],
           ].map(([label, href]) => (
             <a key={label} href={href} className="px-3 py-2 text-xs text-center bg-gray-50 hover:bg-gray-100 rounded border text-gray-700 font-medium">
               {label}

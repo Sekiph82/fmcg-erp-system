@@ -225,7 +225,7 @@ export default function WhatIfPage() {
                       <input aria-label={tx("Shift date")} type="date" className="border border-gray-200 rounded px-2 py-1.5 text-xs" value={shiftDate} onChange={(e) => setShiftDate(e.target.value)} />
                       <input aria-label={tx("Additional shift start time")} type="time" className="border border-gray-200 rounded px-2 py-1.5 text-xs" value={shiftStartTime} onChange={(e) => setShiftStartTime(e.target.value)} />
                       <input aria-label={tx("Additional shift end time")} type="time" className="border border-gray-200 rounded px-2 py-1.5 text-xs" value={shiftEndTime} onChange={(e) => setShiftEndTime(e.target.value)} />
-                      <span className="col-span-2 text-xs text-gray-500">{tx("Added time:")} {shiftDurationHours() == null ? tx("choose a valid interval") : `${shiftDurationHours()} hours`}</span>
+                      <span className="col-span-2 text-xs text-gray-500">{tx("Added time:")} {shiftDurationHours() == null ? tx("choose a valid interval") : tx("{shiftDurationHours} hours", { shiftDurationHours: shiftDurationHours() })}</span>
                     </>
                   ) : (
                     changeType === "LINE_CHANGE" ? (
@@ -339,15 +339,15 @@ export default function WhatIfPage() {
               {comparison && <div role="status" aria-live="polite" className="space-y-2 text-xs text-gray-600">
                 <p>{tx("Service level Δ")} {comparison.service_level_pct_delta.toFixed(1)} {tx("pp · Delayed lines Δ")} {comparison.delay_count_delta} {tx("lines")}</p>
                 <p>{tx("Material shortages Δ")} {comparison.material_status === "COMPLETE" && comparison.material_shortage_count_delta != null ? tx("{material_shortage_count_delta} lines", { material_shortage_count_delta: comparison.material_shortage_count_delta }) : tx("incomplete inputs")}
-                  {comparison.material_shortage_quantity_by_uom_delta && ` · Quantity Δ ${Object.entries(comparison.material_shortage_quantity_by_uom_delta).map(([uom, quantity]) => `${quantity} ${uom}`).join(", ") || "0 by source UOM"}`}
+                  {comparison.material_shortage_quantity_by_uom_delta && tx(" · Quantity Δ {material_shortage_quantity_by_uom_delta}", { material_shortage_quantity_by_uom_delta: Object.entries(comparison.material_shortage_quantity_by_uom_delta).map(([uom, quantity]) => `${quantity} ${uom}`).join(", ") || "0 by source UOM" })}
                 </p>
-                <p>{tx("Capacity overload Δ")} {comparison.capacity_status === "COMPLETE" && comparison.capacity_overload_hours_delta != null ? `${comparison.capacity_overload_hours_delta.toFixed(3)} hours` : tx("incomplete inputs")}
-                  {tx("· Changeover Δ")} {comparison.changeover_status === "COMPLETE" && comparison.changeover_hours_delta != null ? `${comparison.changeover_hours_delta.toFixed(3)} hours` : tx("incomplete inputs")}
-                  {tx("· CIP Δ")} {comparison.cip_status === "COMPLETE" && comparison.cip_hours_delta != null ? `${comparison.cip_hours_delta.toFixed(3)} hours` : tx("incomplete inputs")}
+                <p>{tx("Capacity overload Δ")} {comparison.capacity_status === "COMPLETE" && comparison.capacity_overload_hours_delta != null ? tx("{capacity_overload_hours_delta} hours", { capacity_overload_hours_delta: comparison.capacity_overload_hours_delta.toFixed(3) }) : tx("incomplete inputs")}
+                  {tx("· Changeover Δ")} {comparison.changeover_status === "COMPLETE" && comparison.changeover_hours_delta != null ? tx("{changeover_hours_delta} hours", { changeover_hours_delta: comparison.changeover_hours_delta.toFixed(3) }) : tx("incomplete inputs")}
+                  {tx("· CIP Δ")} {comparison.cip_status === "COMPLETE" && comparison.cip_hours_delta != null ? tx("{cip_hours_delta} hours", { cip_hours_delta: comparison.cip_hours_delta.toFixed(3) }) : tx("incomplete inputs")}
                 </p>
                 <p>{tx("Estimated cost Δ")} {comparison.cost_delta_status === "COMPLETE" && comparison.cost_delta != null && comparison.cost_currency
                   ? `${comparison.cost_currency} ${comparison.cost_delta.toFixed(4)}`
-                  : `unknown (${comparison.cost_delta_status.replaceAll("_", " ").toLowerCase()})`} {tx("· Confidence:")} {comparison.confidence_status.replaceAll("_", " ").toLowerCase()}</p>
+                  : tx("unknown ({replaceAll})", { replaceAll: comparison.cost_delta_status.replaceAll("_", " ").toLowerCase() })} {tx("· Confidence:")} {comparison.confidence_status.replaceAll("_", " ").toLowerCase()}</p>
                 {comparison.unknowns.length > 0 && <p>{tx("Unknown inputs:")} {comparison.unknowns.join("; ")}</p>}
                 <details>
                   <summary className="cursor-pointer">{tx("KPI sources")}</summary>

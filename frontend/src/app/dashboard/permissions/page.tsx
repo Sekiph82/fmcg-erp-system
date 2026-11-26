@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { rolesApi, groupByModule, STANDARD_ACTIONS } from "@/lib/roles";
 import { getPermissionCoverage } from "@/lib/modules";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 const MODULE_ORDER = [
   "users", "roles", "audit",
@@ -13,20 +13,20 @@ const MODULE_ORDER = [
   "logistics", "tax", "integrations",
 ];
 
-const ACTION_DISPLAY: Record<string, string> = {
-  view: "View",
-  create: "Create",
-  edit: "Edit",
-  delete: "Delete",
-  approve: "Approve",
-  export: "Export",
-  initiate_payment: "Initiate",
-  view_transactions: "View Txns",
-  retry_transaction: "Retry",
-  cancel_payment: "Cancel",
-  reconcile_payment: "Reconcile",
-  view_payment_logs: "Logs",
-};
+const ACTION_DISPLAY: Record<string, string> = lx(() => ({
+  view: tx("View"),
+  create: tx("Create"),
+  edit: tx("Edit"),
+  delete: tx("Delete"),
+  approve: tx("Approve"),
+  export: tx("Export"),
+  initiate_payment: tx("Initiate"),
+  view_transactions: tx("View Txns"),
+  retry_transaction: tx("Retry"),
+  cancel_payment: tx("Cancel"),
+  reconcile_payment: tx("Reconcile"),
+  view_payment_logs: tx("Logs"),
+}));
 
 export default function PermissionsPage() {
   const { data: allPerms = [], isLoading: permsLoading } = useQuery({

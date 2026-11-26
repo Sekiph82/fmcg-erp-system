@@ -23,7 +23,7 @@ const AGE_BUCKETS = lx(() => [
 function bucket(days: number | null): string {
   if (days === null) return "Unknown";
   if (days < 0) return "Expired";
-  if (days <= 7) return "Expiring in ≤7d";
+  if (days <= 7) return tx("Expiring in ≤7d");
   if (days <= 30) return "8–30d";
   if (days <= 90) return "31–90d";
   if (days <= 180) return "91–180d";

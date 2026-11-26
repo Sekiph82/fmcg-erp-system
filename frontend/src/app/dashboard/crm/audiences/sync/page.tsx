@@ -4,10 +4,10 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { apiClient } from "@/lib/api";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 type Provider = "meta" | "google" | "linkedin" | "tiktok";
-const LABEL: Record<Provider, string> = { meta: "Meta", google: "Google Ads (Data Manager API)", linkedin: "LinkedIn", tiktok: "TikTok" };
+const LABEL: Record<Provider, string> = lx(() => ({ meta: tx("Meta"), google: tx("Google Ads (Data Manager API)"), linkedin: tx("LinkedIn"), tiktok: tx("TikTok") }));
 interface Account { id: string; provider: Provider; name: string; currency: string; member: boolean; refusal: string | null }
 interface Sync { id: string; audience_id: string; audience_name: string | null; account_id: string; account_name: string; provider: Provider; kind: string;
   name: string; external_id: string | null; status: string; mode: "LIVE" | "SIMULATED"; provider_status: string | null; provider_size: number | null;
@@ -22,7 +22,7 @@ interface Aud { id: string; name: string; member_count: number }
 const err = (e: unknown) => {
   const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
   return typeof d === "string" ? d : d && typeof d === "object" && "detail" in d ? String((d as { detail: unknown }).detail)
-    : e instanceof Error && e.message ? e.message : "Request failed.";
+    : e instanceof Error && e.message ? e.message : tx("Request failed.");
 };
 const input = "border rounded px-2 py-1 text-xs bg-white text-gray-900";
 const btn = "text-xs border rounded px-2 py-1 bg-white text-gray-900 disabled:opacity-40 disabled:cursor-not-allowed";
@@ -72,7 +72,7 @@ export default function AudienceSync() {
 
       <section className="border rounded p-3 bg-white text-gray-900 space-y-2">
         <h3 className="font-semibold">{tx("1. Choose segment and ad account")}</h3>
-        <form className="flex flex-wrap gap-2 items-end" onSubmit={(e) => { e.preventDefault(); run(() => apiClient.post(API, { audience_id: aid, account_id: acct }), "Sync draft created. Preview it next."); }}>
+        <form className="flex flex-wrap gap-2 items-end" onSubmit={(e) => { e.preventDefault(); run(() => apiClient.post(API, { audience_id: aid, account_id: acct }), tx("Sync draft created. Preview it next.")); }}>
           <label className="text-xs">{tx("Segment")}<select className={`${input} block`} value={aid} onChange={(e) => setAid(e.target.value)} required>
             <option value="">{tx("Select…")}</option>{auds.map((a) => <option key={a.id} value={a.id}>{a.name} ({a.member_count})</option>)}</select></label>
           <label className="text-xs">{tx("Ad account")}<select className={`${input} block`} value={acct} onChange={(e) => setAcct(e.target.value)} required>
@@ -93,7 +93,7 @@ export default function AudienceSync() {
         <h3 className="font-semibold">{tx("3. Consent withdrawal")}</h3>
         <p className="text-xs text-gray-500">{tx("Unsubscribes the address, adds it to the suppression list (never sent again) and removes it from every platform list that holds it.")}</p>
         <form className="flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault();
-          run(async () => { const r = await apiClient.post(`${API}/consent-withdrawal`, { email }); setWithdrawn(r.data); setEmail(""); }, "Consent withdrawn."); }}>
+          run(async () => { const r = await apiClient.post(`${API}/consent-withdrawal`, { email }); setWithdrawn(r.data); setEmail(""); }, tx("Consent withdrawn.")); }}>
           <input aria-label={tx("E-mail address")} type="email" className={`${input} w-64`} placeholder="customer@povu-demo.test" value={email} onChange={(e) => setEmail(e.target.value)} required />
           <button className={btn} disabled={busy || !email}>{tx("Withdraw consent and remove")}</button>
         </form>
@@ -107,7 +107,7 @@ export default function AudienceSync() {
           {(["meta", "google"] as Provider[]).map((p) => <button key={p} className={btn} disabled={busy || !caps?.export_enabled}
             title={caps?.export_enabled ? "" : tx("AUDIENCE_EXPORT_ENABLED is off.")}
             onClick={() => run(async () => { const r = await apiClient.post(`/api/v1/audiences/conversion-uploads/${p}`); if (r.data.status === "NOT_CONFIGURED") throw new Error(r.data.message); },
-              `${LABEL[p]} conversions uploaded (consented, hashed, once per source).`)}>{tx("Upload")} {LABEL[p]} {tx("conversions")}</button>)}
+              tx("{LABEL} conversions uploaded (consented, hashed, once per source).", { LABEL: LABEL[p] }))}>{tx("Upload")} {LABEL[p]} {tx("conversions")}</button>)}
           {(["linkedin", "tiktok"] as Provider[]).map((p) => <button key={p} className={btn} disabled title={caps?.providers.find((c) => c.provider === p)?.note ?? ""}>{tx("Upload")} {LABEL[p]} {tx("conversions")}</button>)}
         </div>
         {conv && conv.rows.length > 0 && <p className="text-xs">{tx("Uploaded so far:")} {conv.rows.map((r) => `${r.provider} ${r.status.toLowerCase()} ${r.count}`).join(" · ")}</p>}
@@ -148,20 +148,20 @@ function SyncCard({ s, cap, busy, run }: { s: Sync; cap?: Cap; busy: boolean; ru
       </div>}
       <div className="flex flex-wrap gap-1 items-center">
         {!lookalike && <button className={btn} disabled={busy || gone} onClick={async () => { try { setPv((await apiClient.get(`${u}/preview`)).data); } catch (e) { setPv(null); alert(err(e)); } }}>{tx("Preview")}</button>}
-        <button className={btn} disabled={busy || gone || s.approval_status === "PENDING"} onClick={() => run(() => apiClient.post(`${u}/approvals`), "Approval requested.")}>{tx("Request approval")}</button>
+        <button className={btn} disabled={busy || gone || s.approval_status === "PENDING"} onClick={() => run(() => apiClient.post(`${u}/approvals`), tx("Approval requested."))}>{tx("Request approval")}</button>
         <button className={btn} disabled={busy || s.approval_status !== "PENDING" || !s.can_approve} title={s.approval_status !== "PENDING" ? tx("Nothing waiting for approval.") : s.can_approve ? "" : tx("Needs marketing.approve and must not be the requester or author.")}
           onClick={() => run(() => apiClient.post(`${u}/decide`, { ok: true }), "Approved.")}>{tx("Approve")}</button>
         <button className={btn} disabled={busy || s.approval_status !== "PENDING" || !s.can_approve} onClick={() => run(() => apiClient.post(`${u}/decide`, { ok: false }), "Rejected.")}>{tx("Reject")}</button>
         <button className={btn} disabled={busy || s.approval_status !== "APPROVED"} title={s.approval_status === "APPROVED" ? "" : tx("Needs an approved request.")}
-          onClick={() => run(() => apiClient.post(`${u}/sync`), "Synced; read the platform status next.")}>{tx("Sync")}</button>
-        <button className={btn} disabled={busy || !s.external_id || gone} onClick={() => run(() => apiClient.post(`${u}/poll`), "Status read from the platform.")}>{tx("Poll status")}</button>
+          onClick={() => run(() => apiClient.post(`${u}/sync`), tx("Synced; read the platform status next."))}>{tx("Sync")}</button>
+        <button className={btn} disabled={busy || !s.external_id || gone} onClick={() => run(() => apiClient.post(`${u}/poll`), tx("Status read from the platform."))}>{tx("Poll status")}</button>
         <button className={btn} disabled={busy || !["UNKNOWN", "FAILED"].includes(s.status)} title={tx("Re-sends pending member changes (idempotent) and reads the status.")}
           onClick={() => run(() => apiClient.post(`${u}/reconcile`), "Reconciled.")}>{tx("Reconcile")}</button>
-        <button className={btn} disabled={busy || gone} onClick={() => { if (confirm(tx("Delete this audience on the platform? Members are removed from it."))) run(() => apiClient.delete(u), "Audience deleted."); }}>{tx("Delete")}</button>
+        <button className={btn} disabled={busy || gone} onClick={() => { if (confirm(tx("Delete this audience on the platform? Members are removed from it."))) run(() => apiClient.delete(u), tx("Audience deleted.")); }}>{tx("Delete")}</button>
         {!lookalike && <>
           <input aria-label={tx("Lookalike ratio")} className={`${input} w-16`} type="number" min="0.01" max="0.2" step="0.01" value={ratio} onChange={(e) => setRatio(e.target.value)} />
-          <button className={btn} disabled={busy || gone || !cap?.operations.lookalike} title={cap?.operations.lookalike ? tx("Needs the list on the platform and at least the seed minimum.") : `Not available: ${cap?.note ?? "no documented API"}`}
-            onClick={() => run(() => apiClient.post(`${API}/lookalike`, { origin_sync_id: s.id, ratio: Number(ratio) }), "Lookalike draft created; approve and sync it.")}>{tx("Platform lookalike")}</button>
+          <button className={btn} disabled={busy || gone || !cap?.operations.lookalike} title={cap?.operations.lookalike ? tx("Needs the list on the platform and at least the seed minimum.") : tx("Not available: {note}", { note: cap?.note ?? "no documented API" })}
+            onClick={() => run(() => apiClient.post(`${API}/lookalike`, { origin_sync_id: s.id, ratio: Number(ratio) }), tx("Lookalike draft created; approve and sync it."))}>{tx("Platform lookalike")}</button>
           <button className={btn} disabled={busy} onClick={async () => { try { setLocal((await apiClient.get(`/api/v1/audiences/${s.audience_id}/similar`)).data); } catch (e) { alert(err(e)); } }}>{tx("Local similarity score")}</button></>}
       </div>
       {local && <div className="text-xs border rounded p-2 bg-gray-50"><p className="font-medium">{local.label}</p>{local.note && <p>{local.note}</p>}

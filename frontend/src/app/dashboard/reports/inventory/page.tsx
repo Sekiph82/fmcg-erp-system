@@ -20,7 +20,7 @@ function InventoryDashboard() {
   return (
     <DashboardShell
       title={tx("Inventory Analytics")}
-      subtitle="Stock value, movements, and reorder alerts"
+      subtitle={tx("Stock value, movements, and reorder alerts")}
       days={days}
       onDaysChange={setDays}
       backHref="/dashboard/reports"
@@ -34,7 +34,7 @@ function InventoryDashboard() {
             label={tx("Low Stock Items")}
             value={data ? fmt(data.low_stock_count) : "—"}
             color={data && data.low_stock_count > 0 ? "amber" : "green"}
-            sub={data && data.low_stock_count > 0 ? "Need reorder" : "All stocked"}
+            sub={data && data.low_stock_count > 0 ? tx("Need reorder") : tx("All stocked")}
             trend={data && data.low_stock_count > 0 ? "down" : "neutral"}
           />
           <KpiCard

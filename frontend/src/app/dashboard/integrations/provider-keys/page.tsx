@@ -3,17 +3,17 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 interface ProviderField { field: string; label: string; secret: boolean; is_set: boolean; value: string | null }
 interface Provider { provider: string; label: string; configured: boolean; fields: ProviderField[] }
 
-const WHAT_FOR: Record<string, string> = {
-  mpesa: "Shops pay their orders with M-Pesa (STK push) and payments reconcile automatically.",
+const WHAT_FOR: Record<string, string> = lx(() => ({
+  mpesa: tx("Shops pay their orders with M-Pesa (STK push) and payments reconcile automatically."),
   sms: "“Your order is on the way” messages when no WhatsApp sender is set up.",
   whatsapp: "“Your order is on the way” messages to shops on WhatsApp.",
-  email: "Invoices e-mailed to shops at delivery and to marketplace buyers on payment; campaigns.",
-};
+  email: tx("Invoices e-mailed to shops at delivery and to marketplace buyers on payment; campaigns."),
+}));
 
 export default function ProviderKeysPage() {
   const { data: providers = [], isError } = useQuery<Provider[]>({

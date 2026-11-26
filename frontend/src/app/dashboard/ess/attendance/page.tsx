@@ -65,7 +65,7 @@ export default function AttendancePage() {
         <table className="w-full text-sm">
           <thead><tr className="border-b border-white/[0.07]">
             {[tx("Date"), tx("Status"), tx("Check In"), tx("Check Out"), tx("Hours"), tx("Late (min)"), tx("Notes")].map((h) => (
-              <th key={h} className={`px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest ${["Hours","Late (min)"].includes(h) ? "text-right" : "text-left"}`}>{h}</th>
+              <th key={h} className={`px-4 py-3 text-[10px] text-slate-500 uppercase tracking-widest ${[tx("Hours"),tx("Late (min)")].includes(h) ? "text-right" : "text-left"}`}>{h}</th>
             ))}
           </tr></thead>
           <tbody>

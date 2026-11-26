@@ -12,7 +12,7 @@ function errorText(e: unknown) {
   if (typeof detail === "string") return detail;
   if (Array.isArray(detail)) return detail.map((d) => (d as { msg?: string }).msg).join("; ");
   if (detail && typeof detail === "object" && "detail" in detail) return String((detail as { detail: unknown }).detail);
-  return "Request failed.";
+  return tx("Request failed.");
 }
 
 const EMPTY = { name: "", subject: "", body: "", segment_id: "", company_id: "", track_engagement: false, design_id: "", ab_split_pct: 0, variant_b_subject: "", send_time_optimize: false };
@@ -64,7 +64,7 @@ export default function CRMEmailCampaignsPage() {
       {info && !error && <p role="status" className="rounded-lg p-3 text-sm bg-emerald-50 border border-emerald-200 text-emerald-800">{info}</p>}
 
       {canAuthor && <form aria-label={tx("New campaign")} className="bg-white rounded-xl border shadow-sm p-4 grid md:grid-cols-2 gap-2"
-        onSubmit={(e) => { e.preventDefault(); act(() => crmApi.createEmailCampaign({ ...draft, design_id: draft.design_id || undefined, variant_b_subject: draft.variant_b_subject || undefined }), "Draft campaign created."); setDraft({ ...EMPTY, company_id: draft.company_id }); }}>
+        onSubmit={(e) => { e.preventDefault(); act(() => crmApi.createEmailCampaign({ ...draft, design_id: draft.design_id || undefined, variant_b_subject: draft.variant_b_subject || undefined }), tx("Draft campaign created.")); setDraft({ ...EMPTY, company_id: draft.company_id }); }}>
         <h2 className="font-semibold text-gray-800 md:col-span-2">{tx("New campaign")}</h2>
         <div className="md:col-span-2 flex flex-wrap gap-2 items-center">
           <select aria-label={tx("Start from template")} value="" className={input}
@@ -78,7 +78,7 @@ export default function CRMEmailCampaignsPage() {
           <button type="button" className="px-3 py-1.5 text-sm border rounded-lg" disabled={!draft.subject || !draft.body}
             onClick={() => {
               const name = prompt(tx("Template name"), draft.name || draft.subject);
-              if (name) act(() => emailApi.createTemplate({ name, module: "crm_campaign", subject_template: draft.subject, body_template: draft.body }).then(loadTemplates), "Template saved.");
+              if (name) act(() => emailApi.createTemplate({ name, module: "crm_campaign", subject_template: draft.subject, body_template: draft.body }).then(loadTemplates), tx("Template saved."));
             }}>{tx("Save as template")}</button>
         </div>
         <input aria-label={tx("Campaign name")} required placeholder={tx("Name")} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className={input} />
@@ -124,12 +124,12 @@ export default function CRMEmailCampaignsPage() {
                   <td className="text-xs">{Object.keys(st).length ? Object.entries(st).map(([k, v]) => `${k} ${v}`).join(" · ") : "—"}
                     {c.queued_at && <div>{tx("Converted:")} {c.stats.converted_customers}</div>}</td>
                   <td className="text-right space-x-2 whitespace-nowrap">
-                    {(c.status === "DRAFT" || c.status === "FAILED") && <button className="text-xs underline" onClick={() => act(() => crmApi.scheduleEmailCampaign(c.id), "Campaign scheduled; the worker queues it within a minute.")}>{tx("Send now")}</button>}
-                    {canAuthor && c.status === "DRAFT" && c.approval_status !== "PENDING" && c.approval_status !== "APPROVED" && <button className="text-xs underline" onClick={() => act(() => crmApi.campaignApproval(c.id, "request"), "Sent for approval; another editor must approve it.")}>{tx("Request approval")}</button>}
-                    {canAuthor && c.approval_status === "PENDING" && <><button className="text-xs underline" onClick={() => act(() => crmApi.campaignApproval(c.id, "approve"), "Campaign approved.")}>{tx("Approve")}</button>
-                      <button className="text-xs underline" onClick={() => act(() => crmApi.campaignApproval(c.id, "reject"), "Campaign rejected.")}>{tx("Reject")}</button></>}
+                    {(c.status === "DRAFT" || c.status === "FAILED") && <button className="text-xs underline" onClick={() => act(() => crmApi.scheduleEmailCampaign(c.id), tx("Campaign scheduled; the worker queues it within a minute."))}>{tx("Send now")}</button>}
+                    {canAuthor && c.status === "DRAFT" && c.approval_status !== "PENDING" && c.approval_status !== "APPROVED" && <button className="text-xs underline" onClick={() => act(() => crmApi.campaignApproval(c.id, "request"), tx("Sent for approval; another editor must approve it."))}>{tx("Request approval")}</button>}
+                    {canAuthor && c.approval_status === "PENDING" && <><button className="text-xs underline" onClick={() => act(() => crmApi.campaignApproval(c.id, "approve"), tx("Campaign approved."))}>{tx("Approve")}</button>
+                      <button className="text-xs underline" onClick={() => act(() => crmApi.campaignApproval(c.id, "reject"), tx("Campaign rejected."))}>{tx("Reject")}</button></>}
                     {c.ab_split_pct > 0 && c.queued_at && <button className="text-xs underline" onClick={async () => { setError(null); try { const r = await crmApi.campaignAbResult(c.id); setInfo(`A/B: ${r.verdict}. A ${r.arms.A.clicked}/${r.arms.A.sent}, B ${r.arms.B.clicked}/${r.arms.B.sent}${r.p_value != null ? `, p=${r.p_value}` : ""}.`); } catch (e) { setError(errorText(e)); } }}>{tx("A/B result")}</button>}
-                    {c.status !== "CANCELLED" && <button className="text-xs underline" onClick={() => act(() => crmApi.cancelEmailCampaign(c.id), "Campaign cancelled.")}>{tx("Cancel")}</button>}
+                    {c.status !== "CANCELLED" && <button className="text-xs underline" onClick={() => act(() => crmApi.cancelEmailCampaign(c.id), tx("Campaign cancelled."))}>{tx("Cancel")}</button>}
                   </td>
                 </tr>
               );

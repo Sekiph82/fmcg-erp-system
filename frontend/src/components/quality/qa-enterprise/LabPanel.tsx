@@ -19,7 +19,7 @@ function SampleActions({ sample, notify, canApprove }: { sample: RetainSample; n
   const withdraw = useAction(() => qaEnterpriseApi.withdrawRetainSample(sample.id, qty, reason), notify,
     (s) => `${s.sample_no}: ${s.quantity_remaining} ${s.uom} remaining`, ["qa-retain"]);
   const dispose = useAction(() => qaEnterpriseApi.disposeRetainSample(sample.id, reason), notify,
-    (s) => `${s.sample_no} disposed`, ["qa-retain"]);
+    (s) => tx("{sample_no} disposed", { sample_no: s.sample_no }), ["qa-retain"]);
   if (sample.status === "DISPOSED") return null;
   const early = sample.retain_until >= todayIso();
   return (
@@ -53,16 +53,16 @@ export function LabPanel({ notify }: { notify: Notify }) {
     requires_instrument: false, required_skill_id: "" });
   const [link, setLink] = useState({ parameter_id: "", test_method_id: "" });
 
-  const register = useAction(qaEnterpriseApi.registerRetainSample, notify, (s) => `Retain sample ${s.sample_no} registered`, ["qa-retain"]);
-  const createMethod = useAction(qaEnterpriseApi.createTestMethod, notify, (m) => `Test method ${m.method_code} v${m.version} created`, ["qa-methods"]);
+  const register = useAction(qaEnterpriseApi.registerRetainSample, notify, (s) => tx("Retain sample {sample_no} registered", { sample_no: s.sample_no }), ["qa-retain"]);
+  const createMethod = useAction(qaEnterpriseApi.createTestMethod, notify, (m) => tx("Test method {method_code} v{version} created", { method_code: m.method_code, version: m.version }), ["qa-methods"]);
   const linkMethod = useAction(() => qaEnterpriseApi.linkParameterMethod(link.parameter_id.trim(), link.test_method_id || null),
-    notify, "Template parameter linked to test method", []);
+    notify, tx("Template parameter linked to test method"), []);
 
   if (!perms.canView) return <ReadOnlyNotice>{tx("Laboratory records require quality.view.")}</ReadOnlyNotice>;
 
   return (
     <div className="space-y-4">
-      <Section title={tx("Retain samples")} description="Reference samples kept until their retention date. Early disposal needs quality approval and a reason."
+      <Section title={tx("Retain samples")} description={tx("Reference samples kept until their retention date. Early disposal needs quality approval and a reason.")}
         actions={(
           <label className="flex items-center gap-2 text-sm text-gray-700">
             <input type="checkbox" checked={dueOnly} onChange={(e) => setDueOnly(e.target.checked)} /> {tx("Past retention only")}
@@ -72,7 +72,7 @@ export function LabPanel({ notify }: { notify: Notify }) {
           <Table<RetainSample>
             keyField="id"
             data={samples.data ?? []}
-            emptyMessage={dueOnly ? "No samples are past their retention date." : "No retain samples."}
+            emptyMessage={dueOnly ? tx("No samples are past their retention date.") : tx("No retain samples.")}
             columns={[
               { header: tx("Sample"), accessor: "sample_no" },
               { header: tx("Lot"), accessor: (s) => shortId(s.lot_id) },
@@ -106,7 +106,7 @@ export function LabPanel({ notify }: { notify: Notify }) {
         )}
       </Section>
 
-      <Section title={tx("Test methods")} description="Versioned methods. A required instrument blocks results from uncalibrated equipment; a required skill blocks unqualified testers.">
+      <Section title={tx("Test methods")} description={tx("Versioned methods. A required instrument blocks results from uncalibrated equipment; a required skill blocks unqualified testers.")}>
         {methods.error ? <LoadError error={methods.error} /> : (
           <Table<TestMethod>
             keyField="id"
@@ -116,7 +116,7 @@ export function LabPanel({ notify }: { notify: Notify }) {
               { header: tx("Method"), accessor: (m) => `${m.method_code} v${m.version}` },
               { header: tx("Name"), accessor: "name" },
               { header: tx("Standard"), accessor: (m) => m.standard_reference ?? "—" },
-              { header: tx("Instrument"), accessor: (m) => (m.requires_instrument ? `Required: ${m.instrument_type}` : m.instrument_type ?? "—") },
+              { header: tx("Instrument"), accessor: (m) => (m.requires_instrument ? tx("Required: {instrument_type}", { instrument_type: m.instrument_type }) : m.instrument_type ?? "—") },
               { header: tx("Skill"), accessor: (m) => shortId(m.required_skill_id) },
             ]}
           />

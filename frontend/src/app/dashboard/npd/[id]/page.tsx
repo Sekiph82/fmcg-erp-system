@@ -209,7 +209,7 @@ export default function NPDProjectDetailPage() {
               <span className="font-mono text-xs text-blue-600">{tx("Batch #")}{b.batch_no}</span>
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">{b.batch_ref}</p>
-                {b.qty_produced && <p className="text-xs text-gray-400">{b.qty_produced} {b.uom}{b.actual_cogs ? ` · COGS: KES ${b.actual_cogs.toFixed(2)}/unit` : ""}</p>}
+                {b.qty_produced && <p className="text-xs text-gray-400">{b.qty_produced} {b.uom}{b.actual_cogs ? tx(" · COGS: KES {actual_cogs}/unit", { actual_cogs: b.actual_cogs.toFixed(2) }) : ""}</p>}
               </div>
               <span className={`text-xs font-medium ${OUTCOME_COLOR[b.outcome] ?? "text-gray-500"}`}>{b.outcome}</span>
             </div>

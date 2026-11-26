@@ -43,10 +43,10 @@ export function SpecsPanel({ notify }: { notify: Notify }) {
   const [crNotes, setCrNotes] = useState<Record<string, string>>({});
 
   const createSpec = useAction(qaEnterpriseApi.createSpecification, notify,
-    (s) => `Specification ${s.spec_code} v${s.version} saved as draft`, ["qa-specs"]);
+    (s) => tx("Specification {spec_code} v{version} saved as draft", { spec_code: s.spec_code, version: s.version }), ["qa-specs"]);
   const approveSpec = useAction(qaEnterpriseApi.approveSpecification, notify,
-    (s) => `Specification ${s.spec_code} v${s.version} approved`, ["qa-specs"]);
-  const createCr = useAction(qaEnterpriseApi.createChangeRequest, notify, (c) => `Change request ${c.cr_no} created`,
+    (s) => tx("Specification {spec_code} v{version} approved", { spec_code: s.spec_code, version: s.version }), ["qa-specs"]);
+  const createCr = useAction(qaEnterpriseApi.createChangeRequest, notify, (c) => tx("Change request {cr_no} created", { cr_no: c.cr_no }),
     ["qa-change-requests"]);
   const transitionCr = useAction(
     (a: { id: string; status: ChangeStatus; notes?: string }) => qaEnterpriseApi.transitionChangeRequest(a.id, a.status, a.notes),
@@ -66,7 +66,7 @@ export function SpecsPanel({ notify }: { notify: Notify }) {
 
   return (
     <div className="space-y-4">
-      <Section title={tx("Specifications")} description="Versioned, effective-dated specifications. The author cannot approve; version 2+ needs an approved change request.">
+      <Section title={tx("Specifications")} description={tx("Versioned, effective-dated specifications. The author cannot approve; version 2+ needs an approved change request.")}>
         {specs.error ? <LoadError error={specs.error} /> : (
           <Table
             keyField="id"
@@ -123,7 +123,7 @@ export function SpecsPanel({ notify }: { notify: Notify }) {
         )}
       </Section>
 
-      <Section title={tx("Change control")} description="Draft → submitted → approved → implemented → closed. The requester cannot approve their own change.">
+      <Section title={tx("Change control")} description={tx("Draft → submitted → approved → implemented → closed. The requester cannot approve their own change.")}>
         {crs.error ? <LoadError error={crs.error} /> : (
           <Table<ChangeRequest>
             keyField="id"

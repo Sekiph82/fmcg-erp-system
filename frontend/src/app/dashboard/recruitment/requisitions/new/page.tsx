@@ -46,14 +46,14 @@ export default function NewRequisitionPage() {
 
       <div className="glow-card p-5 space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          {f("Job Title *", "job_title")}
+          {f(tx("Job Title *"), "job_title")}
           {f("Location", "location")}
-          {f("Employment Type", "employment_type", "text", ["full_time", "part_time", "contract", "intern"])}
+          {f(tx("Employment Type"), "employment_type", "text", ["full_time", "part_time", "contract", "intern"])}
           {f("Headcount", "headcount", "number")}
-          {f("Opening Date", "opening_date", "date")}
-          {f("Closing Date", "closing_date", "date")}
-          {f("Salary Min (KES)", "salary_min", "number")}
-          {f("Salary Max (KES)", "salary_max", "number")}
+          {f(tx("Opening Date"), "opening_date", "date")}
+          {f(tx("Closing Date"), "closing_date", "date")}
+          {f(tx("Salary Min (KES)"), "salary_min", "number")}
+          {f(tx("Salary Max (KES)"), "salary_max", "number")}
         </div>
         <div><label className={labelCls}>{tx("Job Description")}</label><textarea value={form.job_description} onChange={(e) => setForm({ ...form, job_description: e.target.value })} rows={4} className={inputCls} /></div>
         <div><label className={labelCls}>{tx("Requirements")}</label><textarea value={form.requirements} onChange={(e) => setForm({ ...form, requirements: e.target.value })} rows={3} className={inputCls} /></div>

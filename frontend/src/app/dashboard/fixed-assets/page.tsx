@@ -118,7 +118,7 @@ export default function FADashboardPage() {
         </div>
         <p className="text-xs text-gray-400 text-center">
           {data.total_cost > 0
-            ? `${((data.total_accumulated_depreciation / data.total_cost) * 100).toFixed(1)}% of total cost depreciated`
+            ? tx("{total_accumulated_depreciation}% of total cost depreciated", { total_accumulated_depreciation: ((data.total_accumulated_depreciation / data.total_cost) * 100).toFixed(1) })
             : tx("No active assets")}
         </p>
       </div>

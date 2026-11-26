@@ -105,9 +105,9 @@ export default function RecordDetailPage() {
 
   const tabs: { id: Tab; label: string }[] = [
     { id: "overview", label: tx("Overview") },
-    { id: "activities", label: `Activities (${record.activities?.length || 0})` },
-    { id: "products", label: `Products (${record.interest_lines?.length || 0})` },
-    { id: "competitors", label: `Competitors (${record.competitors?.length || 0})` },
+    { id: "activities", label: tx("Activities ({activities})", { activities: record.activities?.length || 0 }) },
+    { id: "products", label: tx("Products ({interest_lines})", { interest_lines: record.interest_lines?.length || 0 }) },
+    { id: "competitors", label: tx("Competitors ({competitors})", { competitors: record.competitors?.length || 0 }) },
     { id: "close", label: tx("Close Deal") },
   ];
 
@@ -239,7 +239,7 @@ export default function RecordDetailPage() {
                   <div className="font-medium text-gray-800 text-sm">{act.subject}</div>
                   <div className="text-xs text-gray-500 mt-0.5">
                     {ACTIVITY_TYPE_LABELS[act.activity_type]} · {act.result_status}
-                    {act.due_datetime && ` · Due: ${new Date(act.due_datetime).toLocaleDateString()}`}
+                    {act.due_datetime && tx(" · Due: {date}", { date: new Date(act.due_datetime).toLocaleDateString() })}
                   </div>
                   {act.description && <p className="text-xs text-gray-600 mt-1">{act.description}</p>}
                   {act.next_step && <p className="text-xs text-indigo-600 mt-1">{tx("Next:")} {act.next_step}</p>}

@@ -34,7 +34,7 @@ export default function AdminPage() {
   return (
     <ModuleWorkspace
       title={tx("Administration")}
-      description="Users, roles, security, system configuration"
+      description={tx("Users, roles, security, system configuration")}
       permission="users.view"
       tabs={tabs}
       defaultTab="users"

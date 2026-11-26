@@ -23,11 +23,11 @@ export default function HRAdminPage() {
   };
   useEffect(() => { load(); }, []);
 
-  const handleApproveLeave = async (id: string) => { await essApi.approveLeave(id, { approver_id: "00000000-0000-0000-0000-000000000002" }); await load(); flash("Leave approved"); };
-  const handleRejectLeave = async (id: string) => { await essApi.rejectLeave(id, { approver_id: "00000000-0000-0000-0000-000000000002", rejection_reason: "Operational requirements" }); await load(); flash("Leave rejected"); };
-  const handleReviewReq = async (id: string, approved: boolean) => { await essApi.reviewRequest(id, { approver_id: "00000000-0000-0000-0000-000000000002", status: approved ? "approved" : "rejected", hr_notes: approved ? "Processed by HR" : "Request declined" }); await load(); flash(approved ? "Request approved" : "Request rejected"); };
-  const handleCreateAccount = async () => { await essApi.createAccount(newAcc); flash("Account created"); setNewAcc({ employee_id: "", email: "" }); await load(); };
-  const handleCreateProfile = async () => { await essApi.upsertProfile({ ...newProfile, employment_status: "active" }); flash("Profile saved"); };
+  const handleApproveLeave = async (id: string) => { await essApi.approveLeave(id, { approver_id: "00000000-0000-0000-0000-000000000002" }); await load(); flash(tx("Leave approved")); };
+  const handleRejectLeave = async (id: string) => { await essApi.rejectLeave(id, { approver_id: "00000000-0000-0000-0000-000000000002", rejection_reason: "Operational requirements" }); await load(); flash(tx("Leave rejected")); };
+  const handleReviewReq = async (id: string, approved: boolean) => { await essApi.reviewRequest(id, { approver_id: "00000000-0000-0000-0000-000000000002", status: approved ? "approved" : "rejected", hr_notes: approved ? tx("Processed by HR") : tx("Request declined") }); await load(); flash(approved ? tx("Request approved") : tx("Request rejected")); };
+  const handleCreateAccount = async () => { await essApi.createAccount(newAcc); flash(tx("Account created")); setNewAcc({ employee_id: "", email: "" }); await load(); };
+  const handleCreateProfile = async () => { await essApi.upsertProfile({ ...newProfile, employment_status: "active" }); flash(tx("Profile saved")); };
   const handleSeedLeaveTypes = async () => { await essApi.seedLeaveTypes(); flash("7 leave types seeded"); };
 
   const tabs = [
@@ -123,7 +123,7 @@ export default function HRAdminPage() {
             <h2 className="text-sm font-semibold text-white">{tx("Create / Update Profile")}</h2>
             <div className="grid grid-cols-3 gap-3">
               <div><label className={labelCls}>{tx("Employee")}</label><EntityPicker kind="employee" label={tx("Employee for profile")} value={newProfile.employee_id} onChange={(id) => setNewProfile({ ...newProfile, employee_id: id })} /></div>
-              {[["full_name", "Full Name"], ["email", "Work Email"], ["job_title", "Job Title"], ["department_name", "Department"], ["joining_date", "Joining Date"]].map(([k, l]) => (
+              {[["full_name", tx("Full Name")], ["email", tx("Work Email")], ["job_title", tx("Job Title")], ["department_name", "Department"], ["joining_date", tx("Joining Date")]].map(([k, l]) => (
                 <div key={k}><label className={labelCls}>{l}</label><input value={(newProfile as any)[k]} onChange={(e) => setNewProfile({ ...newProfile, [k]: e.target.value })} className={inputCls} /></div>
               ))}
             </div>

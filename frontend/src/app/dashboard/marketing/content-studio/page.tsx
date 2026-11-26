@@ -11,7 +11,7 @@ type Profile = { id: string; name: string; voice: string; banned_terms: string[]
 type Finding = { level: string; code: string; message: string };
 type Draft = { id: string; profile_id: string; channel: string; template: string; brief: string; body: string; engine: string; cost: number; findings: Finding[];
   history: { at: string; by: string; action: string; note?: string }[]; status: string; created_by: string; approved_by: string | null; source_id: string | null };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : typeof (d as { detail?: unknown })?.detail === "string" ? (d as { detail: string }).detail : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : typeof (d as { detail?: unknown })?.detail === "string" ? (d as { detail: string }).detail : tx("Something went wrong."); };
 
 function ImageForm({ say }: { say: (m: string) => void }) {
   const [f, setF] = useState({ title: "", prompt: "" });
@@ -20,7 +20,7 @@ function ImageForm({ say }: { say: (m: string) => void }) {
     <p className="text-gray-500">{tx("The image lands in the asset library as a draft; it cannot be used in e-mail, social or the website until approved there.")}</p>
     <input aria-label={tx("Image title")} placeholder={tx("Title, e.g. POVU AllClean counter visual")} className="border rounded px-1 w-full" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />
     <textarea aria-label={tx("Image prompt")} rows={2} placeholder={tx("Describe the image")} className="border rounded px-1 w-full" value={f.prompt} onChange={(e) => setF({ ...f, prompt: e.target.value })} />
-    <button className="border rounded px-3 py-1" onClick={() => apiClient.post("/api/v1/content-studio/images", f).then((r) => { say(`Draft creative created (document ${r.data.document_id}); approve it in the asset library.`); setF({ title: "", prompt: "" }); }).catch((e) => say(err(e)))}>{tx("Generate image")}</button>
+    <button className="border rounded px-3 py-1" onClick={() => apiClient.post("/api/v1/content-studio/images", f).then((r) => { say(tx("Draft creative created (document {document_id}); approve it in the asset library.", { document_id: r.data.document_id })); setF({ title: "", prompt: "" }); }).catch((e) => say(err(e)))}>{tx("Generate image")}</button>
   </section>;
 }
 
@@ -32,18 +32,18 @@ function ProfileForm({ p, onSaved, say }: { p: Profile | null; onSaved: () => vo
     terminology: Object.fromEntries(f.terms.split("\n").filter((l) => l.includes("=")).map((l) => l.split("=").map((x) => x.trim()))),
     evidence: f.evidence.split("\n").filter((l) => l.split("|").length >= 3).map((l) => { const [id, text, ...src] = l.split("|"); return { id: id.trim(), text: text.trim(), source: src.join("|").trim() }; }) });
   const save = () => (p ? apiClient.patch(`/api/v1/content-studio/profiles/${p.id}`, body()) : apiClient.post("/api/v1/content-studio/profiles", body()))
-    .then(() => { say("Brand profile saved."); onSaved(); }).catch((e) => say(err(e)));
+    .then(() => { say(tx("Brand profile saved.")); onSaved(); }).catch((e) => say(err(e)));
   const area = (k: keyof typeof f, label: string, rows = 3) => <label className="text-xs block">{label}<textarea aria-label={label} rows={rows} className="border rounded px-1 w-full block" value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} /></label>;
   return <section className="border rounded p-3 bg-white space-y-2">
     <h3 className="font-semibold">{p ? tx("Brand voice: {name}", { name: p.name }) : tx("New brand profile")}</h3>
     <div className="grid gap-2 sm:grid-cols-2">
       <label className="text-xs">{tx("Name")}<input aria-label={tx("Profile name")} className="border rounded px-1 w-full block" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></label>
-      <label className="text-xs">{tx("Monthly AI budget (USD, 0 = rules only)")}{p && ` · used ${p.spent_this_month.toFixed(4)} in ${p.calls_this_month} calls`}
+      <label className="text-xs">{tx("Monthly AI budget (USD, 0 = rules only)")}{p && tx(" · used {spent_this_month} in {calls_this_month} calls", { spent_this_month: p.spent_this_month.toFixed(4), calls_this_month: p.calls_this_month })}
         <input aria-label={tx("Monthly AI budget")} type="number" min={0} step="0.01" className="border rounded px-1 w-full block" value={f.budget} onChange={(e) => setF({ ...f, budget: e.target.value })} /></label>
-      {area("voice", "Voice and style")}{area("banned", "Banned words (comma separated)")}
-      {area("terms", "Terminology (one per line: wrong = right)")}{area("claims", "Words that make a claim (comma separated)")}
+      {area("voice", tx("Voice and style"))}{area("banned", tx("Banned words (comma separated)"))}
+      {area("terms", tx("Terminology (one per line: wrong = right)"))}{area("claims", tx("Words that make a claim (comma separated)"))}
     </div>
-    {area("evidence", "Approved evidence — one per line: id | fact | source. Claims must cite [E:id].", 4)}
+    {area("evidence", tx("Approved evidence — one per line: id | fact | source. Claims must cite [E:id]."), 4)}
     <button className="bg-indigo-600 text-white rounded px-3 py-1 text-xs" onClick={save}>{tx("Save profile")}</button>
   </section>;
 }
@@ -105,9 +105,9 @@ export default function ContentStudioPage() {
               <option value="">{tx("Repurpose for…")}</option>{Object.keys(opts.channels).filter((c) => c !== cur.channel).map((c) => <option key={c}>{c}</option>)}</select>
             <fieldset className="flex flex-wrap gap-1 items-center border rounded px-1"><legend>{tx("Remix to channels")}</legend>{Object.keys(opts.channels).filter((c) => c !== cur.channel).map((c) =>
               <label key={c} className="flex gap-1"><input type="checkbox" checked={remix.includes(c)} onChange={(e) => setRemix(e.target.checked ? [...remix, c] : remix.filter((x) => x !== c))} />{c}</label>)}
-              <button className="border rounded px-2" disabled={remix.length === 0} onClick={() => apiClient.post(`/api/v1/content-studio/drafts/${cur.id}/remix`, { channels: remix }).then((r) => { say(`${r.data.length} drafts created (${r.data.map((d: Draft) => `${d.channel}: ${d.engine}`).join(", ")}); each needs its own approval.`); setRemix([]); load(); }).catch((e) => say(err(e)))}>{tx("Remix")}</button></fieldset>
+              <button className="border rounded px-2" disabled={remix.length === 0} onClick={() => apiClient.post(`/api/v1/content-studio/drafts/${cur.id}/remix`, { channels: remix }).then((r) => { say(tx("{length} drafts created ({data}); each needs its own approval.", { length: r.data.length, data: r.data.map((d: Draft) => `${d.channel}: ${d.engine}`).join(", ") })); setRemix([]); load(); }).catch((e) => say(err(e)))}>{tx("Remix")}</button></fieldset>
             {cur.status === "APPROVED" && <><input aria-label={tx("Website page id")} placeholder={tx("Website page id")} className="border rounded px-1" value={pageId} onChange={(e) => setPageId(e.target.value)} />
-              <button className="border rounded px-2 py-1" onClick={() => apiClient.post(`/api/v1/content-studio/drafts/${cur.id}/to-page`, { page_id: pageId }).then(() => say("Added to the page draft — it still needs review and publishing.")).catch((e) => say(err(e)))}>{tx("Add to page draft")}</button></>}
+              <button className="border rounded px-2 py-1" onClick={() => apiClient.post(`/api/v1/content-studio/drafts/${cur.id}/to-page`, { page_id: pageId }).then(() => say(tx("Added to the page draft — it still needs review and publishing."))).catch((e) => say(err(e)))}>{tx("Add to page draft")}</button></>}
           </div>
           <details><summary>{tx("History")}</summary><ul>{cur.history.map((h, i) => <li key={i}>{new Date(h.at).toLocaleString()} · {h.by} · {h.action}{h.note ? ` · ${h.note}` : ""}</li>)}</ul></details>
         </section>}

@@ -10,7 +10,7 @@ function errorText(e: unknown) {
   const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
   if (typeof detail === "string") return detail;
   if (detail && typeof detail === "object" && "detail" in detail) return String((detail as { detail: unknown }).detail);
-  return "Request failed.";
+  return tx("Request failed.");
 }
 
 const EMPTY: ScoreRuleInput = { name: "", category: "FIT", field: "source_type", operator: "in", value: "", points: 10 };
@@ -57,7 +57,7 @@ export default function LeadScoringPage() {
         </div>
         <div className="flex gap-2">
           {rules?.using_defaults && (
-            <button className="px-3 py-1.5 text-sm border rounded-lg" onClick={() => act(crmApi.seedScoreRules, "Default rules copied; you can now edit them.")}>
+            <button className="px-3 py-1.5 text-sm border rounded-lg" onClick={() => act(crmApi.seedScoreRules, tx("Default rules copied; you can now edit them."))}>
               {tx("Make default rules editable")}
             </button>
           )}
@@ -65,7 +65,7 @@ export default function LeadScoringPage() {
             onClick={() => act(async () => {
               const r = await crmApi.recalculateScores();
               setMessage(tx("Rescored {scored} open records; {changed} changed.", { scored: r.scored, changed: r.changed }));
-            }, "Scores recalculated.")}>
+            }, tx("Scores recalculated."))}>
             {tx("Recalculate all")}
           </button>
         </div>
@@ -85,7 +85,7 @@ export default function LeadScoringPage() {
                 <td className="text-right">{r.points}{r.max_points != null ? tx(" (max {max_points})", { max_points: r.max_points }) : ""}</td>
                 <td className="text-right">
                   {"id" in r && (
-                    <button className="text-xs underline" onClick={() => act(() => crmApi.updateScoreRule(String(r.id), { active_flag: !r.active_flag }), "Rule updated.")}>
+                    <button className="text-xs underline" onClick={() => act(() => crmApi.updateScoreRule(String(r.id), { active_flag: !r.active_flag }), tx("Rule updated."))}>
                       {r.active_flag ? tx("Disable") : tx("Enable")}
                     </button>
                   )}
@@ -95,7 +95,7 @@ export default function LeadScoringPage() {
           </tbody>
         </table>
         <form aria-label={tx("New score rule")} className="flex flex-wrap items-end gap-2 mt-4"
-          onSubmit={(e) => { e.preventDefault(); act(() => crmApi.createScoreRule(draft), "Rule added."); setDraft(EMPTY); }}>
+          onSubmit={(e) => { e.preventDefault(); act(() => crmApi.createScoreRule(draft), tx("Rule added.")); setDraft(EMPTY); }}>
           <input aria-label={tx("Rule name")} required placeholder={tx("Rule name")} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className="text-sm border rounded-lg px-2 py-1.5" />
           <select aria-label={tx("Category")} value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value as "FIT" | "ENGAGEMENT" })} className="text-sm border rounded-lg px-2 py-1.5">
             <option value="FIT">{tx("Fit")}</option><option value="ENGAGEMENT">{tx("Engagement")}</option>

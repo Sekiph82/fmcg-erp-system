@@ -81,7 +81,7 @@ function errorMessage(error: unknown): string {
   const detail = candidate.response?.data?.detail;
   if (typeof detail === "string") return detail;
   if (detail && typeof detail === "object" && "detail" in detail && typeof detail.detail === "string") return detail.detail;
-  return candidate.message || "The request could not be completed.";
+  return candidate.message || tx("The request could not be completed.");
 }
 
 export function QualityGateWorkspace() {
@@ -240,7 +240,7 @@ export function QualityGateWorkspace() {
               columns={[
                 { header: tx("Gate"), accessor: (item) => <span><strong>{item.name}</strong><span className="ml-2 font-mono text-xs text-gray-500">{item.code} {tx("v")}{item.version}</span></span> },
                 { header: tx("Scope"), accessor: (item) => <span>{item.target_module} · {item.trigger_event}</span> },
-                { header: tx("Required QC"), accessor: (item) => item.required_templates.map((template) => template.name).join(", ") || "No templates" },
+                { header: tx("Required QC"), accessor: (item) => item.required_templates.map((template) => template.name).join(", ") || tx("No templates") },
                 { header: tx("Policy"), accessor: (item) => <span className="flex flex-wrap gap-1"><Badge label={item.severity} variant={severityVariant(item.severity)} /><Badge label={item.is_mandatory ? tx("Mandatory") : tx("Optional")} variant={item.is_mandatory ? "blue" : "gray"} /><Badge label={item.is_active ? tx("Active") : tx("Inactive")} variant={item.is_active ? "green" : "gray"} /></span> },
                 { header: tx("Effective"), accessor: (item) => <span className="flex flex-wrap items-center gap-2">{`${item.effective_from}${item.effective_to ? ` – ${item.effective_to}` : " – open"}`}{canConfigure && !item.effective_to && <Button type="button" variant="secondary" className="!px-2 !py-1 text-xs" loading={closeDefinition.isPending} onClick={() => closeDefinition.mutate(item)}>{tx("Close version")}</Button>}</span> },
               ]}

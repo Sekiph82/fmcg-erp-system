@@ -9,7 +9,7 @@ type Recap = { status: string; engine?: string; recap?: { decisions: Item[]; act
 type Brief = { open_deals: { id: string; name: string; expected_revenue: string; currency: string }[];
   last_orders: { order_no: string; date: string; net_total: string; currency: string; status: string }[];
   open_tickets: { ticket_no: string; subject: string; status: string }[]; hidden: string[]; note?: string };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 
 export function MeetingRecap({ meetingId, canChange }: { meetingId: string; canChange: boolean }) {
   const [brief, setBrief] = useState<Brief | null>(null);

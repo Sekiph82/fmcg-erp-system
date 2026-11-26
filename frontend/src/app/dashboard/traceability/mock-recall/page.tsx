@@ -37,7 +37,7 @@ export default function MockRecallPage() {
       // 1. Initiate mock recall
       const r = await traceApi.initiateRecall({
         recall_type: "mock_recall",
-        recall_reason: `Mock Recall Drill: ${form.scenario_name}`,
+        recall_reason: tx("Mock Recall Drill: {scenario_name}", { scenario_name: form.scenario_name }),
         trigger_source: "manual",
         severity_level: form.severity_level,
         source_lot_id: form.source_lot_id || undefined,

@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
+import { tx as xlate } from "@/lib/i18n/core";
 
 export default function SODetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -54,25 +55,25 @@ export default function SODetailPage() {
 
   const confirmMut = useMutation({
     mutationFn: () => salesApi.confirmOrder(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["sales-order", id] }); toast("success", "Order confirmed"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["sales-order", id] }); toast("success", xlate("Order confirmed")); },
     onError: (e) => toast("error", extractApiError(e)),
   });
 
   const discountMut = useMutation({
     mutationFn: (v: { approve: boolean; reason?: string }) => salesApi.decideOrderDiscount(id, v.approve, v.reason),
-    onSuccess: (_d, v) => { qc.invalidateQueries({ queryKey: ["sales-order", id] }); toast("success", v.approve ? "Discount approved" : "Discount rejected"); },
+    onSuccess: (_d, v) => { qc.invalidateQueries({ queryKey: ["sales-order", id] }); toast("success", v.approve ? xlate("Discount approved") : xlate("Discount rejected")); },
     onError: (e) => toast("error", extractApiError(e)),
   });
 
   const allocateMut = useMutation({
     mutationFn: () => salesApi.allocateOrder(id, allocWarehouse),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["sales-order", id] }); setShowAllocate(false); toast("success", "Stock allocated"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["sales-order", id] }); setShowAllocate(false); toast("success", xlate("Stock allocated")); },
     onError: (e) => toast("error", extractApiError(e)),
   });
 
   const cancelMut = useMutation({
     mutationFn: () => salesApi.cancelOrder(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["sales-order", id] }); toast("success", "Order cancelled"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["sales-order", id] }); toast("success", xlate("Order cancelled")); },
     onError: (e) => toast("error", extractApiError(e)),
   });
 
@@ -87,7 +88,7 @@ export default function SODetailPage() {
       qc.invalidateQueries({ queryKey: ["mpesa-transactions", id] });
       setShowMpesa(false);
       setMpesaForm({ phone_number: "", amount: "" });
-      toast("success", "M-Pesa payment request sent");
+      toast("success", xlate("M-Pesa payment request sent"));
     },
     onError: (e) => toast("error", extractApiError(e)),
   });
@@ -112,8 +113,8 @@ export default function SODetailPage() {
     onError: (e) => toast("error", extractApiError(e)),
   });
 
-  if (isLoading) return <div className="text-center py-12 text-gray-500">Loading...</div>;
-  if (!so) return <div className="text-center py-12 text-red-500">Order not found</div>;
+  if (isLoading) return <div className="text-center py-12 text-gray-500">{xlate("Loading...")}</div>;
+  if (!so) return <div className="text-center py-12 text-red-500">{xlate("Order not found")}</div>;
 
   const statusColor = (s: string) =>
     s === "INVOICED" || s === "SHIPPED" ? "green"
@@ -165,29 +166,29 @@ export default function SODetailPage() {
                 setShowMpesa(true);
               }}
             >
-              Request M-Pesa Payment
+              {xlate("Request M-Pesa Payment")}
             </Button>
           )}
           {so.approval_status === "PENDING_DISCOUNT" && (
-            <span className="self-center text-xs px-2 py-1 rounded bg-amber-50 text-amber-800">Discount waiting for approval</span>
+            <span className="self-center text-xs px-2 py-1 rounded bg-amber-50 text-amber-800">{xlate("Discount waiting for approval")}</span>
           )}
           {so.approval_status === "DISCOUNT_REJECTED" && (
-            <span className="self-center text-xs px-2 py-1 rounded bg-red-50 text-red-700">Discount rejected — cancel and enter a new order</span>
+            <span className="self-center text-xs px-2 py-1 rounded bg-red-50 text-red-700">{xlate("Discount rejected — cancel and enter a new order")}</span>
           )}
           {so.access?.can_discount_approve && (
             <>
-              <Button onClick={() => discountMut.mutate({ approve: true })} disabled={discountMut.isPending}>Approve discount</Button>
+              <Button onClick={() => discountMut.mutate({ approve: true })} disabled={discountMut.isPending}>{xlate("Approve discount")}</Button>
               <Button variant="danger" disabled={discountMut.isPending} onClick={() => {
-                const reason = window.prompt("Why is the discount rejected?");
+                const reason = window.prompt(xlate("Why is the discount rejected?"));
                 if (reason?.trim()) discountMut.mutate({ approve: false, reason });
-              }}>Reject discount</Button>
+              }}>{xlate("Reject discount")}</Button>
             </>
           )}
           {canConfirm && !["PENDING_DISCOUNT", "DISCOUNT_REJECTED"].includes(so.approval_status ?? "") && (
-            <Button onClick={() => confirmMut.mutate()} disabled={confirmMut.isPending}>Confirm</Button>
+            <Button onClick={() => confirmMut.mutate()} disabled={confirmMut.isPending}>{xlate("Confirm")}</Button>
           )}
           {canAllocate && (
-            <Button onClick={() => setShowAllocate(true)}>Allocate Stock</Button>
+            <Button onClick={() => setShowAllocate(true)}>{xlate("Allocate Stock")}</Button>
           )}
           {canCreateShipment && (
             <Button variant="secondary" onClick={() => {
@@ -200,10 +201,10 @@ export default function SODetailPage() {
                 delivery_notes: "",
               });
               setShowShipment(true);
-            }}>Create Shipment</Button>
+            }}>{xlate("Create Shipment")}</Button>
           )}
           {canCancel && (
-            <Button variant="danger" onClick={() => { if (confirm("Cancel this order?")) cancelMut.mutate(); }}>Cancel</Button>
+            <Button variant="danger" onClick={() => { if (confirm(xlate("Cancel this order?"))) cancelMut.mutate(); }}>{xlate("Cancel")}</Button>
           )}
         </div>
       </div>
@@ -211,34 +212,34 @@ export default function SODetailPage() {
       {/* Order Info */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-white rounded-lg border p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Customer</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide">{xlate("Customer")}</p>
           <p className="font-semibold mt-1">{so.customer_name}</p>
         </div>
         <div className="bg-white rounded-lg border p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Order Date</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide">{xlate("Order Date")}</p>
           <p className="font-semibold mt-1">{so.order_date}</p>
         </div>
         <div className="bg-white rounded-lg border p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Requested Delivery</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide">{xlate("Requested Delivery")}</p>
           <p className={`font-semibold mt-1 ${(so.days_until_delivery ?? 0) < 0 ? "text-red-600" : ""}`}>
             {so.requested_delivery_date}
             {so.days_until_delivery !== undefined && (
               <span className="text-xs ml-2 text-gray-400">
-                {so.days_until_delivery >= 0 ? `(${so.days_until_delivery}d)` : `(${Math.abs(so.days_until_delivery)}d overdue)`}
+                {so.days_until_delivery >= 0 ? xlate("({days_until_delivery}d)", { days_until_delivery: so.days_until_delivery }) : xlate("({days_until_delivery}d overdue)", { days_until_delivery: Math.abs(so.days_until_delivery) })}
               </span>
             )}
           </p>
         </div>
         <div className="bg-white rounded-lg border p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Warehouse</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide">{xlate("Warehouse")}</p>
           <p className="font-semibold mt-1">{so.warehouse_name || "—"}</p>
         </div>
         <div className="bg-white rounded-lg border p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Currency</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide">{xlate("Currency")}</p>
           <p className="font-semibold mt-1">{so.currency}</p>
         </div>
         <div className="bg-white rounded-lg border p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Total Value</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide">{xlate("Total Value")}</p>
           <p className="font-semibold mt-1 text-green-700">
             {so.total_value !== undefined
               ? `${so.currency} ${Number(so.total_value).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
@@ -246,16 +247,16 @@ export default function SODetailPage() {
           </p>
         </div>
         <div className="bg-white rounded-lg border p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Payment Method</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide">{xlate("Payment Method")}</p>
           <p className="font-semibold mt-1 capitalize">{so.payment_method}</p>
         </div>
         <div className="bg-white rounded-lg border p-4">
-          <p className="text-xs text-gray-500 uppercase tracking-wide">Payment Status</p>
+          <p className="text-xs text-gray-500 uppercase tracking-wide">{xlate("Payment Status")}</p>
           <p className={`font-semibold mt-1 capitalize ${so.payment_status === "paid" ? "text-green-700" : so.payment_status === "failed" ? "text-red-600" : "text-gray-900"}`}>
             {so.payment_status.replace("_", " ")}
           </p>
           {so.mpesa_reference && (
-            <p className="text-xs text-gray-400 mt-1">Ref: {so.mpesa_reference}</p>
+            <p className="text-xs text-gray-400 mt-1">{xlate("Ref:")} {so.mpesa_reference}</p>
           )}
         </div>
       </div>
@@ -263,13 +264,13 @@ export default function SODetailPage() {
       {/* Order Lines */}
       <div className="bg-white rounded-lg border">
         <div className="px-6 py-4 border-b">
-          <h2 className="font-semibold text-gray-900">Order Lines</h2>
+          <h2 className="font-semibold text-gray-900">{xlate("Order Lines")}</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                {["#", "Product", "Ordered", "Allocated", "Shipped", "Pending", "Unit Price", "Discount", "Tax", "Line Total"].map((h) => (
+                {["#", xlate("Product"), xlate("Ordered"), xlate("Allocated"), xlate("Shipped"), xlate("Pending"), xlate("Unit Price"), xlate("Discount"), xlate("Tax"), xlate("Line Total")].map((h) => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
                 ))}
               </tr>
@@ -298,7 +299,7 @@ export default function SODetailPage() {
       {so.shipments && so.shipments.length > 0 && (
         <div className="bg-white rounded-lg border">
           <div className="px-6 py-4 border-b">
-            <h2 className="font-semibold text-gray-900">Shipments</h2>
+            <h2 className="font-semibold text-gray-900">{xlate("Shipments")}</h2>
           </div>
           <div className="divide-y">
             {(so.shipments as any[]).map((ship: any) => (
@@ -308,7 +309,7 @@ export default function SODetailPage() {
                   <p className="text-sm text-gray-500">{ship.scheduled_date} • {ship.status}</p>
                 </div>
                 <Button variant="secondary" onClick={() => router.push(`/dashboard/sales/shipments/${ship.id}`)}>
-                  View
+                  {xlate("View")}
                 </Button>
               </div>
             ))}
@@ -320,7 +321,7 @@ export default function SODetailPage() {
       {so.invoices && so.invoices.length > 0 && (
         <div className="bg-white rounded-lg border">
           <div className="px-6 py-4 border-b">
-            <h2 className="font-semibold text-gray-900">Invoices</h2>
+            <h2 className="font-semibold text-gray-900">{xlate("Invoices")}</h2>
           </div>
           <div className="divide-y">
             {(so.invoices as any[]).map((inv: any) => (
@@ -330,7 +331,7 @@ export default function SODetailPage() {
                   <p className="text-sm text-gray-500">{inv.invoice_date} • {inv.status}</p>
                 </div>
                 <Button variant="secondary" onClick={() => router.push(`/dashboard/sales/invoices/${inv.id}`)}>
-                  View
+                  {xlate("View")}
                 </Button>
               </div>
             ))}
@@ -342,7 +343,7 @@ export default function SODetailPage() {
       {so.payment_method === "mpesa" && (
         <div className="bg-white rounded-lg border">
           <div className="px-6 py-4 border-b flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900">M-Pesa Transactions</h2>
+            <h2 className="font-semibold text-gray-900">{xlate("M-Pesa Transactions")}</h2>
             {canRequestMpesa && (
               <Button
                 variant="secondary"
@@ -351,18 +352,18 @@ export default function SODetailPage() {
                   setShowMpesa(true);
                 }}
               >
-                + Request Payment
+                {xlate("+ Request Payment")}
               </Button>
             )}
           </div>
           {mpesaTxns.length === 0 ? (
-            <p className="px-6 py-4 text-sm text-gray-400">No M-Pesa transactions yet.</p>
+            <p className="px-6 py-4 text-sm text-gray-400">{xlate("No M-Pesa transactions yet.")}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    {["Date", "Phone", "Amount", "Status", "Reference", "Description"].map((h) => (
+                    {[xlate("Date"), xlate("Phone"), xlate("Amount"), xlate("Status"), xlate("Reference"), xlate("Description")].map((h) => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">{h}</th>
                     ))}
                   </tr>
@@ -388,68 +389,68 @@ export default function SODetailPage() {
       )}
 
       {/* Allocate Modal */}
-      <Modal open={showAllocate} onClose={() => setShowAllocate(false)} title="Allocate Stock">
+      <Modal open={showAllocate} onClose={() => setShowAllocate(false)} title={xlate("Allocate Stock")}>
         <div className="space-y-4">
-          <p className="text-sm text-gray-600">Select a warehouse to reserve stock for this order.</p>
-          <Select label="Warehouse" options={warehouseOpts} value={allocWarehouse} onChange={(e) => setAllocWarehouse(e.target.value)} />
+          <p className="text-sm text-gray-600">{xlate("Select a warehouse to reserve stock for this order.")}</p>
+          <Select label={xlate("Warehouse")} options={warehouseOpts} value={allocWarehouse} onChange={(e) => setAllocWarehouse(e.target.value)} />
           <div className="flex justify-end gap-3">
-            <Button variant="secondary" onClick={() => setShowAllocate(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setShowAllocate(false)}>{xlate("Cancel")}</Button>
             <Button onClick={() => allocateMut.mutate()} disabled={allocateMut.isPending || !allocWarehouse}>
-              {allocateMut.isPending ? "Allocating..." : "Allocate"}
+              {allocateMut.isPending ? xlate("Allocating...") : xlate("Allocate")}
             </Button>
           </div>
         </div>
       </Modal>
 
       {/* M-Pesa Payment Modal */}
-      <Modal open={showMpesa} onClose={() => setShowMpesa(false)} title="Request M-Pesa Payment">
+      <Modal open={showMpesa} onClose={() => setShowMpesa(false)} title={xlate("Request M-Pesa Payment")}>
         <div className="space-y-4">
           <p className="text-sm text-gray-600">
-            An STK Push will be sent to the customer&apos;s phone to prompt payment.
+            {xlate("An STK Push will be sent to the customer's phone to prompt payment.")}
           </p>
           <Input
-            label="Phone Number (e.g. 254712345678)"
+            label={xlate("Phone Number (e.g. 254712345678)")}
             value={mpesaForm.phone_number}
             onChange={(e) => setMpesaForm({ ...mpesaForm, phone_number: e.target.value })}
             required
           />
           <Input
-            label={`Amount (${so.currency})`}
+            label={xlate("Amount ({currency})", { currency: so.currency })}
             type="number"
             value={mpesaForm.amount}
             onChange={(e) => setMpesaForm({ ...mpesaForm, amount: e.target.value })}
             required
           />
           <div className="flex justify-end gap-3">
-            <Button variant="secondary" onClick={() => setShowMpesa(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setShowMpesa(false)}>{xlate("Cancel")}</Button>
             <Button
               onClick={() => mpesaMut.mutate()}
               disabled={mpesaMut.isPending || !mpesaForm.phone_number || !mpesaForm.amount}
             >
-              {mpesaMut.isPending ? "Sending..." : "Send STK Push"}
+              {mpesaMut.isPending ? xlate("Sending...") : xlate("Send STK Push")}
             </Button>
           </div>
         </div>
       </Modal>
 
       {/* Create Shipment Modal */}
-      <Modal open={showShipment} onClose={() => setShowShipment(false)} title="Create Shipment">
+      <Modal open={showShipment} onClose={() => setShowShipment(false)} title={xlate("Create Shipment")}>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Shipment No" value={shipForm.shipment_no} onChange={(e) => setShipForm({ ...shipForm, shipment_no: e.target.value })} required />
-            <Select label="Warehouse" options={warehouseOpts} value={shipForm.warehouse_id} onChange={(e) => setShipForm({ ...shipForm, warehouse_id: e.target.value })} />
+            <Input label={xlate("Shipment No")} value={shipForm.shipment_no} onChange={(e) => setShipForm({ ...shipForm, shipment_no: e.target.value })} required />
+            <Select label={xlate("Warehouse")} options={warehouseOpts} value={shipForm.warehouse_id} onChange={(e) => setShipForm({ ...shipForm, warehouse_id: e.target.value })} />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Scheduled Date" type="date" value={shipForm.scheduled_date} onChange={(e) => setShipForm({ ...shipForm, scheduled_date: e.target.value })} required />
-            <Input label="Carrier" value={shipForm.carrier} onChange={(e) => setShipForm({ ...shipForm, carrier: e.target.value })} />
+            <Input label={xlate("Scheduled Date")} type="date" value={shipForm.scheduled_date} onChange={(e) => setShipForm({ ...shipForm, scheduled_date: e.target.value })} required />
+            <Input label={xlate("Carrier")} value={shipForm.carrier} onChange={(e) => setShipForm({ ...shipForm, carrier: e.target.value })} />
           </div>
-          <Input label="Tracking Number" value={shipForm.tracking_number} onChange={(e) => setShipForm({ ...shipForm, tracking_number: e.target.value })} />
-          <Input label="Delivery Notes" value={shipForm.delivery_notes} onChange={(e) => setShipForm({ ...shipForm, delivery_notes: e.target.value })} />
-          <p className="text-xs text-gray-500">Shipment lines will be auto-populated from pending SO lines.</p>
+          <Input label={xlate("Tracking Number")} value={shipForm.tracking_number} onChange={(e) => setShipForm({ ...shipForm, tracking_number: e.target.value })} />
+          <Input label={xlate("Delivery Notes")} value={shipForm.delivery_notes} onChange={(e) => setShipForm({ ...shipForm, delivery_notes: e.target.value })} />
+          <p className="text-xs text-gray-500">{xlate("Shipment lines will be auto-populated from pending SO lines.")}</p>
           <div className="flex justify-end gap-3">
-            <Button variant="secondary" onClick={() => setShowShipment(false)}>Cancel</Button>
+            <Button variant="secondary" onClick={() => setShowShipment(false)}>{xlate("Cancel")}</Button>
             <Button onClick={() => createShipMut.mutate()} disabled={createShipMut.isPending || !shipForm.shipment_no || !shipForm.warehouse_id || !shipForm.scheduled_date}>
-              {createShipMut.isPending ? "Creating..." : "Create Shipment"}
+              {createShipMut.isPending ? xlate("Creating...") : xlate("Create Shipment")}
             </Button>
           </div>
         </div>

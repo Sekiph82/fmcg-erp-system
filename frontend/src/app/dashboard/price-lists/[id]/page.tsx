@@ -114,11 +114,11 @@ export default function PLDetail() {
   const canEdit = hdr.status === "DRAFT";
 
   const TABS: { key: Tab; label: string }[] = [
-    { key: "lines", label: `Price Lines (${lines.length})` },
-    { key: "tiers", label: `Tier Pricing${selectedLine ? ` — ${selectedLine.uom}` : ""}` },
-    { key: "assignments", label: `Assignments (${assignments.length})` },
-    { key: "history", label: `Change History (${history.length})` },
-    { key: "approvals", label: `Approvals (${approvals.length})` },
+    { key: "lines", label: tx("Price Lines ({length})", { length: lines.length }) },
+    { key: "tiers", label: tx("Tier Pricing") + (selectedLine ? ` — ${selectedLine.uom}` : "") },
+    { key: "assignments", label: tx("Assignments ({length})", { length: assignments.length }) },
+    { key: "history", label: tx("Change History ({length})", { length: history.length }) },
+    { key: "approvals", label: tx("Approvals ({length})", { length: approvals.length }) },
   ];
 
   return (

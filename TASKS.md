@@ -3681,6 +3681,11 @@ Dependency: prior major milestone accepted and synchronized; extend actual exist
       - backend CSV/XLSX/PDF exports in about 22 modules are not translated.
       - All are carried to M52 persona acceptance.
     - Translations are machine-generated (glossary-guided, placeholders verified) and need native-speaker review before release.
+    - Coverage pass (gate):
+      - The codemod now also covers tuple labels, helper-call text, ternaries, returns, complex templates (named placeholders and full-sentence plurals) and module constants via lx.
+      - The report reaches sentence_literals 0 and module_level 0. The catalog has 15,729 keys, 0 missing in SW/TR.
+      - Left English on purpose: 140 valueless `<option>` data values, 53 reviewed data strings in i18n-codemod.skip.json, and about 379 single-word capitalised labels the codemod cannot safely tell from data (months, Yes, shift names, …). These are carried to M52 persona acceptance.
+      - The 165 non-client files contain no user-visible English the codemod could wrap.
   - **Implementation:** Translate EVERY staff dashboard module page, widgets, command palette, navigation, forms/tables/validation, toasts, dialogs, role home, mobile/field screens, exports/print templates where applicable and backend system messages via stable codes/catalogs; locale formatting, fallback, no untranslated key/English placeholder in localized system UI. User-entered data stays original unless translation is requested.
   - **Acceptance at milestone gate:** All roles and external personas (M52 matrix), each locale; screenshot and click through affected screens, automated key/translation coverage plus human language QA, date/currency and error messages.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
@@ -3708,6 +3713,16 @@ Dependency: prior major milestone accepted and synchronized; extend actual exist
     - C4: crawler errors are per page; robots 5xx means disallow-all; robots is re-checked on redirects.
     - C5: ffmpeg is killed on probe timeout and gets an input protocol whitelist.
   - Tests: test_m51_s01_t011_review_fixes (17 tests). Runner: 12/12.
+  - Re-review fixes:
+    - N1: revoke unpublishes CMS media instead of deleting it; analytics and sales-video rows are kept.
+    - S1: only validated addresses are pinned; IPv6 is bracketed; WebRTC is blocked. Lighthouse is refused because it cannot pin DNS, so lab vitals use Playwright only.
+    - C1: part upload locks the session and returns 409 after complete or abort; no orphan parts.
+    - C2: plain http only to a loopback literal, or to a host that resolves privately with a pinned private-only backend.
+    - txApi matches backend_messages only.
+    - Error-code slugs drop dynamic values.
+    - Localization: 20 data-valued `<option>`s now carry explicit values (in SW/TR they had submitted translated text). The scanner scripts/i18n-options.mjs reports 0; the codemod never wraps valueless options; `description`/`subtitle` props are localized (64 new strings in SW/TR).
+    - Gate walkthrough found and fixed a pre-existing CRM pipeline deadlock: the selector was hidden while loading, so the page loaded forever.
+  - Tests: t011 25 passed; runner 13/13; test:i18n 5 pass. Legacy source-text tests adapted to the tx() wrapping (gap021 nav, M48 brand-context allow-list).
 
 ## M51.S02 — Consolidated milestone gate and synchronization
 - [ ] M51.S02.T001 — Run milestone-only consolidated tests on frozen candidate SHA: full applicable backend, DB-gated integration and legacy regression, migration from empty and prior populated head, local provider contracts, frontend tsc/lint/build, security/roles/company isolation, real local ERP manual UI clicks and screenshots desktop/mobile for every affected persona and feature; evaluate applicable quality categories and original task mappings; add remediation tasks for any gap; independent reviewer on exact source; record commands, counts, skipped-test dispositions, screenshot paths, click logs, reviewer identity and verdict. Fix failures, rerun, [x] only after all applicable checks pass; no account activation needed.

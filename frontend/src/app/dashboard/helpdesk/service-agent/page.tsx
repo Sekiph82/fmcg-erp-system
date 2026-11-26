@@ -6,7 +6,7 @@ import { apiClient } from "@/lib/api";
 import { tx } from "@/lib/i18n/core";
 
 const API = "/api/v1/service-desk/agent";
-const errText = (e: unknown) => (e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Request failed.";
+const errText = (e: unknown) => (e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? tx("Request failed.");
 
 interface Metrics {
   days: number; turns: number; sessions: number; outcomes: Record<string, number>; modes: Record<string, number>;
@@ -76,14 +76,14 @@ function MetricsTab({ days }: { days: number }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {card("Chats / turns", `${m.sessions} / ${m.turns}`)}
-        {card("Grounded answer rate", pct(m.grounded_rate), "answered vs. abstained")}
-        {card("Contained by the agent", pct(m.containment_rate), "never handed over or escalated")}
-        {card("Confirmed resolved", pct(m.confirmed_resolution_rate), `${m.sessions_with_feedback} chats with a rating`)}
-        {card("CSAT (1-5)", m.csat.avg === null ? "no data yet" : String(m.csat.avg), `${m.csat.n} ratings`)}
-        {card("CES (1-7, 7 = easy)", m.ces.avg === null ? "no data yet" : String(m.ces.avg), `${m.ces.n} ratings`)}
-        {card("Reviewed answers correct", pct(m.accuracy.correct_rate), `${m.accuracy.reviewed} reviewed; citations ok ${pct(m.accuracy.citation_ok_rate)}`)}
-        {card("Safety escalations", String(m.safety_escalations))}
+        {card(tx("Chats / turns"), `${m.sessions} / ${m.turns}`)}
+        {card(tx("Grounded answer rate"), pct(m.grounded_rate), "answered vs. abstained")}
+        {card(tx("Contained by the agent"), pct(m.containment_rate), "never handed over or escalated")}
+        {card(tx("Confirmed resolved"), pct(m.confirmed_resolution_rate), tx("{sessions_with_feedback} chats with a rating", { sessions_with_feedback: m.sessions_with_feedback }))}
+        {card("CSAT (1-5)", m.csat.avg === null ? "no data yet" : String(m.csat.avg), tx("{n} ratings", { n: m.csat.n }))}
+        {card(tx("CES (1-7, 7 = easy)"), m.ces.avg === null ? "no data yet" : String(m.ces.avg), tx("{n} ratings", { n: m.ces.n }))}
+        {card(tx("Reviewed answers correct"), pct(m.accuracy.correct_rate), tx("{reviewed} reviewed; citations ok {pct}", { reviewed: m.accuracy.reviewed, pct: pct(m.accuracy.citation_ok_rate) }))}
+        {card(tx("Safety escalations"), String(m.safety_escalations))}
       </div>
       <p className="text-xs text-gray-500">{tx("Outcomes:")} {Object.entries(m.outcomes).map(([k, v]) => `${k} ${v}`).join(", ") || tx("none")}{tx(". Answer modes:")} {Object.entries(m.modes).map(([k, v]) => `${k} ${v}`).join(", ") || tx("none")}{tx(". Safety chats are never counted as resolved.")}</p>
       <BreakDown title={tx("By topic")} rows={m.by_topic} />
@@ -184,7 +184,7 @@ function ReviewsTab() {
     onError: (e, v) => setErr((x) => ({ ...x, [v.id]: errText(e) })),
   });
   if (q.isError) return <p role="alert" className="text-sm text-red-600">{errText(q.error)}</p>;
-  const verdicts: [string, string][] = [["CORRECT", "Correct"], ["WRONG_CITATION", "Wrong citation"], ["INACCURATE", "Inaccurate"], ["UNSUPPORTED", "Not supported by source"]];
+  const verdicts: [string, string][] = [["CORRECT", "Correct"], ["WRONG_CITATION", tx("Wrong citation")], ["INACCURATE", "Inaccurate"], ["UNSUPPORTED", tx("Not supported by source")]];
   return (
     <div className="space-y-3">
       <p className="text-sm text-gray-600">Check each answer against the cited article. Any verdict other than &ldquo;Correct&rdquo; needs a note.</p>

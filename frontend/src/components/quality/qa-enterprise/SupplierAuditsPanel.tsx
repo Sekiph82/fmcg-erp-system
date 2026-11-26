@@ -52,15 +52,15 @@ export function SupplierAuditsPanel({ notify }: { notify: Notify }) {
   });
 
   const createApproval = useAction(supplierAuditApi.createApproval, notify,
-    (a) => `Approval request for ${a.supplier_name} (${a.approval_type}) registered`, ["qa-supplier-approvals"]);
-  const createAudit = useAction(supplierAuditApi.createAudit, notify, (a) => `Supplier audit ${a.audit_ref} scheduled`,
+    (a) => tx("Approval request for {supplier_name} ({approval_type}) registered", { supplier_name: a.supplier_name, approval_type: a.approval_type }), ["qa-supplier-approvals"]);
+  const createAudit = useAction(supplierAuditApi.createAudit, notify, (a) => tx("Supplier audit {audit_ref} scheduled", { audit_ref: a.audit_ref }),
     ["qa-supplier-audits"]);
   const scoreAudit = useAction(
     (a: { id: string; results: Array<{ item_index: number; result: AuditItemResult; finding?: string }> }) =>
       supplierAuditApi.scoreAudit(a.id, a.results),
-    notify, "Audit results saved", ["qa-supplier-audits", "qa-supplier-audit"]);
+    notify, tx("Audit results saved"), ["qa-supplier-audits", "qa-supplier-audit"]);
   const closeAudit = useAction((a: { id: string; next?: string }) => supplierAuditApi.closeAudit(a.id, a.next), notify,
-    (r) => `Audit closed (${r.result})${r.suspended_approval_ids.length ? ` — ${r.suspended_approval_ids.length} approval(s) suspended` : ""}`,
+    (r) => tx("Audit closed ({result}){suspended_approval_ids}", { result: r.result, suspended_approval_ids: r.suspended_approval_ids.length ? tx(" — {length} approval(s) suspended", { length: r.suspended_approval_ids.length }) : "" }),
     ["qa-supplier-audits", "qa-supplier-audit", "qa-supplier-approvals"]);
   const decide = useAction(
     (d: typeof decision) => supplierAuditApi.decide(d.id, {
@@ -89,7 +89,7 @@ export function SupplierAuditsPanel({ notify }: { notify: Notify }) {
 
   return (
     <div className="space-y-4">
-      <Section title={tx("Supplier approvals")} description="Requests start pending. Approval needs a closed, passing audit of the same supplier, decided by someone other than the audit closer, and cannot outlast the next audit. A failed supplier audit suspends the supplier's active approvals.">
+      <Section title={tx("Supplier approvals")} description={tx("Requests start pending. Approval needs a closed, passing audit of the same supplier, decided by someone other than the audit closer, and cannot outlast the next audit. A failed supplier audit suspends the supplier's active approvals.")}>
         {approvals.error ? <LoadError error={approvals.error} /> : (
           <Table<SupplierApproval>
             keyField="id"
@@ -125,7 +125,7 @@ export function SupplierAuditsPanel({ notify }: { notify: Notify }) {
               onChange={(e) => setDecision((d) => ({ ...d, status: e.target.value as SupplierApprovalStatus }))}
               options={[{ value: "", label: tx("Select") }, ...SUPPLIER_APPROVAL_NEXT[target.status]
                 .filter((s) => (s === "PENDING" ? perms.canEdit || perms.canApprove : perms.canApprove))
-                .map((s) => ({ value: s, label: s === "PENDING" ? "Re-audit (pending)" : s }))]} />
+                .map((s) => ({ value: s, label: s === "PENDING" ? tx("Re-audit (pending)") : s }))]} />
             {needsAudit && (
               <>
                 <Select id="decision-audit" label={tx("Evidence audit")} value={decision.audit}
@@ -133,7 +133,7 @@ export function SupplierAuditsPanel({ notify }: { notify: Notify }) {
                     const a = closedAudits.find((x) => x.id === e.target.value);
                     setDecision((d) => ({ ...d, audit: e.target.value, expiry: a?.next_audit_date ?? d.expiry }));
                   }}
-                  options={[{ value: "", label: closedAudits.length ? "Select closed audit" : "No closed audit for this supplier" },
+                  options={[{ value: "", label: closedAudits.length ? tx("Select closed audit") : tx("No closed audit for this supplier") },
                     ...closedAudits.map((a) => ({ value: a.id, label: `${a.audit_ref} — ${a.result} ${a.score_pct ?? ""}%` }))]} />
                 <Input id="decision-expiry" label={tx("Valid until")} type="date" min={addDaysIso(1)} value={decision.expiry}
                   max={closedAudits.find((a) => a.id === decision.audit)?.next_audit_date ?? undefined}
@@ -174,7 +174,7 @@ export function SupplierAuditsPanel({ notify }: { notify: Notify }) {
         )}
       </Section>
 
-      <Section title={tx("Supplier audits")} description="Schedule an audit against a standard, score every item (a failed item needs a finding), then close it. Closing raises a supplier CAPA for failed items.">
+      <Section title={tx("Supplier audits")} description={tx("Schedule an audit against a standard, score every item (a failed item needs a finding), then close it. Closing raises a supplier CAPA for failed items.")}>
         {audits.error ? <LoadError error={audits.error} /> : (
           <Table<SupplierAudit>
             keyField="id"

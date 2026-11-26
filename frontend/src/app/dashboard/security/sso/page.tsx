@@ -6,7 +6,7 @@ import { tx } from "@/lib/i18n/core";
 
 type Cfg = { name: string; issuer: string; client_id: string; client_secret?: string; scopes: string; role_mapping: Record<string, string>; enforced: boolean; break_glass: string[]; active: boolean; has_secret?: boolean; redirect_uri?: string };
 const EMPTY: Cfg = { name: "Company IdP", issuer: "https://", client_id: "", scopes: "openid email profile groups", role_mapping: {}, enforced: false, break_glass: [], active: false };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 const inp = "border rounded px-2 py-1 w-full text-xs";
 
 export default function SSOPage() {
@@ -28,7 +28,7 @@ export default function SSOPage() {
       <h2 className="text-lg font-semibold">{tx("Single sign-on")}</h2>
       {status && <p className="text-xs text-gray-500">{tx("OpenID Connect:")} {status.oidc.toLowerCase().replace("_", " ")}{tx(". SAML:")} {status.saml.toLowerCase().replace("_", " ")} ({status.saml_note})</p>}
       {msg && <p role="status" className="text-xs">{msg}</p>}
-      {field("name", "Name shown on the login page")}
+      {field("name", tx("Name shown on the login page"))}
       {field("issuer", "Issuer URL")}
       {field("client_id", "Client ID")}
       <label className="text-xs block">{tx("Client secret")} {cfg.has_secret ? tx("(stored; leave empty to keep)") : ""}<input aria-label={tx("Client secret")} type="password" className={inp} value={cfg.client_secret ?? ""} onChange={(e) => setCfg({ ...cfg, client_secret: e.target.value })} /></label>
@@ -63,7 +63,7 @@ function SamlSection() {
   }, []);
   const save = () => {
     const role_mapping = Object.fromEntries(map.split("\n").map((l) => l.split("=").map((x) => x.trim())).filter((x) => x.length === 2 && x[0] && x[1]));
-    apiClient.put("/api/v1/sso/saml/config", { ...f, idp_x509_cert: f.idp_x509_cert || undefined, role_mapping }).then((r) => { setM("SAML saved."); setO({ ...o!, config: r.data }); }).catch((e) => setM(err(e)));
+    apiClient.put("/api/v1/sso/saml/config", { ...f, idp_x509_cert: f.idp_x509_cert || undefined, role_mapping }).then((r) => { setM(tx("SAML saved.")); setO({ ...o!, config: r.data }); }).catch((e) => setM(err(e)));
   };
   const t = (k: keyof Saml, label: string) => <label className="text-xs block">{label}<input aria-label={label} className={inp} value={String(f[k] ?? "")} onChange={(e) => setF({ ...f, [k]: k === "clock_skew_seconds" ? Number(e.target.value) : e.target.value })} /></label>;
   return (
@@ -75,14 +75,14 @@ function SamlSection() {
       {o?.config && <div className="text-xs border rounded p-2 bg-gray-50 space-y-1">
         <div>{tx("Give the IdP administrator: SP entity ID")} <code>{o.config.sp_entity_id}</code>{tx(", ACS URL")} <code>{o.config.acs_url}</code> {tx("(HTTP-POST), or the metadata:")} <a className="underline" href={o.config.metadata_url} target="_blank" rel="noreferrer">{o.config.metadata_url}</a></div>
         <div>{tx("IdP certificate:")} {o.config.certificate.subject}{tx(", valid until")} {new Date(o.config.certificate.not_after).toLocaleDateString()}{o.config.certificate.expired ? tx(" (EXPIRED)") : ""}{tx(", SHA-256")} {o.config.certificate.sha256.slice(0, 16)}…</div></div>}
-      {t("name", "SAML name shown on the login page")}
-      {t("idp_entity_id", "IdP entity ID")}
-      {t("idp_sso_url", "IdP single sign-on URL (HTTP-Redirect)")}
+      {t("name", tx("SAML name shown on the login page"))}
+      {t("idp_entity_id", tx("IdP entity ID"))}
+      {t("idp_sso_url", tx("IdP single sign-on URL (HTTP-Redirect)"))}
       <label className="text-xs block">{tx("IdP signing certificate (PEM, public part only)")}{o?.config ? tx(" — paste again only to replace it") : ""}<textarea aria-label={tx("IdP certificate")} className={`${inp} font-mono`} rows={4} value={f.idp_x509_cert} onChange={(e) => setF({ ...f, idp_x509_cert: e.target.value })} /></label>
-      {t("sp_entity_id", "SP entity ID")}
-      {t("email_attribute", "E-mail attribute name")}
-      {t("groups_attribute", "Groups attribute name")}
-      {t("clock_skew_seconds", "Allowed clock skew (seconds, max 120)")}
+      {t("sp_entity_id", tx("SP entity ID"))}
+      {t("email_attribute", tx("E-mail attribute name"))}
+      {t("groups_attribute", tx("Groups attribute name"))}
+      {t("clock_skew_seconds", tx("Allowed clock skew (seconds, max 120)"))}
       <label className="text-xs block">{tx("Role mapping (idp-group=ERP role name, one per line)")}<textarea aria-label={tx("SAML role mapping")} className={inp} rows={3} value={map} onChange={(e) => setMap(e.target.value)} /></label>
       <label className="text-xs flex gap-2 items-center"><input type="checkbox" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} /> {tx("Active (shows the SAML button on the login page)")}</label>
       <p className="text-xs text-gray-500">{tx("Only users that already exist in the ERP (same e-mail) can sign in; privileged accounts keep password + authenticator app.")}</p>

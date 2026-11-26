@@ -359,43 +359,43 @@ function RecordModal({
           </div>
 
           {/* Flow */}
-          {field("Influent Flow (m³/h)", "influent_flow_m3h")}
-          {field("Effluent Flow (m³/h)", "effluent_flow_m3h")}
+          {field(tx("Influent Flow (m³/h)"), "influent_flow_m3h")}
+          {field(tx("Effluent Flow (m³/h)"), "effluent_flow_m3h")}
 
           {/* pH */}
-          {field("Influent pH", "influent_ph")}
-          {field("Effluent pH", "effluent_ph")}
+          {field(tx("Influent pH"), "influent_ph")}
+          {field(tx("Effluent pH"), "effluent_ph")}
 
           {/* COD */}
-          {field("Influent COD (mg/L)", "influent_cod_mgl")}
-          {field("Effluent COD (mg/L)", "effluent_cod_mgl")}
+          {field(tx("Influent COD (mg/L)"), "influent_cod_mgl")}
+          {field(tx("Effluent COD (mg/L)"), "effluent_cod_mgl")}
 
           {/* BOD */}
-          {field("Influent BOD (mg/L)", "influent_bod_mgl")}
-          {field("Effluent BOD (mg/L)", "effluent_bod_mgl")}
+          {field(tx("Influent BOD (mg/L)"), "influent_bod_mgl")}
+          {field(tx("Effluent BOD (mg/L)"), "effluent_bod_mgl")}
 
           {/* TSS */}
-          {field("Influent TSS (mg/L)", "influent_tss_mgl")}
-          {field("Effluent TSS (mg/L)", "effluent_tss_mgl")}
+          {field(tx("Influent TSS (mg/L)"), "influent_tss_mgl")}
+          {field(tx("Effluent TSS (mg/L)"), "effluent_tss_mgl")}
 
           {/* Other process */}
-          {field("Conductivity (µS/cm)", "conductivity_us_cm")}
+          {field(tx("Conductivity (µS/cm)"), "conductivity_us_cm")}
           {field("Temperature (°C)", "temperature_c")}
-          {field("Dissolved Oxygen (mg/L)", "do_mgl")}
-          {field("MLSS (mg/L)", "mlss_mgl")}
+          {field(tx("Dissolved Oxygen (mg/L)"), "do_mgl")}
+          {field(tx("MLSS (mg/L)"), "mlss_mgl")}
 
           {/* Blower */}
-          {field("Blower Runtime (h)", "aeration_runtime_hours")}
-          {field("Blower Power (kW)", "blower_power_kw")}
+          {field(tx("Blower Runtime (h)"), "aeration_runtime_hours")}
+          {field(tx("Blower Power (kW)"), "blower_power_kw")}
 
           {/* Dosing */}
-          {field("Nutrient Dose (kg)", "nutrient_dose_kg")}
-          {field("Antifoam Dose (kg)", "antifoam_dose_kg")}
+          {field(tx("Nutrient Dose (kg)"), "nutrient_dose_kg")}
+          {field(tx("Antifoam Dose (kg)"), "antifoam_dose_kg")}
 
           {/* Sludge */}
-          {field("Sludge Produced (kg)", "sludge_produced_kg")}
-          {field("Sludge Volume (m³)", "sludge_volume_m3")}
-          {field("Sludge Disposal (kg)", "sludge_disposal_qty_kg")}
+          {field(tx("Sludge Produced (kg)"), "sludge_produced_kg")}
+          {field(tx("Sludge Volume (m³)"), "sludge_volume_m3")}
+          {field(tx("Sludge Disposal (kg)"), "sludge_disposal_qty_kg")}
 
           {/* Permit */}
           <div className="flex flex-col gap-1 col-span-2">
@@ -530,27 +530,27 @@ export default function WastewaterPage() {
       {
         key: "ph", active: kpis.alarm_ph_out_of_range, severity: "ALERT",
         label: tx("pH Out of Range"),
-        detail: `Effluent pH outside [6.0 – 9.0]. Avg: ${n(kpis.avg_effluent_ph, 2)}`,
+        detail: tx("Effluent pH outside [6.0 – 9.0]. Avg: {n}", { n: n(kpis.avg_effluent_ph, 2) }),
       },
       {
         key: "cod", active: kpis.alarm_cod_high, severity: "CRITICAL",
         label: tx("COD Exceedance"),
-        detail: `Avg effluent COD ${n(kpis.avg_effluent_cod)} mg/L exceeds 150 mg/L limit.`,
+        detail: tx("Avg effluent COD {n} mg/L exceeds 150 mg/L limit.", { n: n(kpis.avg_effluent_cod) }),
       },
       {
         key: "do", active: kpis.alarm_low_do, severity: "WARNING",
         label: tx("Low Dissolved Oxygen"),
-        detail: `Avg DO ${n(kpis.avg_do_mgl)} mg/L is below 1.5 mg/L minimum.`,
+        detail: tx("Avg DO {n} mg/L is below 1.5 mg/L minimum.", { n: n(kpis.avg_do_mgl) }),
       },
       {
         key: "blower", active: kpis.alarm_blower_failure, severity: "CRITICAL",
         label: tx("Blower Failure"),
-        detail: "One or more records show zero aeration runtime.",
+        detail: tx("One or more records show zero aeration runtime."),
       },
       {
         key: "overflow", active: kpis.alarm_overflow_risk, severity: "ALERT",
         label: tx("Overflow Risk"),
-        detail: "Influent flow exceeded overflow threshold (500 m³/h).",
+        detail: tx("Influent flow exceeded overflow threshold (500 m³/h)."),
       },
       {
         key: "nc", active: kpis.alarm_non_compliant_discharge, severity: "CRITICAL",
@@ -567,7 +567,7 @@ export default function WastewaterPage() {
       { name: "Compliant",     value: compliance.compliant,     fill: COMPLIANCE_CHART_COLORS.COMPLIANT },
       { name: "Non-Compliant", value: compliance.non_compliant, fill: COMPLIANCE_CHART_COLORS.NON_COMPLIANT },
       { name: "Borderline",    value: compliance.borderline,    fill: COMPLIANCE_CHART_COLORS.BORDERLINE },
-      { name: "Not Tested",    value: compliance.not_tested,    fill: COMPLIANCE_CHART_COLORS.NOT_TESTED },
+      { name: tx("Not Tested"),    value: compliance.not_tested,    fill: COMPLIANCE_CHART_COLORS.NOT_TESTED },
     ].filter(d => d.value > 0);
   }, [compliance]);
 
@@ -657,7 +657,7 @@ export default function WastewaterPage() {
           <KPICard
             label={tx("Treatment Cost / m³")}
             value={kpis.treatment_cost_per_m3 != null ? `$${n(kpis.treatment_cost_per_m3, 4)}` : "—"}
-            sub={kpis.treatment_cost_total != null ? `Total $${n(kpis.treatment_cost_total, 2)}` : "No cost data"}
+            sub={kpis.treatment_cost_total != null ? tx("Total ${n}", { n: n(kpis.treatment_cost_total, 2) }) : tx("No cost data")}
             accent="border-orange-700"
           />
           <KPICard
@@ -666,7 +666,7 @@ export default function WastewaterPage() {
             sub={`Total power: ${n(kpis.total_power_kwh, 1)} kWh`}
             accent="border-blue-700"
             flag={kpis.alarm_blower_failure}
-            flagMsg={kpis.alarm_blower_failure ? "Blower failure detected" : undefined}
+            flagMsg={kpis.alarm_blower_failure ? tx("Blower failure detected") : undefined}
           />
           <KPICard
             label={tx("Sludge Generation Rate")}
@@ -680,7 +680,7 @@ export default function WastewaterPage() {
             sub="Aeration tank"
             accent="border-violet-700"
             flag={kpis.alarm_low_do}
-            flagMsg={kpis.alarm_low_do ? "Below 1.5 mg/L minimum" : undefined}
+            flagMsg={kpis.alarm_low_do ? tx("Below 1.5 mg/L minimum") : undefined}
           />
           <KPICard
             label={tx("Non-Compliance Risk")}
@@ -688,7 +688,7 @@ export default function WastewaterPage() {
             sub="Based on last 7 days"
             accent={kpis.non_compliance_risk ? "border-red-700" : "border-slate-700"}
             flag={kpis.non_compliance_risk}
-            flagMsg={kpis.non_compliance_risk ? "Recent non-compliant trend" : undefined}
+            flagMsg={kpis.non_compliance_risk ? tx("Recent non-compliant trend") : undefined}
           />
         </div>
       ) : null}

@@ -225,7 +225,7 @@ function ShipmentLinkageModal({ shipment, onClose }: { shipment: IntlShipment; o
     },
   });
   const mutationError = addPo.error || removePo.error || addContainer.error;
-  const errorMessage = mutationError instanceof Error ? mutationError.message : "Could not save the shipment linkage.";
+  const errorMessage = mutationError instanceof Error ? mutationError.message : tx("Could not save the shipment linkage.");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/40 p-4" role="presentation">
@@ -342,7 +342,7 @@ function ShipmentOwnershipPanel({ shipment, link, canEdit }: {
   const canRecordNow = OWNERSHIP_STATUS_FLOW.includes(shipment.status);
 
   return (
-    <div className="space-y-2 rounded bg-gray-50 p-3" aria-label={`Inventory ownership for ${link.po_no || link.po_id}`}>
+    <div className="space-y-2 rounded bg-gray-50 p-3" aria-label={tx("Inventory ownership for {po_no}", { po_no: link.po_no || link.po_id })}>
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="font-medium">{tx("Inventory owner:")}</span>
         <Badge label={ownerLabel(link.inventory_owner_status)} variant={link.inventory_owner_status === "UNCONFIRMED" ? "yellow" : "blue"} />

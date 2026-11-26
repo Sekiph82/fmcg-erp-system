@@ -171,7 +171,7 @@ function AnalyticsHubTab() {
         <div>
           <h1 className="text-xl font-bold text-slate-100">{tx("Analytics & BI")}</h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            {data ? `Updated ${new Date(data.as_of).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : tx("Daily KPI snapshot")}
+            {data ? tx("Updated {date}", { date: new Date(data.as_of).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }) : tx("Daily KPI snapshot")}
           </p>
         </div>
 
@@ -231,7 +231,7 @@ export default function AnalyticsPage() {
   return (
     <ModuleWorkspace
       title={tx("Analytics")}
-      description="KPIs, module analytics, reports, report builder"
+      description={tx("KPIs, module analytics, reports, report builder")}
       permission="analytics.view"
       tabs={tabs}
       defaultTab="overview"

@@ -203,7 +203,7 @@ export default function BOMDetailPage() {
               <dt className="text-gray-400">{tx("Code")}</dt><dd className="font-mono text-gray-700">{bom.bom_code}</dd>
               <dt className="text-gray-400">{tx("Product")}</dt><dd>{bom.product_name || "—"}</dd>
               <dt className="text-gray-400">{tx("Base Qty")}</dt><dd>{Number(bom.base_qty).toLocaleString()} {bom.base_uom}</dd>
-              <dt className="text-gray-400">{tx("Expected Process Yield")}</dt><dd>{bom.expected_process_yield_pct == null ? "—" : `${Number(bom.expected_process_yield_pct).toLocaleString()}% of input`}</dd>
+              <dt className="text-gray-400">{tx("Expected Process Yield")}</dt><dd>{bom.expected_process_yield_pct == null ? "—" : tx("{expected_process_yield_pct}% of input", { expected_process_yield_pct: Number(bom.expected_process_yield_pct).toLocaleString() })}</dd>
               <dt className="text-gray-400">{tx("Version")}</dt><dd>{tx("v")}{bom.version_no} {tx("(rev")} {bom.revision_no})</dd>
               <dt className="text-gray-400">{tx("Effective From")}</dt><dd>{bom.effective_from ? new Date(bom.effective_from).toLocaleDateString() : "—"}</dd>
               <dt className="text-gray-400">{tx("Effective To")}</dt><dd>{bom.effective_to ? new Date(bom.effective_to).toLocaleDateString() : "—"}</dd>
@@ -240,7 +240,7 @@ export default function BOMDetailPage() {
                 <input
                   type="number"
                   className="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-sm"
-                  placeholder={`Target qty (base: ${Number(bom.base_qty).toLocaleString()} ${bom.base_uom})`}
+                  placeholder={tx("Target qty (base: {base_qty} {base_uom})", { base_qty: Number(bom.base_qty).toLocaleString(), base_uom: bom.base_uom })}
                   value={scalingQty}
                   onChange={(e) => setScalingQty(e.target.value)}
                 />
@@ -477,7 +477,7 @@ export default function BOMDetailPage() {
                 {[
                   ["allergen_flag", "Allergen"],
                   ["critical_component", "Critical"],
-                  ["qc_required", "QC Required"],
+                  ["qc_required", tx("QC Required")],
                   ["is_optional", "Optional"],
                   ["fixed_consumption", "Fixed"],
                 ].map(([field, label]) => (

@@ -198,9 +198,9 @@ export default function WhatsAppPage() {
       {/* Tabs */}
       <div className="flex gap-1 border-b">
         {([
-          { key: "conversations", label: "Conversations" },
-          { key: "templates",    label: `Templates (${templates.length})` },
-          { key: "config",       label: "Config" },
+          { key: "conversations", label: tx("Conversations") },
+          { key: "templates",    label: tx("Templates ({length})", { length: templates.length }) },
+          { key: "config",       label: tx("Config") },
         ] as const).map((t) => (
           <button
             key={t.key}

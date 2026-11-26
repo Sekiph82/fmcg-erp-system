@@ -30,10 +30,7 @@ def test_parse_html_and_jsonld_validation():
     assert not cr.HREFLANG_RE.match("xx_bad") and cr.HREFLANG_RE.match("sw-KE") and cr.HREFLANG_RE.match("x-default")
 
 
-def test_lighthouse_parser_and_origin():
-    got = cr.parse_lighthouse({"audits": {"largest-contentful-paint": {"numericValue": 2300.5}, "cumulative-layout-shift": {"numericValue": 0.02}},
-                               "categories": {"performance": {"score": 0.91}}})
-    assert got["lcp_ms"] == 2300.5 and got["cls"] == 0.02 and got["tbt_ms"] is None
+def test_origin_of():
     assert cr.origin_of("https://WWW.Example.com:8443/a?b=1") == "https://www.example.com:8443"
     for bad in ("ftp://x.com", "https://u:p@x.com", "notaurl"):
         with pytest.raises(cr.CrawlError):
@@ -147,21 +144,12 @@ async def test_lab_runs_when_tool_present(monkeypatch):
     use_sim(monkeypatch)
     await sim_control({"reset": True})
     u = await _setup()
-    monkeypatch.setattr(cr, "lab_tool", lambda: "lighthouse")
-    monkeypatch.setattr(cr.shutil, "which", lambda n: "/fake/lighthouse")
-
-    class P_:
-        async def communicate(self):
-            return b'{"audits": {"largest-contentful-paint": {"numericValue": 1900}}}', b""
-
-    async def fake_exec(*a, **k):
-        assert a[1] == SIM + "/" and "--output=json" in a
-        return P_()
-    monkeypatch.setattr(cr.asyncio, "create_subprocess_exec", fake_exec)
+    from tests.test_m51_s01_t011_review_fixes import fake_playwright
+    fake_playwright(monkeypatch, {"lcp": 1900, "cls": 0.01})
     async with client_for(u) as c:
         await _allow(c, SIM)
         lab = (await c.post(f"{P}/vitals/lab", json={"url": SIM + "/"})).json()
-        assert lab["state"] == "OK" and lab["tool"] == "lighthouse" and lab["metrics"]["lcp_ms"] == 1900
+        assert lab["state"] == "OK" and lab["tool"] == "playwright" and lab["metrics"]["lcp_ms"] == 1900
 
 
 @DB

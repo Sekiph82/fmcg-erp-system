@@ -102,15 +102,15 @@ export default function SPAccountDetail() {
           ) : (
             <div className="space-y-2 text-sm">
               {[
-                ["Supplier ID", account.supplier_id],
-                ["Contact Name", account.primary_contact_name],
-                ["Email", account.primary_contact_email],
-                ["Phone", account.primary_contact_phone],
-                ["Currency", account.default_currency],
-                ["Language", account.preferred_language],
-                ["Timezone", account.timezone],
-                ["Can View Prices", account.can_view_prices ? "Yes" : "No"],
-                ["Can View Payment", account.can_view_payment ? "Yes" : "No"],
+                [tx("Supplier ID"), account.supplier_id],
+                [tx("Contact Name"), account.primary_contact_name],
+                [tx("Email"), account.primary_contact_email],
+                [tx("Phone"), account.primary_contact_phone],
+                [tx("Currency"), account.default_currency],
+                [tx("Language"), account.preferred_language],
+                [tx("Timezone"), account.timezone],
+                [tx("Can View Prices"), account.can_view_prices ? "Yes" : "No"],
+                [tx("Can View Payment"), account.can_view_payment ? "Yes" : "No"],
               ].map(([k, v]) => (
                 <div key={String(k)} className="flex justify-between">
                   <span className="text-gray-500">{k}</span>

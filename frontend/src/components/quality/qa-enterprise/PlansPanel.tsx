@@ -21,11 +21,11 @@ export function PlansPanel({ notify }: { notify: Notify }) {
   const [coverageFor, setCoverageFor] = useState({ plan_id: "", ref_type: "production_order_id", ref_id: "" });
   const [coverage, setCoverage] = useState<PlanCoverage | null>(null);
 
-  const createPlan = useAction(qaEnterpriseApi.createPlan, notify, (p) => `QC plan ${p.plan_code} v${p.version} saved as draft`, ["qa-plans"]);
-  const activate = useAction(qaEnterpriseApi.activatePlan, notify, (p) => `QC plan ${p.plan_code} v${p.version} is active`, ["qa-plans"]);
+  const createPlan = useAction(qaEnterpriseApi.createPlan, notify, (p) => tx("QC plan {plan_code} v{version} saved as draft", { plan_code: p.plan_code, version: p.version }), ["qa-plans"]);
+  const activate = useAction(qaEnterpriseApi.activatePlan, notify, (p) => tx("QC plan {plan_code} v{version} is active", { plan_code: p.plan_code, version: p.version }), ["qa-plans"]);
   const checkCoverage = useAction(
     () => qaEnterpriseApi.planCoverage(coverageFor.plan_id, { [coverageFor.ref_type]: coverageFor.ref_id.trim() }),
-    notify, (c) => (c.complete ? "All mandatory steps are satisfied" : "Plan coverage is incomplete"), [],
+    notify, (c) => (c.complete ? tx("All mandatory steps are satisfied") : tx("Plan coverage is incomplete")), [],
   );
 
   if (!perms.canView) return <ReadOnlyNotice>{tx("QC plans require quality.view.")}</ReadOnlyNotice>;
@@ -35,7 +35,7 @@ export function PlansPanel({ notify }: { notify: Notify }) {
 
   return (
     <div className="space-y-4">
-      <Section title={tx("Quality control plans")} description="Ordered inspection steps per item. A second person activates a plan; the previous active version retires.">
+      <Section title={tx("Quality control plans")} description={tx("Ordered inspection steps per item. A second person activates a plan; the previous active version retires.")}>
         {plans.error ? <LoadError error={plans.error} /> : (
           <Table
             keyField="id"
@@ -103,7 +103,7 @@ export function PlansPanel({ notify }: { notify: Notify }) {
         )}
       </Section>
 
-      <Section title={tx("Plan coverage")} description="Which mandatory steps are satisfied, missing or failed for one production order or lot.">
+      <Section title={tx("Plan coverage")} description={tx("Which mandatory steps are satisfied, missing or failed for one production order or lot.")}>
         <form className="grid gap-3 md:grid-cols-4" onSubmit={(e) => {
           e.preventDefault();
           checkCoverage.mutate(undefined, { onSuccess: setCoverage });

@@ -23,7 +23,7 @@ function TicketFiles({ ticketId }: { ticketId: string }) {
   const [shareNew, setShareNew] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const refresh = () => qc.invalidateQueries({ queryKey: key });
-  const msg = (e: unknown) => ((e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? "Request failed.");
+  const msg = (e: unknown) => ((e as { response?: { data?: { detail?: string } } }).response?.data?.detail ?? tx("Request failed."));
   if (files.isError) return null;  // no quality access: the section is hidden
   return (
     <div className="border-t pt-3 space-y-2">
@@ -498,7 +498,7 @@ export default function HelpdeskPage() {
   return (
     <ModuleWorkspace
       title={tx("Helpdesk")}
-      description="Support tickets, escalations, SLA tracking"
+      description={tx("Support tickets, escalations, SLA tracking")}
       permission="crm.view|sales.view|quality.view|consumer_complaints.view"
       tabs={tabs}
       defaultTab="all"

@@ -71,3 +71,6 @@ scripts/graphify-out/
 
 # local phone-test certificates (scripts/dev_lan_tls.py)
 .lan-tls/
+
+# per-run Next build/dev output dirs (NEXT_DIST_DIR=.next-<tag>)
+frontend/.next-*/

@@ -57,7 +57,7 @@ export default function POSPage() {
     onError: (e: any, data: any) => {
       if (isOffline(e)) {  // no connection: keep the sale on this device; Sync sends it (same offline_id, never twice)
         queue("transactions", data);
-        setCreatedTxn({ offline: true, offline_id: data.offline_id, txn_no: "Saved offline — not yet synced", total_amount: +totals.total.toFixed(2) });
+        setCreatedTxn({ offline: true, offline_id: data.offline_id, txn_no: tx("Saved offline — not yet synced"), total_amount: +totals.total.toFixed(2) });
         setStep("payment");
         return;
       }
@@ -246,7 +246,7 @@ export default function POSPage() {
 
           <button onClick={handlePay} disabled={payMut.isPending}
             className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-white text-sm disabled:opacity-50">
-            {payMut.isPending ? tx("Processing…") : `Collect KES ${createdTxn.total_amount?.toLocaleString()}`}
+            {payMut.isPending ? tx("Processing…") : tx("Collect KES {total_amount}", { total_amount: createdTxn.total_amount?.toLocaleString() })}
           </button>
 
           <button onClick={reset} className="w-full py-2 text-slate-500 text-sm hover:text-slate-300">{tx("← Back to sale")}</button>

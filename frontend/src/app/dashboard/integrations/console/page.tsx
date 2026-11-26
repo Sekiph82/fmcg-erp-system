@@ -2,7 +2,7 @@
 // Integration console (M36.S05.T003): evidence-based health per connector — never a fake "synced".
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 interface Row {
   provider: string; label: string; capability: string; health: string; credentials: "SET" | "NOT_SET" | null;
@@ -11,14 +11,14 @@ interface Row {
 }
 interface Console { connectors: Row[]; mappings: Record<string, Record<string, unknown>>; generated_at: string }
 
-const HEALTH: Record<string, [string, string]> = {
+const HEALTH: Record<string, [string, string]> = lx(() => ({
   HEALTHY: ["Working", "bg-emerald-100 text-emerald-800"],
   FAILING: ["Failing", "bg-red-100 text-red-700"],
-  NO_DATA: ["No runs yet", "bg-gray-100 text-gray-700"],
-  NOT_CONNECTED: ["Not connected", "bg-amber-100 text-amber-800"],
-  STUB_ONLY: ["Not available", "bg-gray-100 text-gray-500"],
-  SIMULATED: ["Simulation only", "bg-blue-50 text-blue-700"],
-};
+  NO_DATA: [tx("No runs yet"), "bg-gray-100 text-gray-700"],
+  NOT_CONNECTED: [tx("Not connected"), "bg-amber-100 text-amber-800"],
+  STUB_ONLY: [tx("Not available"), "bg-gray-100 text-gray-500"],
+  SIMULATED: [tx("Simulation only"), "bg-blue-50 text-blue-700"],
+}));
 const when = (v: string | null) => (v ? new Date(v).toLocaleString() : "—");
 
 export default function IntegrationConsolePage() {
@@ -37,10 +37,10 @@ export default function IntegrationConsolePage() {
     try {
       const res = (await apiClient.post(`/api/v1/integrations/console/${r.provider}/sync`)).data as { status: string; result: Record<string, number>; error: string | null };
       const detail = Object.entries(res.result ?? {}).map(([k, v]) => `${k} ${v}`).join(", ");
-      setMsg({ ok: res.status === "SUCCESS", text: res.status === "SUCCESS" ? `${r.label}: done${detail ? ` (${detail})` : ""}.` : `${r.label} failed: ${res.error ?? "see the log"}` });
+      setMsg({ ok: res.status === "SUCCESS", text: res.status === "SUCCESS" ? `${r.label}: done${detail ? ` (${detail})` : ""}.` : tx("{label} failed: {error}", { label: r.label, error: res.error ?? "see the log" }) });
     } catch (e: unknown) {
       const d = (e as { response?: { data?: { detail?: unknown; retry_at?: string } } })?.response?.data;
-      const text = typeof d?.detail === "string" ? d.detail : (d?.detail as { detail?: string })?.detail ?? "Sync was refused.";
+      const text = typeof d?.detail === "string" ? d.detail : (d?.detail as { detail?: string })?.detail ?? tx("Sync was refused.");
       setMsg({ ok: false, text: d?.retry_at ? `${text} Next try after ${when(d.retry_at)}.` : text });
     } finally { setBusy(null); await load(); }
   };

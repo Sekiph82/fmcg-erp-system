@@ -5,23 +5,23 @@ import { useParams } from "next/navigation";
 import { crmApi, type CustomerTimeline, type TimelineEvent } from "@/lib/crm_pipeline";
 import { CopilotPanel } from "@/components/crm/CopilotPanel";
 import { QuickNote } from "@/components/crm/QuickNote";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
-const TYPE_LABELS: Record<string, string> = {
-  crm_record: "CRM", crm_activity: "Activity", interaction: "Interaction", visit: "Visit", field_visit: "Field visit",
-  call: "Call", meeting: "Meeting", quote: "Quote", order: "Order", invoice: "Invoice", payment: "Payment",
-  ticket: "Ticket", email: "E-mail",
-};
-const SOURCE_LABELS: Record<string, string> = {
-  crm: "CRM records", interactions: "interactions", calls_meetings: "calls and meetings", sales: "quotes, orders, invoices and payments",
+const TYPE_LABELS: Record<string, string> = lx(() => ({
+  crm_record: "CRM", crm_activity: tx("Activity"), interaction: tx("Interaction"), visit: tx("Visit"), field_visit: tx("Field visit"),
+  call: tx("Call"), meeting: tx("Meeting"), quote: tx("Quote"), order: tx("Order"), invoice: tx("Invoice"), payment: tx("Payment"),
+  ticket: tx("Ticket"), email: tx("E-mail"),
+}));
+const SOURCE_LABELS: Record<string, string> = lx(() => ({
+  crm: tx("CRM records"), interactions: "interactions", calls_meetings: "calls and meetings", sales: "quotes, orders, invoices and payments",
   tickets: "support tickets", email: "e-mail",
-};
+}));
 
 function errorText(e: unknown) {
   const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
   if (typeof detail === "string") return detail;
   if (detail && typeof detail === "object" && "detail" in detail) return String((detail as { detail: unknown }).detail);
-  return "Could not load the timeline.";
+  return tx("Could not load the timeline.");
 }
 
 export default function CustomerTimelinePage() {

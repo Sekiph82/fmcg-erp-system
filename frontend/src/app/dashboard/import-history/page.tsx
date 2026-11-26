@@ -125,9 +125,9 @@ export default function ImportHistoryPage() {
 
 function HistoryRow({ row }: { row: ImportHistoryEntry }) {
   const modeName: Record<string, string> = {
-    validate_only:       "Validate only",
-    import_valid_only:   "Valid rows",
-    strict:              "Strict",
+    validate_only:       tx("Validate only"),
+    import_valid_only:   tx("Valid rows"),
+    strict:              tx("Strict"),
   };
 
   return (

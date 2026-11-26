@@ -251,7 +251,7 @@ function ProcurementPRsTab() {
         </form>
       </Modal>
 
-      <Modal open={!!convertPr} onClose={() => setConvertPr(null)} title={`Create purchase order from ${convertPr?.pr_no ?? ""}`}>
+      <Modal open={!!convertPr} onClose={() => setConvertPr(null)} title={tx("Create purchase order from {pr_no}", { pr_no: convertPr?.pr_no ?? "" })}>
         <form onSubmit={(e) => { e.preventDefault(); convert.mutate(); }} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <Input label={tx("PO No *")} value={conv.po_no} onChange={(e) => setConv((c) => ({ ...c, po_no: e.target.value }))} required />
@@ -298,7 +298,7 @@ export default function ProcurementPage() {
   return (
     <ModuleWorkspace
       title={tx("Procurement")}
-      description="Purchase requests, orders, RFQ, suppliers, subcontracting"
+      description={tx("Purchase requests, orders, RFQ, suppliers, subcontracting")}
       permission="procurement.view"
       tabs={tabs}
       defaultTab="purchase-requests"

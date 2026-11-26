@@ -601,7 +601,7 @@ export default function InventoryPage() {
   return (
     <ModuleWorkspace
       title={tx("Inventory")}
-      description="Stock ledger, movements, cycle counts, shelf life, traceability"
+      description={tx("Stock ledger, movements, cycle counts, shelf life, traceability")}
       permission="inventory.view"
       tabs={tabs}
       defaultTab="stock"

@@ -409,7 +409,7 @@ export default function SteamPage() {
           <KPICard
             label={tx("Boiler Efficiency")}
             value={K.avg_efficiency_pct != null ? `${n(K.avg_efficiency_pct, 1)}%` : "—"}
-            sub={K.avg_boiler_load_pct != null ? `Load: ${n(K.avg_boiler_load_pct, 1)}%` : undefined}
+            sub={K.avg_boiler_load_pct != null ? tx("Load: {n}%", { n: n(K.avg_boiler_load_pct, 1) }) : undefined}
             flag={K.flag_low_efficiency}
             flagMsg="Below 80% threshold"
             accent="border-green-500/40"
@@ -439,7 +439,7 @@ export default function SteamPage() {
           <KPICard
             label={tx("Availability")}
             value={K.availability_pct != null ? `${n(K.availability_pct, 1)}%` : "—"}
-            sub={K.total_burner_hours != null ? `${n(K.total_burner_hours, 1)} burner hrs` : undefined}
+            sub={K.total_burner_hours != null ? tx("{n} burner hrs", { n: n(K.total_burner_hours, 1) }) : undefined}
             accent="border-violet-500/40"
           />
           <KPICard
@@ -451,7 +451,7 @@ export default function SteamPage() {
           <KPICard
             label={tx("Steam Cost / Ton")}
             value={K.steam_cost_per_ton != null ? `$${n(K.steam_cost_per_ton, 2)}` : "—"}
-            sub={K.steam_cost_total != null ? `Total: $${n(K.steam_cost_total, 0)}` : undefined}
+            sub={K.steam_cost_total != null ? tx("Total: ${n}", { n: n(K.steam_cost_total, 0) }) : undefined}
             accent="border-emerald-500/40"
           />
           <KPICard
@@ -744,31 +744,31 @@ export default function SteamPage() {
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-2 text-sm">
               {[
-                ["Shift",          viewRec.shift_ref],
-                ["Department",     viewRec.department],
-                ["Period (h)",     viewRec.period_hours],
-                ["Steam Pressure", viewRec.steam_pressure_bar != null ? `${viewRec.steam_pressure_bar} bar` : null],
-                ["Steam Temp",     viewRec.steam_temp_c != null ? `${viewRec.steam_temp_c} °C` : null],
-                ["Steam Flow",     viewRec.steam_flow_kgh != null ? `${viewRec.steam_flow_kgh} kg/h` : null],
-                ["Steam Quality",  viewRec.steam_quality_pct != null ? `${viewRec.steam_quality_pct}%` : null],
-                ["Steam Generated",viewRec.steam_generated_kg != null ? `${n(viewRec.steam_generated_kg, 0)} kg` : null],
-                ["Feedwater",      viewRec.feedwater_consumed_m3 != null ? `${viewRec.feedwater_consumed_m3} m³` : null],
-                ["Condensate",     viewRec.condensate_returned_m3 != null ? `${viewRec.condensate_returned_m3} m³` : null],
-                ["Blowdown %",     viewRec.blowdown_pct != null ? `${viewRec.blowdown_pct}%` : null],
-                ["Blowdown Vol.",  viewRec.blowdown_volume_litres != null ? `${viewRec.blowdown_volume_litres} L` : null],
-                ["Fuel Type",      viewRec.fuel_type],
-                ["Fuel Consumed",  viewRec.fuel_consumption != null ? `${viewRec.fuel_consumption} ${viewRec.fuel_unit ?? ""}` : null],
-                ["Efficiency",     viewRec.boiler_efficiency_pct != null ? `${viewRec.boiler_efficiency_pct}%` : null],
-                ["Flue Temp",      viewRec.flue_gas_temp_c != null ? `${viewRec.flue_gas_temp_c} °C` : null],
-                ["O₂ %",           viewRec.o2_pct],
-                ["CO₂ %",          viewRec.co2_pct],
-                ["Boiler Load",    viewRec.boiler_load_pct != null ? `${viewRec.boiler_load_pct}%` : null],
-                ["Burner Hours",   viewRec.burner_runtime_hours],
-                ["Start-Stops",    viewRec.start_stop_count],
-                ["Downtime (min)", viewRec.downtime_minutes],
-                ["Chemical",       viewRec.chemical_dosing_amount != null ? `${viewRec.chemical_dosing_amount} ${viewRec.chemical_dosing_unit ?? ""}` : null],
-                ["Source",         viewRec.source_method],
-                ["Notes",          viewRec.notes],
+                [tx("Shift"),          viewRec.shift_ref],
+                [tx("Department"),     viewRec.department],
+                [tx("Period (h)"),     viewRec.period_hours],
+                [tx("Steam Pressure"), viewRec.steam_pressure_bar != null ? tx("{steam_pressure_bar} bar", { steam_pressure_bar: viewRec.steam_pressure_bar }) : null],
+                [tx("Steam Temp"),     viewRec.steam_temp_c != null ? `${viewRec.steam_temp_c} °C` : null],
+                [tx("Steam Flow"),     viewRec.steam_flow_kgh != null ? `${viewRec.steam_flow_kgh} kg/h` : null],
+                [tx("Steam Quality"),  viewRec.steam_quality_pct != null ? `${viewRec.steam_quality_pct}%` : null],
+                [tx("Steam Generated"),viewRec.steam_generated_kg != null ? `${n(viewRec.steam_generated_kg, 0)} kg` : null],
+                [tx("Feedwater"),      viewRec.feedwater_consumed_m3 != null ? `${viewRec.feedwater_consumed_m3} m³` : null],
+                [tx("Condensate"),     viewRec.condensate_returned_m3 != null ? `${viewRec.condensate_returned_m3} m³` : null],
+                [tx("Blowdown %"),     viewRec.blowdown_pct != null ? `${viewRec.blowdown_pct}%` : null],
+                [tx("Blowdown Vol."),  viewRec.blowdown_volume_litres != null ? `${viewRec.blowdown_volume_litres} L` : null],
+                [tx("Fuel Type"),      viewRec.fuel_type],
+                [tx("Fuel Consumed"),  viewRec.fuel_consumption != null ? `${viewRec.fuel_consumption} ${viewRec.fuel_unit ?? ""}` : null],
+                [tx("Efficiency"),     viewRec.boiler_efficiency_pct != null ? `${viewRec.boiler_efficiency_pct}%` : null],
+                [tx("Flue Temp"),      viewRec.flue_gas_temp_c != null ? `${viewRec.flue_gas_temp_c} °C` : null],
+                [tx("O₂ %"),           viewRec.o2_pct],
+                [tx("CO₂ %"),          viewRec.co2_pct],
+                [tx("Boiler Load"),    viewRec.boiler_load_pct != null ? `${viewRec.boiler_load_pct}%` : null],
+                [tx("Burner Hours"),   viewRec.burner_runtime_hours],
+                [tx("Start-Stops"),    viewRec.start_stop_count],
+                [tx("Downtime (min)"), viewRec.downtime_minutes],
+                [tx("Chemical"),       viewRec.chemical_dosing_amount != null ? `${viewRec.chemical_dosing_amount} ${viewRec.chemical_dosing_unit ?? ""}` : null],
+                [tx("Source"),         viewRec.source_method],
+                [tx("Notes"),          viewRec.notes],
               ].map(([label, val]) =>
                 val != null ? (
                   <div key={String(label)} className="flex flex-col">
@@ -827,7 +827,7 @@ export default function SteamPage() {
                   onChange={e => fSet("shift_ref", e.target.value || undefined)}
                   className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-sm text-white">
                   <option value="">—</option>
-                  {["A", "B", "C", tx("Day"), tx("Night")].map(s => <option key={s}>{s}</option>)}
+                  {[["A", "A"], ["B", "B"], ["C", "C"], ["Day", tx("Day")], ["Night", tx("Night")]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
               <div>
@@ -860,12 +860,12 @@ export default function SteamPage() {
               <legend className="text-xs text-slate-400 px-1">{tx("Steam Parameters")}</legend>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  ["Steam Generated (kg)",   "steam_generated_kg"],
-                  ["Steam Pressure (bar)",   "steam_pressure_bar"],
-                  ["Steam Temp (°C)",        "steam_temp_c"],
-                  ["Steam Flow (kg/h)",      "steam_flow_kgh"],
-                  ["Steam Quality (%)",      "steam_quality_pct"],
-                  ["Period Hours",           "period_hours"],
+                  [tx("Steam Generated (kg)"),   "steam_generated_kg"],
+                  [tx("Steam Pressure (bar)"),   "steam_pressure_bar"],
+                  [tx("Steam Temp (°C)"),        "steam_temp_c"],
+                  [tx("Steam Flow (kg/h)"),      "steam_flow_kgh"],
+                  [tx("Steam Quality (%)"),      "steam_quality_pct"],
+                  [tx("Period Hours"),           "period_hours"],
                 ].map(([lbl, key]) => (
                   <div key={key}>
                     <label className="text-xs text-slate-400 block mb-1">{lbl}</label>
@@ -883,12 +883,12 @@ export default function SteamPage() {
               <legend className="text-xs text-slate-400 px-1">{tx("Water Consumption")}</legend>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  ["Feedwater (m³)",         "feedwater_consumed_m3"],
-                  ["Condensate Return (m³)", "condensate_returned_m3"],
+                  [tx("Feedwater (m³)"),         "feedwater_consumed_m3"],
+                  [tx("Condensate Return (m³)"), "condensate_returned_m3"],
                   ["Blowdown %",             "blowdown_pct"],
-                  ["Blowdown Volume (L)",    "blowdown_volume_litres"],
-                  ["Feed Water Temp (°C)",   "feed_water_temp_c"],
-                  ["Feed Water TDS (ppm)",   "feed_water_tds_ppm"],
+                  [tx("Blowdown Volume (L)"),    "blowdown_volume_litres"],
+                  [tx("Feed Water Temp (°C)"),   "feed_water_temp_c"],
+                  [tx("Feed Water TDS (ppm)"),   "feed_water_tds_ppm"],
                 ].map(([lbl, key]) => (
                   <div key={key}>
                     <label className="text-xs text-slate-400 block mb-1">{lbl}</label>
@@ -928,16 +928,16 @@ export default function SteamPage() {
                     onChange={e => fSet("fuel_unit", e.target.value || undefined)}
                     className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-white">
                     <option value="">—</option>
-                    {[tx("m3"), "L", tx("kg"), tx("ton")].map(u => <option key={u}>{u}</option>)}
+                    {[["m3", tx("m3")], ["L", "L"], ["kg", tx("kg")], ["ton", tx("ton")]].map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                   </select>
                 </div>
                 {[
                   ["Efficiency (%)",    "boiler_efficiency_pct"],
-                  ["Boiler Load (%)",   "boiler_load_pct"],
-                  ["Flue Temp (°C)",    "flue_gas_temp_c"],
+                  [tx("Boiler Load (%)"),   "boiler_load_pct"],
+                  [tx("Flue Temp (°C)"),    "flue_gas_temp_c"],
                   ["O₂ (%)",            "o2_pct"],
                   ["CO₂ (%)",           "co2_pct"],
-                  ["CO (ppm)",          "co_ppm"],
+                  [tx("CO (ppm)"),          "co_ppm"],
                 ].map(([lbl, key]) => (
                   <div key={key}>
                     <label className="text-xs text-slate-400 block mb-1">{lbl}</label>
@@ -955,11 +955,11 @@ export default function SteamPage() {
               <legend className="text-xs text-slate-400 px-1">{tx("Operational")}</legend>
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  ["Burner Runtime (h)",     "burner_runtime_hours"],
-                  ["Start-Stop Count",       "start_stop_count"],
-                  ["Cumul. Running Hrs",     "running_hours_cumulative"],
-                  ["Downtime (min)",         "downtime_minutes"],
-                  ["Chemical Amount",        "chemical_dosing_amount"],
+                  [tx("Burner Runtime (h)"),     "burner_runtime_hours"],
+                  [tx("Start-Stop Count"),       "start_stop_count"],
+                  [tx("Cumul. Running Hrs"),     "running_hours_cumulative"],
+                  [tx("Downtime (min)"),         "downtime_minutes"],
+                  [tx("Chemical Amount"),        "chemical_dosing_amount"],
                 ].map(([lbl, key]) => (
                   <div key={key}>
                     <label className="text-xs text-slate-400 block mb-1">{lbl}</label>

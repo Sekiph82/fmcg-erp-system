@@ -49,14 +49,14 @@ export default function FACategoriesPage() {
           <h2 className="text-sm font-semibold text-gray-700">{tx("New Asset Category")}</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {[
-              ["category_code","Category Code","text"],
-              ["category_name","Category Name","text"],
-              ["default_useful_life_months","Default Useful Life (months)","number"],
-              ["default_salvage_value_pct","Default Salvage % ","number"],
-              ["capitalization_threshold","Capitalization Threshold","number"],
-              ["asset_account","Asset GL Account","text"],
-              ["accum_depreciation_account","Accum. Depr. Account","text"],
-              ["depreciation_expense_account","Depr. Expense Account","text"],
+              ["category_code",tx("Category Code"),"text"],
+              ["category_name",tx("Category Name"),"text"],
+              ["default_useful_life_months",tx("Default Useful Life (months)"),"number"],
+              ["default_salvage_value_pct",tx("Default Salvage % "),"number"],
+              ["capitalization_threshold",tx("Capitalization Threshold"),"number"],
+              ["asset_account",tx("Asset GL Account"),"text"],
+              ["accum_depreciation_account",tx("Accum. Depr. Account"),"text"],
+              ["depreciation_expense_account",tx("Depr. Expense Account"),"text"],
             ].map(([key, label, type]) => (
               <div key={key} className="flex flex-col gap-1">
                 <label className="text-xs text-gray-500">{label}</label>

@@ -1,0 +1,12 @@
+# M51 gate migrations, candidate f448098, 2026-11-26T22:23:54+03:00
+## empty -> head
+20261201_0081
+M51 tables: 22
+## seeded copy with evidence rows: 0081 -> 0080 -> head, twice
+round 1 down: 20261130_0080; archives: 13
+round 1 up: 20261201_0081
+round 2 down: 20261130_0080; archives: 26
+round 2 up: 20261201_0081
+seo site row kept in archive: 1
+seed customers kept: 2
+dropped mig51

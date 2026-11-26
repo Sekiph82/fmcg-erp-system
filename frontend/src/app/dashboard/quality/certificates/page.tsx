@@ -168,10 +168,10 @@ export default function CertificatesPage() {
         {[
           { label: tx("Total Active"), value: stats.total_active, color: "text-gray-800" },
           { label: tx("Expiring (90d)"), value: stats.expiring_90d, color: "text-amber-600" },
-          { label: "Expired", value: stats.expired, color: "text-red-600" },
+          { label: tx("Expired"), value: stats.expired, color: "text-red-600" },
           { label: tx("Authorities"), value: Object.keys(stats?.by_authority ?? {}).length, color: "text-blue-600" },
         ].map((k) => (
-          <div key={k.label} className={`bg-white border rounded-lg p-4 shadow-sm ${k.label === "Expired" && k.value > 0 ? "border-red-300 bg-red-50" : ""}`}>
+          <div key={k.label} className={`bg-white border rounded-lg p-4 shadow-sm ${k.label === tx("Expired") && k.value > 0 ? "border-red-300 bg-red-50" : ""}`}>
             <p className="text-xs text-gray-500">{k.label}</p>
             <p className={`text-2xl font-bold mt-1 ${k.color}`}>{k.value}</p>
           </div>
@@ -316,7 +316,7 @@ export default function CertificatesPage() {
                     <td className={`px-4 py-2.5 text-xs ${urgencyColor(c.days_to_expiry)}`}>
                       {c.days_to_expiry !== null
                         ? c.days_to_expiry < 0
-                          ? `Expired ${Math.abs(c.days_to_expiry)}d ago`
+                          ? tx("Expired {days_to_expiry}d ago", { days_to_expiry: Math.abs(c.days_to_expiry) })
                           : tx("{days_to_expiry}d", { days_to_expiry: c.days_to_expiry })
                         : "—"}
                     </td>

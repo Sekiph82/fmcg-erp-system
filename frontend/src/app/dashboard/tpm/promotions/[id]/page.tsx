@@ -167,14 +167,14 @@ export default function TPMPromotionDetailPage() {
             ) : (
               <div className="space-y-2 text-sm">
                 {[
-                  ["Baseline Volume",    exp.baseline_volume],
-                  ["Target Volume",      exp.target_volume],
-                  ["Uplift Qty",         exp.expected_uplift_qty],
-                  ["Uplift %",           `${exp.expected_uplift_pct}%`],
-                  ["Expected Revenue",   fmtCurrency(exp.expected_revenue)],
-                  ["Margin Impact",      fmtCurrency(exp.expected_margin_impact)],
-                  ["Expected ROI %",     `${exp.expected_roi_pct}%`],
-                  ["Baseline Method",    exp.baseline_method],
+                  [tx("Baseline Volume"),    exp.baseline_volume],
+                  [tx("Target Volume"),      exp.target_volume],
+                  [tx("Uplift Qty"),         exp.expected_uplift_qty],
+                  [tx("Uplift %"),           `${exp.expected_uplift_pct}%`],
+                  [tx("Expected Revenue"),   fmtCurrency(exp.expected_revenue)],
+                  [tx("Margin Impact"),      fmtCurrency(exp.expected_margin_impact)],
+                  [tx("Expected ROI %"),     `${exp.expected_roi_pct}%`],
+                  [tx("Baseline Method"),    exp.baseline_method],
                 ].map(([label, value]) => (
                   <div key={String(label)} className="flex justify-between">
                     <span className="text-gray-500">{label}</span>
@@ -192,13 +192,13 @@ export default function TPMPromotionDetailPage() {
             ) : (
               <div className="space-y-2 text-sm">
                 {[
-                  ["Actual Volume",   act.actual_volume],
-                  ["Uplift Qty",      act.actual_uplift_qty],
-                  ["Uplift %",        `${Number(act.actual_uplift_pct).toFixed(1)}%`],
-                  ["Revenue",         fmtCurrency(act.actual_revenue)],
-                  ["Margin Impact",   fmtCurrency(act.actual_margin_impact)],
-                  ["Actual Spend",    fmtCurrency(act.actual_spend)],
-                  ["Actual ROI %",    `${Number(act.actual_roi_pct).toFixed(1)}%`],
+                  [tx("Actual Volume"),   act.actual_volume],
+                  [tx("Uplift Qty"),      act.actual_uplift_qty],
+                  [tx("Uplift %"),        `${Number(act.actual_uplift_pct).toFixed(1)}%`],
+                  [tx("Revenue"),         fmtCurrency(act.actual_revenue)],
+                  [tx("Margin Impact"),   fmtCurrency(act.actual_margin_impact)],
+                  [tx("Actual Spend"),    fmtCurrency(act.actual_spend)],
+                  [tx("Actual ROI %"),    `${Number(act.actual_roi_pct).toFixed(1)}%`],
                 ].map(([label, value]) => (
                   <div key={String(label)} className="flex justify-between">
                     <span className="text-gray-500">{label}</span>

@@ -804,7 +804,7 @@ export default function GS1DashboardPage() {
                     >
                       {printGeneratedMut.isPending
                         ? tx("Printing…")
-                        : `Print ${copies} Label${copies > 1 ? "s" : ""} (${sizeLabelShort})`}
+                        : ((copies > 1) ? tx("Print {copies} Labels ({sizeLabelShort})", { copies, sizeLabelShort }) : tx("Print {copies} Label ({sizeLabelShort})", { copies, sizeLabelShort }))}
                     </button>
                     <button
                       onClick={() => {

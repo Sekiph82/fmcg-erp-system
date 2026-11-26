@@ -56,7 +56,7 @@ export default function IoTDashboardPage() {
       });
       if (!r.ok) throw new Error(await r.text());
       const res = await r.json();
-      setIngestResult(`Ingested: ${res.machine_id} / ${res.metric} = ${res.value}`);
+      setIngestResult(tx("Ingested: {machine_id} / {metric} = {value}", { machine_id: res.machine_id, metric: res.metric, value: res.value }));
       load();
     } catch (e) { setError(String(e)); }
     setSaving(false);
@@ -115,9 +115,9 @@ export default function IoTDashboardPage() {
             { label: tx("Readings (1h)"), value: dash.readings_last_1h, color: "text-blue-600" },
             { label: tx("Active Machines (24h)"), value: dash.active_machines_24h, color: "text-gray-800" },
             { label: tx("Open Alerts"), value: dash.open_alerts, color: "text-amber-600" },
-            { label: "Critical Alerts", value: dash.critical_alerts, color: "text-red-600" },
+            { label: tx("Critical Alerts"), value: dash.critical_alerts, color: "text-red-600" },
           ].map((k) => (
-            <div key={k.label} className={`bg-white border rounded-lg p-4 shadow-sm ${k.label === "Critical Alerts" && k.value > 0 ? "border-red-300 bg-red-50" : ""}`}>
+            <div key={k.label} className={`bg-white border rounded-lg p-4 shadow-sm ${k.label === tx("Critical Alerts") && k.value > 0 ? "border-red-300 bg-red-50" : ""}`}>
               <p className="text-xs text-gray-500">{k.label}</p>
               <p className={`text-2xl font-bold mt-1 ${k.color}`}>{k.value}</p>
             </div>
@@ -127,7 +127,7 @@ export default function IoTDashboardPage() {
 
       {/* Tabs */}
       <div className="flex gap-1 border-b flex-wrap">
-        {([["overview","Machine States"],["alerts","Alerts"],["sensors","Sensor Summary"],["ingest","Ingest Data"],["thresholds","+ Threshold"]] as const).map(([t,l]) => (
+        {([["overview",tx("Machine States")],["alerts","Alerts"],["sensors",tx("Sensor Summary")],["ingest",tx("Ingest Data")],["thresholds","+ Threshold"]] as const).map(([t,l]) => (
           <button key={t} onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px ${tab===t?"border-blue-600 text-blue-600":"border-transparent text-gray-500 hover:text-gray-700"}`}>{l}</button>
         ))}
@@ -226,7 +226,7 @@ export default function IoTDashboardPage() {
           <p className="text-xs text-gray-400">{tx("For testing. In production, devices POST to")} <code className="bg-gray-100 px-1 rounded">/api/v1/iot/ingest</code> {tx("directly.")}</p>
           {ingestResult && <div className="bg-green-50 border border-green-200 rounded p-2 text-xs text-green-700">{ingestResult}</div>}
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {([["Machine ID *","machine_id","e.g. LINE-A-001"],["Metric Name *","metric_name","e.g. temperature"],["Value *","value","e.g. 85.3"],["Unit","unit","e.g. °C"]] as const).map(([label,key,ph]) => (
+            {([["Machine ID *","machine_id","e.g. LINE-A-001"],[tx("Metric Name *"),"metric_name","e.g. temperature"],["Value *","value","e.g. 85.3"],["Unit","unit","e.g. °C"]] as const).map(([label,key,ph]) => (
               <div key={key}>
                 <label className="text-xs text-gray-500 block mb-1">{label}</label>
                 <input type="text" placeholder={ph} value={(ingestForm as unknown as Record<string,string>)[key]}
@@ -247,7 +247,7 @@ export default function IoTDashboardPage() {
         <div className="bg-white border rounded-lg p-5 shadow-sm space-y-3 max-w-lg">
           <h2 className="text-sm font-semibold text-gray-700">{tx("Add Alert Threshold")}</h2>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {([["Machine ID *","machine_id","e.g. LINE-A-001"],["Metric Name *","metric_name","e.g. temperature"],["Min Threshold","min_threshold","e.g. 20"],["Max Threshold","max_threshold","e.g. 95"],["Description","description","Optional"]] as const).map(([label,key,ph]) => (
+            {([["Machine ID *","machine_id","e.g. LINE-A-001"],[tx("Metric Name *"),"metric_name","e.g. temperature"],[tx("Min Threshold"),"min_threshold","e.g. 20"],[tx("Max Threshold"),"max_threshold","e.g. 95"],["Description","description","Optional"]] as const).map(([label,key,ph]) => (
               <div key={key}>
                 <label className="text-xs text-gray-500 block mb-1">{label}</label>
                 <input type="text" placeholder={ph} value={(thresholdForm as unknown as Record<string,string>)[key]}

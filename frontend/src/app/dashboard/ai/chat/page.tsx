@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import { aiApi, AIChatResponse, parseAIError } from "@/lib/aiApi";
 import { Button } from "@/components/ui/Button";
 import { RequirePermission } from "@/components/PermissionGuard";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 interface Message {
   role: "user" | "assistant";
@@ -13,13 +13,13 @@ interface Message {
   meta?: { provider?: string; mode?: string; latency_ms?: number };
 }
 
-const EXAMPLE_QUESTIONS = [
-  "What is the current inventory status?",
-  "How are sales trending over the last 90 days?",
-  "Which products are at reorder risk?",
-  "What is our outstanding receivables balance?",
-  "How many open purchase orders do we have?",
-];
+const EXAMPLE_QUESTIONS = lx(() => [
+  tx("What is the current inventory status?"),
+  tx("How are sales trending over the last 90 days?"),
+  tx("Which products are at reorder risk?"),
+  tx("What is our outstanding receivables balance?"),
+  tx("How many open purchase orders do we have?"),
+]);
 
 export default function ERPChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);

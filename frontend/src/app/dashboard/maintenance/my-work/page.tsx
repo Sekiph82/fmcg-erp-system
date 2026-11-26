@@ -13,7 +13,7 @@ type Job = { kind: "work-orders"; row: WO } | { kind: "breakdowns"; row: BD };
 
 const err = (e: unknown) => {
   const d = (e as { response?: { data?: { detail?: unknown } } })?.response?.data?.detail;
-  return typeof d === "string" ? d : (d as { message?: string })?.message ?? "Something went wrong.";
+  return typeof d === "string" ? d : (d as { message?: string })?.message ?? tx("Something went wrong.");
 };
 
 export default function MyJobs() {
@@ -60,7 +60,7 @@ function JobCard({ job, open, onToggle, onDone, onFail }: { job: Job; open: bool
       <button onClick={onToggle} aria-expanded={open} className="w-full text-left p-3 flex justify-between gap-2">
         <span className="min-w-0">
           <span className="block font-medium text-gray-900">{isBd ? tx("Breakdown") : (r as WO).plan ?? tx("Planned maintenance")} — {r.asset}</span>
-          <span className="block text-xs text-gray-500">{title} · {r.asset_no} · {isBd ? `${(r as BD).severity.toLowerCase()} · since ${new Date((r as BD).since).toLocaleString()}` : `due ${(r as WO).scheduled_date}`}</span>
+          <span className="block text-xs text-gray-500">{title} · {r.asset_no} · {isBd ? tx("{r} · since {date}", { r: (r as BD).severity.toLowerCase(), date: new Date((r as BD).since).toLocaleString() }) : tx("due {r}", { r: (r as WO).scheduled_date })}</span>
         </span>
         <span className={`shrink-0 text-xs rounded-full px-2 py-0.5 h-fit ${started ? "bg-amber-100 text-amber-800" : "bg-gray-100 text-gray-700"}`}>{r.status.replace("_", " ").toLowerCase()}</span>
       </button>
@@ -70,7 +70,7 @@ function JobCard({ job, open, onToggle, onDone, onFail }: { job: Job; open: bool
             <ul className="list-disc pl-5 text-gray-700">{(r as WO).checklist!.split("\n").filter(Boolean).map((c, i) => <li key={i}>{c}</li>)}</ul>
           )}
           {!started ? (
-            <button disabled={busy} onClick={() => run(() => apiClient.post(`${base}/start`), `${title} started.`)}
+            <button disabled={busy} onClick={() => run(() => apiClient.post(`${base}/start`), tx("{title} started.", { title }))}
               className="w-full py-2.5 rounded-lg bg-blue-600 text-white disabled:opacity-50">{tx("Start job")}</button>
           ) : (<>
             <div className="grid grid-cols-[1fr_5rem_auto] gap-2 items-end">
@@ -78,23 +78,23 @@ function JobCard({ job, open, onToggle, onDone, onFail }: { job: Job; open: bool
                 <EntityPicker kind="spare_part" label={tx("Spare part")} value={spare.id} onChange={(id) => setSpare({ ...spare, id })} /></div>
               <div><label className="block text-xs text-gray-500 mb-1">{tx("Qty")}</label>
                 <input aria-label={tx("Quantity")} type="number" min="0.0001" step="any" value={spare.qty} onChange={(e) => setSpare({ ...spare, qty: e.target.value })} className="w-full border rounded px-2 py-2 text-sm" /></div>
-              <button disabled={busy || !spare.id} onClick={() => run(() => apiClient.post(`${base}/spares`, { spare_part_id: spare.id, quantity: spare.qty }).then(() => setSpare({ id: "", qty: "1" })), "Spare part recorded.")}
+              <button disabled={busy || !spare.id} onClick={() => run(() => apiClient.post(`${base}/spares`, { spare_part_id: spare.id, quantity: spare.qty }).then(() => setSpare({ id: "", qty: "1" })), tx("Spare part recorded."))}
                 className="py-2 px-3 rounded-lg border text-sm disabled:opacity-50">{tx("Add")}</button>
             </div>
             <label className="block text-xs text-gray-500">{tx("Photo (")}{r.photos}/10)
               <input type="file" accept="image/jpeg,image/png" capture="environment" disabled={busy} className="block mt-1 text-sm"
                 onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; const fd = new FormData(); fd.append("file", f);
-                  run(() => apiClient.post(`${base}/photo`, fd), "Photo added."); e.target.value = ""; }} />
+                  run(() => apiClient.post(`${base}/photo`, fd), tx("Photo added.")); e.target.value = ""; }} />
             </label>
             {isBd ? (<>
               <textarea aria-label={tx("Root cause")} placeholder={tx("Root cause")} value={cause} onChange={(e) => setCause(e.target.value)} rows={2} className="w-full border rounded-lg px-3 py-2" />
               <textarea aria-label={tx("What was done")} placeholder={tx("What was done to fix it")} value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className="w-full border rounded-lg px-3 py-2" />
               <button disabled={busy || cause.trim().length < 3 || notes.trim().length < 3}
-                onClick={() => run(() => apiClient.post(`${base}/resolve`, { root_cause: cause, corrective_action: notes }), `${title} resolved.`)}
+                onClick={() => run(() => apiClient.post(`${base}/resolve`, { root_cause: cause, corrective_action: notes }), tx("{title} resolved.", { title }))}
                 className="w-full py-2.5 rounded-lg bg-emerald-600 text-white disabled:opacity-50">{tx("Machine fixed — close breakdown")}</button>
             </>) : (<>
               <textarea aria-label={tx("Completion notes")} placeholder={tx("What was done, readings, anything to follow up")} value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} className="w-full border rounded-lg px-3 py-2" />
-              <button disabled={busy || notes.trim().length < 3} onClick={() => run(() => apiClient.post(`${base}/complete`, { notes }), `${title} completed.`)}
+              <button disabled={busy || notes.trim().length < 3} onClick={() => run(() => apiClient.post(`${base}/complete`, { notes }), tx("{title} completed.", { title }))}
                 className="w-full py-2.5 rounded-lg bg-emerald-600 text-white disabled:opacity-50">{tx("Complete job")}</button>
             </>)}
           </>)}

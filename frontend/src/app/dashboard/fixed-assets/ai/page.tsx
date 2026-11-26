@@ -2,13 +2,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { faApi, FAAIRecommendation, FAIAgentType, FAIRecStatus } from "@/lib/fixed_assets";
 import { useState } from "react";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
-const AGENT_LABEL: Record<FAIAgentType, string> = {
-  RISK_MONITOR:           "Asset Risk Monitor",
-  DEPRECIATION_REVIEW:    "Depreciation Review",
-  CAPITALIZATION_CHECKER: "Capitalization Quality",
-};
+const AGENT_LABEL: Record<FAIAgentType, string> = lx(() => ({
+  RISK_MONITOR:           tx("Asset Risk Monitor"),
+  DEPRECIATION_REVIEW:    tx("Depreciation Review"),
+  CAPITALIZATION_CHECKER: tx("Capitalization Quality"),
+}));
 const SEVERITY_BADGE: Record<string, string> = {
   info:     "bg-blue-100 text-blue-700",
   warning:  "bg-yellow-100 text-yellow-700",

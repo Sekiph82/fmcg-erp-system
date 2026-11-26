@@ -294,7 +294,7 @@ export default function MarketingPage() {
   return (
     <ModuleWorkspace
       title={tx("Marketing")}
-      description="Campaigns, promotions, TPM, ads, social media, e-commerce"
+      description={tx("Campaigns, promotions, TPM, ads, social media, e-commerce")}
       permission="marketing.view"
       tabs={tabs}
       defaultTab="overview"

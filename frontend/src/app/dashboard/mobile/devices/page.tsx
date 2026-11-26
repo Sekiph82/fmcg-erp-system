@@ -55,9 +55,9 @@ export default function DeviceManagerPage() {
         title: testMsg.title,
         body: testMsg.body,
       });
-      setSendResult(`Queued for ${r.queued} device(s). ${r.note}`);
+      setSendResult(tx("Queued for {queued} device(s). {note}", { queued: r.queued, note: r.note }));
     } catch (e) {
-      setSendResult(`Error: ${String(e)}`);
+      setSendResult(tx("Error: {e}", { e: String(e) }));
     } finally {
       setSending(false);
     }

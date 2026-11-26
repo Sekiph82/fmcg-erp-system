@@ -7,7 +7,7 @@ import Link from "next/link";
 import { apiClient } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { RequirePermission } from "@/components/PermissionGuard";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 type Item = { link_id?: string; kind: string; ref_id: string; label: string; status?: string; version?: number; linked_version?: number | null; usable?: boolean;
   outdated?: boolean; submitted?: boolean; approved?: boolean; approval?: string; mode?: string; via?: string; members?: number; provider?: string; audience_size?: number | null; missing?: boolean };
@@ -34,9 +34,9 @@ type Row = { id: string; code: string; name: string; status: string; approval_st
 
 const API = "/api/v1/marketing-studio";
 const CH = ["email", "social", "ads"] as const;
-const KIND_NAME: Record<string, string> = { DAM_ASSET: "Approved asset (library)", BRAND_ASSET: "Brand asset", EMAIL_DESIGN: "E-mail design", SOCIAL_POST: "Social post",
-  AD_TREE: "Ad campaign", AUDIENCE_SYNC: "Audience sync", AUDIENCE: "Audience", EMAIL_CAMPAIGN: "E-mail campaign" };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const KIND_NAME: Record<string, string> = lx(() => ({ DAM_ASSET: tx("Approved asset (library)"), BRAND_ASSET: tx("Brand asset"), EMAIL_DESIGN: tx("E-mail design"), SOCIAL_POST: tx("Social post"),
+  AD_TREE: tx("Ad campaign"), AUDIENCE_SYNC: tx("Audience sync"), AUDIENCE: tx("Audience"), EMAIL_CAMPAIGN: tx("E-mail campaign") }));
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 
 function Badge({ children, tone }: { children: React.ReactNode; tone: "ok" | "warn" | "bad" | "idle" }) {
   const c = { ok: "bg-emerald-100 text-emerald-800", warn: "bg-amber-100 text-amber-800", bad: "bg-red-100 text-red-800", idle: "bg-gray-100 text-gray-700" }[tone];
@@ -63,7 +63,7 @@ function Picker({ kinds, cands, canWrite, onLink }: { kinds: string[]; cands: Ca
   const opts = kinds.flatMap((k) => (cands?.[k] ?? []).map((c) => ({ ...c, kind: k })));
   const [sel, setSel] = useState("");
   const [kind, ref] = sel.split("|");
-  const reason = !canWrite ? "Marketing editors only" : !opts.length ? "Nothing approved and available to link yet" : !sel ? "Choose a record first" : "";
+  const reason = !canWrite ? tx("Marketing editors only") : !opts.length ? tx("Nothing approved and available to link yet") : !sel ? tx("Choose a record first") : "";
   return <div className="flex flex-wrap gap-2 items-center text-xs">
     <select aria-label={tx("Record to link")} className="border rounded px-1 py-1 max-w-full" value={sel} onChange={(e) => setSel(e.target.value)}>
       <option value="">{tx("Choose a record to link…")}</option>
@@ -78,13 +78,13 @@ function BriefCard({ s, say, reload }: { s: Studio; say: (m: string) => void; re
   const d = s.brief.data;
   const [f, setF] = useState({ summary: d.summary ?? "", key_message: d.key_message ?? "", audience_notes: d.audience_notes ?? "", kpi: d.kpi ?? "",
     channels: d.channels ?? [], skus: (d.product_skus ?? []).join(", ") });
-  const reason = !s.user.can_write ? "Marketing editors only" : !f.summary.trim() || !f.key_message.trim() ? "Summary and key message are required" : "";
+  const reason = !s.user.can_write ? tx("Marketing editors only") : !f.summary.trim() || !f.key_message.trim() ? tx("Summary and key message are required") : "";
   const save = () => apiClient.put(`${API}/campaigns/${s.campaign.id}/brief`, { summary: f.summary, key_message: f.key_message, audience_notes: f.audience_notes, kpi: f.kpi,
-    channels: f.channels, product_skus: f.skus.split(",").map((x) => x.trim()).filter(Boolean) }).then(() => { say("Brief saved."); reload(); }).catch((e) => say(err(e)));
+    channels: f.channels, product_skus: f.skus.split(",").map((x) => x.trim()).filter(Boolean) }).then(() => { say(tx("Brief saved.")); reload(); }).catch((e) => say(err(e)));
   const t = (k: "summary" | "key_message" | "audience_notes" | "kpi", label: string, rows = 2) => <label className="text-xs block">{label}
     <textarea aria-label={label} rows={rows} className="border rounded px-1 w-full block" value={f[k]} onChange={(e) => setF({ ...f, [k]: e.target.value })} /></label>;
   return <div className="space-y-2">
-    <div className="grid gap-2 sm:grid-cols-2">{t("summary", "Summary", 3)}{t("key_message", "Key message", 3)}{t("audience_notes", "Audience notes")}{t("kpi", "KPI")}</div>
+    <div className="grid gap-2 sm:grid-cols-2">{t("summary", "Summary", 3)}{t("key_message", tx("Key message"), 3)}{t("audience_notes", tx("Audience notes"))}{t("kpi", "KPI")}</div>
     <label className="text-xs block">{tx("Product SKUs (comma separated, e.g. POVU-ALC-1L)")}
       <input aria-label={tx("Product SKUs")} className="border rounded px-1 w-full block" value={f.skus} onChange={(e) => setF({ ...f, skus: e.target.value })} /></label>
     <div className="flex flex-wrap gap-3 text-xs" role="group" aria-label={tx("Channels")}>{tx("Channels:")}
@@ -102,7 +102,7 @@ function BudgetCard({ s, say, reload, canFinance }: { s: Studio; say: (m: string
   const [amount, setAmount] = useState("");
   const [note, setNote] = useState("");
   const b = s.budget, n = Number(amount), over = n > Number(b.cap);
-  const reason = !s.user.can_write ? "Marketing editors only" : b.pending ? "A request is already waiting for finance" : !(n > 0) ? "Enter an amount above 0" : "";
+  const reason = !s.user.can_write ? tx("Marketing editors only") : b.pending ? tx("A request is already waiting for finance") : !(n > 0) ? tx("Enter an amount above 0") : "";
   const post = (p: Promise<unknown>, ok: string) => p.then(() => { say(ok); setAmount(""); setNote(""); reload(); }).catch((e) => say(err(e)));
   return <div className="space-y-2 text-xs">
     <p>{tx("Current budget:")} <b>{b.amount ?? tx("not set")}</b> {tx("· finance cap")} <b>{b.cap}</b>{tx(". Above the cap, a finance approver other than you must approve.")}</p>
@@ -110,15 +110,15 @@ function BudgetCard({ s, say, reload, canFinance }: { s: Studio; say: (m: string
       <label>{tx("Amount")}<input aria-label={tx("Budget amount")} type="number" min={0} step="0.01" className="border rounded px-1 block" value={amount} onChange={(e) => setAmount(e.target.value)} /></label>
       <label className="grow">{tx("Note")}<input aria-label={tx("Budget note")} maxLength={300} className="border rounded px-1 w-full block" value={note} onChange={(e) => setNote(e.target.value)} /></label>
       <button className="bg-indigo-600 text-white rounded px-3 py-1 disabled:opacity-50" disabled={!!reason}
-        onClick={() => post(apiClient.post(`${API}/campaigns/${s.campaign.id}/budget`, { amount: n, note: note || null }), over ? "Sent to finance for approval." : "Budget applied.")}>
+        onClick={() => post(apiClient.post(`${API}/campaigns/${s.campaign.id}/budget`, { amount: n, note: note || null }), over ? tx("Sent to finance for approval.") : tx("Budget applied."))}>
         {over ? tx("Request finance approval") : tx("Set budget")}</button>
     </div>
     {reason && <p className="text-gray-500">{reason}</p>}
     {b.pending && <div className="border rounded p-2 bg-amber-50 space-y-1">
       <p>{tx("Waiting for finance:")} <b>{b.pending.amount}</b> {tx("(asked by")} {b.pending.requested_by}{b.pending.note ? ` — ${b.pending.note}` : ""})</p>
       <div className="flex flex-wrap items-center gap-2">
-        <button className="border rounded px-3 py-1 bg-white disabled:opacity-50" disabled={!canFinance} onClick={() => post(apiClient.post(`${API}/budget-requests/${b.pending!.id}/decide`, { ok: true }), "Budget approved.")}>{tx("Approve")}</button>
-        <button className="border rounded px-3 py-1 bg-white disabled:opacity-50" disabled={!canFinance} onClick={() => post(apiClient.post(`${API}/budget-requests/${b.pending!.id}/decide`, { ok: false }), "Budget rejected.")}>{tx("Reject")}</button>
+        <button className="border rounded px-3 py-1 bg-white disabled:opacity-50" disabled={!canFinance} onClick={() => post(apiClient.post(`${API}/budget-requests/${b.pending!.id}/decide`, { ok: true }), tx("Budget approved."))}>{tx("Approve")}</button>
+        <button className="border rounded px-3 py-1 bg-white disabled:opacity-50" disabled={!canFinance} onClick={() => post(apiClient.post(`${API}/budget-requests/${b.pending!.id}/decide`, { ok: false }), tx("Budget rejected."))}>{tx("Reject")}</button>
         {!canFinance && <span className="text-gray-500">{tx("Finance approvers only (finance.approve). The requester can never approve their own request.")}</span>}
       </div></div>}
     {b.requests.length > 0 && <details><summary className="cursor-pointer">{tx("History (")}{b.requests.length})</summary><ul className="mt-1 space-y-0.5">
@@ -137,7 +137,7 @@ function AnalyticsCard({ a }: { a: Analytics | null }) {
       <div className="border rounded p-2 bg-white"><p className="text-gray-500">{tx("Website leads (UTM)")}</p><p className="text-lg font-semibold">{at.leads || tx("No data")}</p>
         {Object.entries(at.leads_by_source).map(([k, v]) => <p key={k}>{k}: {v}</p>)}</div>
       <div className="border rounded p-2 bg-white"><p className="text-gray-500">{tx("Approved brand spend")}</p>
-        {Object.keys(a.spend.approved_brand_spend).length ? Object.entries(a.spend.approved_brand_spend).map(([c, v]) => <p key={c}>{c} {v}{a.spend.roas[c] ? ` · ROAS ${a.spend.roas[c]}` : ""}</p>) : <p className="text-lg font-semibold">{tx("No data")}</p>}</div>
+        {Object.keys(a.spend.approved_brand_spend).length ? Object.entries(a.spend.approved_brand_spend).map(([c, v]) => <p key={c}>{c} {v}{a.spend.roas[c] ? tx(" · ROAS {roas}", { roas: a.spend.roas[c] }) : ""}</p>) : <p className="text-lg font-semibold">{tx("No data")}</p>}</div>
     </div>
     <div className="grid gap-2 sm:grid-cols-2">
       <div className="border rounded p-2 bg-white"><p className="font-medium">{tx("Ads (stored performance rows)")}</p>
@@ -176,10 +176,10 @@ function StudioWorkspace() {
   const reload = () => { load(cid); list(); };
   const link = (kind: string, ref_id: string) => apiClient.post(`${API}/campaigns/${cid}/links`, { kind, ref_id }).then(() => { setMsg(tx("Linked.")); reload(); }).catch((e) => setMsg(err(e)));
   const unlink = (lid: string) => apiClient.delete(`${API}/campaigns/${cid}/links/${lid}`).then(() => { setMsg(tx("Unlinked.")); reload(); }).catch((e) => setMsg(err(e)));
-  const createReason = !hasPermission("campaigns.create") ? "Needs campaigns.create" : !nc.code.trim() || !nc.name.trim() || !nc.start || !nc.end ? "Code, name and both dates are required" : nc.end < nc.start ? "End date is before the start date" : "";
+  const createReason = !hasPermission("campaigns.create") ? tx("Needs campaigns.create") : !nc.code.trim() || !nc.name.trim() || !nc.start || !nc.end ? tx("Code, name and both dates are required") : nc.end < nc.start ? tx("End date is before the start date") : "";
   const create = () => apiClient.post("/api/v1/marketing/campaigns", { campaign_code: nc.code.trim(), campaign_name: nc.name.trim(), campaign_type: "DIGITAL", start_date: nc.start, end_date: nc.end })
     .then((r) => { setNc({ code: "", name: "", start: "", end: "" }); setMsg(tx("Campaign created.")); list().then(() => setCid(r.data.id)); }).catch((e) => setMsg(err(e)));
-  const approveReason = !hasPermission("campaigns.approve") ? "Needs campaigns.approve" : s?.campaign.approval_status === "APPROVED" ? "Already approved" : "";
+  const approveReason = !hasPermission("campaigns.approve") ? tx("Needs campaigns.approve") : s?.campaign.approval_status === "APPROVED" ? tx("Already approved") : "";
   const sel = useMemo(() => rows.find((r) => r.id === cid), [rows, cid]);
 
   return <div className="p-3 sm:p-6 space-y-3 max-w-6xl mx-auto">

@@ -135,7 +135,7 @@ export default function PurchaseOrdersPage() {
                   {new Date(p.expected_delivery_date).toLocaleDateString()}
                   {p.days_until_delivery != null && (
                     <span className="ml-1 text-xs text-gray-400">
-                      {p.days_until_delivery < 0 ? `(${Math.abs(p.days_until_delivery)}d overdue)` : tx("({days_until_delivery}d)", { days_until_delivery: p.days_until_delivery })}
+                      {p.days_until_delivery < 0 ? tx("({days_until_delivery}d overdue)", { days_until_delivery: Math.abs(p.days_until_delivery) }) : tx("({days_until_delivery}d)", { days_until_delivery: p.days_until_delivery })}
                     </span>
                   )}
                 </span>

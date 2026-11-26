@@ -176,10 +176,10 @@ export default function ConsumerComplaintsPage() {
           {[
             { label: tx("Total Complaints"), value: stats.total, color: "text-gray-800" },
             { label: tx("Open"), value: stats.open, color: "text-orange-600" },
-            { label: "Recall Triggered", value: stats.recall_triggered, color: "text-red-600" },
+            { label: tx("Recall Triggered"), value: stats.recall_triggered, color: "text-red-600" },
             { label: "SAFETY", value: stats.by_severity.SAFETY ?? 0, color: "text-red-800" },
           ].map((k) => (
-            <div key={k.label} className={`bg-white border rounded-lg p-4 shadow-sm ${k.label === "Recall Triggered" && k.value > 0 ? "border-red-300 bg-red-50" : ""}`}>
+            <div key={k.label} className={`bg-white border rounded-lg p-4 shadow-sm ${k.label === tx("Recall Triggered") && k.value > 0 ? "border-red-300 bg-red-50" : ""}`}>
               <p className="text-xs text-gray-500">{k.label}</p>
               <p className={`text-2xl font-bold mt-1 ${k.color}`}>{k.value}</p>
             </div>

@@ -145,7 +145,7 @@ export default function DistributorInventoryPage() {
                     <td className="px-4 py-2 font-mono text-xs">{s.product_sku || "—"}</td>
                     <td className="px-4 py-2 text-right font-semibold">{Number(s.stock_qty).toLocaleString()}</td>
                     <td className={`px-4 py-2 text-right ${daysRisk ? "text-red-600 font-bold" : ""}`}>
-                      {s.days_of_stock != null ? `${Number(s.days_of_stock).toFixed(0)} days` : "—"}
+                      {s.days_of_stock != null ? tx("{days_of_stock} days", { days_of_stock: Number(s.days_of_stock).toFixed(0) }) : "—"}
                     </td>
                     <td className="px-4 py-2 text-right">
                       {s.sell_through_rate != null ? `${(Number(s.sell_through_rate) * 100).toFixed(1)}%` : "—"}

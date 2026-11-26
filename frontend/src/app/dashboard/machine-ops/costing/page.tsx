@@ -23,11 +23,11 @@ export default function CostingPage() {
   });
 
   const pieData = data ? [
-    { name: "Machine Runtime", value: Number(data.machine_cost_runtime) },
-    { name: "Machine Setup", value: Number(data.machine_cost_setup) },
-    { name: "Machine Energy", value: Number(data.machine_cost_energy) },
-    { name: "Labor Direct", value: Number(data.labor_cost_direct) },
-    { name: "Labor Overtime", value: Number(data.labor_cost_overtime) },
+    { name: tx("Machine Runtime"), value: Number(data.machine_cost_runtime) },
+    { name: tx("Machine Setup"), value: Number(data.machine_cost_setup) },
+    { name: tx("Machine Energy"), value: Number(data.machine_cost_energy) },
+    { name: tx("Labor Direct"), value: Number(data.labor_cost_direct) },
+    { name: tx("Labor Overtime"), value: Number(data.labor_cost_overtime) },
   ].filter((p) => p.value > 0) : [];
 
   return (
@@ -94,14 +94,14 @@ export default function CostingPage() {
               <div>
                 <h3 className="font-medium text-gray-800 mb-1">{tx("Machine estimates")}</h3>
                 {data.machine_attributions.map((line) => (
-                  <p key={line.machine_id} className="mb-2">{line.machine_code}{tx(": run")} {line.runtime_hours} {tx("h; setup")} {line.setup_hours} {tx("h; estimate")} {formatCost(line.total_cost)}{tx("; runtime logs")} {line.source_runtime_log_ids.join(", ") || tx("none")}{line.unavailable_runtime_log_ids.length ? `; unavailable ${line.unavailable_runtime_log_ids.join(", ")}` : ""}{line.overlapping_runtime_log_ids.length ? `; overlaps ${line.overlapping_runtime_log_ids.join(", ")}` : ""}</p>
+                  <p key={line.machine_id} className="mb-2">{line.machine_code}{tx(": run")} {line.runtime_hours} {tx("h; setup")} {line.setup_hours} {tx("h; estimate")} {formatCost(line.total_cost)}{tx("; runtime logs")} {line.source_runtime_log_ids.join(", ") || tx("none")}{line.unavailable_runtime_log_ids.length ? tx("; unavailable {unavailable_runtime_log_ids}", { unavailable_runtime_log_ids: line.unavailable_runtime_log_ids.join(", ") }) : ""}{line.overlapping_runtime_log_ids.length ? tx("; overlaps {overlapping_runtime_log_ids}", { overlapping_runtime_log_ids: line.overlapping_runtime_log_ids.join(", ") }) : ""}</p>
                 ))}
                 {!data.machine_attributions.length && <p>{tx("No linked runtime records.")}</p>}
               </div>
               <div>
                 <h3 className="font-medium text-gray-800 mb-1">{tx("Labor source records")}</h3>
                 {data.labor_attributions.map((line) => (
-                  <p key={line.labor_log_id} className="mb-2">{line.labor_log_id}: {line.included ? `direct ${formatCost(line.direct_cost)}, overtime ${formatCost(line.overtime_cost)}` : line.exclusion_reason}</p>
+                  <p key={line.labor_log_id} className="mb-2">{line.labor_log_id}: {line.included ? tx("direct {formatCost}, overtime {formatCost2}", { formatCost: formatCost(line.direct_cost), formatCost2: formatCost(line.overtime_cost) }) : line.exclusion_reason}</p>
                 ))}
                 {!data.labor_attributions.length && <p>{tx("No linked labor records.")}</p>}
               </div>

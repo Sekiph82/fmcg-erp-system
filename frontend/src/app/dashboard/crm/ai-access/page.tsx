@@ -6,7 +6,7 @@ import { tx } from "@/lib/i18n/core";
 
 type Token = { id: string; name: string; prefix: string; scopes: string[]; expires_at: string; revoked: boolean; last_used_at: string | null };
 type Req = { id: string; source: string; action: string; summary: string; status: string; created_at: string; decided_by: string | null; result: Record<string, unknown> | null };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Something went wrong."); };
 
 export default function AIAccessPage() {
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -45,7 +45,7 @@ export default function AIAccessPage() {
             onChange={(e) => setPick(e.target.checked ? [...pick, k] : pick.filter((x) => x !== k))} /><span><b>{k}</b>: {d}</span></label>)}</fieldset>
         {shown && <div className="border rounded p-2 bg-amber-50 text-xs break-all"><b>{tx("Copy it now; it is not shown again:")}</b> <code>{shown}</code> <button className="underline" onClick={() => setShown(null)}>{tx("Done")}</button></div>}
         <ul className="text-xs divide-y">{tokens.map((t) => <li key={t.id} className="py-1 flex flex-wrap justify-between gap-2">
-          <span>{t.name} · {t.prefix}… · {t.scopes.join(", ")} · {t.revoked ? tx("revoked") : `expires ${new Date(t.expires_at).toLocaleDateString()}`}{t.last_used_at ? ` · used ${new Date(t.last_used_at).toLocaleString()}` : ""}</span>
+          <span>{t.name} · {t.prefix}… · {t.scopes.join(", ")} · {t.revoked ? tx("revoked") : tx("expires {date}", { date: new Date(t.expires_at).toLocaleDateString() })}{t.last_used_at ? tx(" · used {date}", { date: new Date(t.last_used_at).toLocaleString() }) : ""}</span>
           {!t.revoked && <button className="text-red-600 underline" onClick={() => revoke(t.id)}>{tx("Revoke")}</button>}</li>)}</ul>
       </section>
       <section className="border rounded p-3 bg-white space-y-2">

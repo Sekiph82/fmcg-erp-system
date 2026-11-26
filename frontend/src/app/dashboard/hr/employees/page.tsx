@@ -55,16 +55,16 @@ function EmployeeForm({
       <h3 className="font-semibold text-gray-800">{initial?.id ? tx("Edit Employee") : tx("New Employee")}</h3>
       <div className="grid grid-cols-2 gap-4">
         {[
-          ["employee_code", "Employee Code"],
-          ["full_name", "Full Name"],
+          ["employee_code", tx("Employee Code")],
+          ["full_name", tx("Full Name")],
           ["department", "Department"],
-          ["role", "Role / Job Title"],
+          ["role", tx("Role / Job Title")],
           ["phone", "Phone"],
           ["email", "Email"],
-          ["hire_date", "Hire Date"],
-          ["salary_grade", "Salary Grade"],
+          ["hire_date", tx("Hire Date")],
+          ["salary_grade", tx("Salary Grade")],
           ["mpesa_number", "M-Pesa Number"],
-          ["bank_account", "Bank Account"],
+          ["bank_account", tx("Bank Account")],
         ].map(([key, label]) => (
           <div key={key}>
             <label className="block text-xs text-gray-500 mb-1">{label}</label>

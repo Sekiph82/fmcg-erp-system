@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { apiClient } from "@/lib/api";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 interface Provider { provider: string; configured: boolean; validate_only: boolean }
 interface Account { id: string; provider: string; external_id: string; name: string; currency: string; status: string; last_error: string | null; last_sync_at: string | null }
@@ -12,9 +12,9 @@ interface Perf { provider: string; account: string; currency: string; campaign_i
 interface Draft { id: string; account_id: string; name: string; objective: string; daily_budget: number; status: string;
   created_by: string; approved_by: string | null; validation: { ok?: boolean; provider_checked?: boolean; problems?: string[] } | null }
 
-const LABEL: Record<string, string> = { meta: "Meta", google: "Google Ads", linkedin: "LinkedIn", tiktok: "TikTok" };
+const LABEL: Record<string, string> = lx(() => ({ meta: tx("Meta"), google: tx("Google Ads"), linkedin: tx("LinkedIn"), tiktok: tx("TikTok") }));
 const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
-  return typeof d === "string" ? d : d && typeof d === "object" && "detail" in d ? String((d as { detail: unknown }).detail) : "Request failed."; };
+  return typeof d === "string" ? d : d && typeof d === "object" && "detail" in d ? String((d as { detail: unknown }).detail) : tx("Request failed."); };
 const key = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
 export default function AdsPage() {
@@ -47,7 +47,7 @@ export default function AdsPage() {
 
       <section className="border rounded p-3 bg-white space-y-2">
         <h3 className="font-semibold">{tx("Ad accounts")}</h3>
-        <form className="flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); run(() => apiClient.post("/api/v1/ads/accounts", na), "Account added."); }}>
+        <form className="flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault(); run(() => apiClient.post("/api/v1/ads/accounts", na), tx("Account added.")); }}>
           <select aria-label={tx("Platform")} className={input} value={na.provider} onChange={(e) => setNa({ ...na, provider: e.target.value })}>{Object.entries(LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select>
           <input aria-label={tx("Account id")} required placeholder={tx("Account id")} className={input} value={na.external_id} onChange={(e) => setNa({ ...na, external_id: e.target.value })} />
           <input aria-label={tx("Account name")} required placeholder={tx("Name")} className={input} value={na.name} onChange={(e) => setNa({ ...na, name: e.target.value })} />
@@ -59,7 +59,7 @@ export default function AdsPage() {
             <tr key={a.id} className="border-t"><td className="py-1">{LABEL[a.provider]}</td><td>{a.name} <span className="text-gray-400">{a.external_id}</span></td><td>{a.currency}</td>
               <td>{a.status}{a.last_error && <div className="text-red-600">{a.last_error}</div>}</td>
               <td>{a.last_sync_at ? new Date(a.last_sync_at).toLocaleString() : tx("never")}</td>
-              <td className="text-right"><button className="underline" onClick={() => run(() => apiClient.post(`/api/v1/ads/accounts/${a.id}/sync`, null, { params: { days: 7 } }), "Synced the last 7 days.")}>{tx("Sync 7 days")}</button></td></tr>))}</tbody></table>
+              <td className="text-right"><button className="underline" onClick={() => run(() => apiClient.post(`/api/v1/ads/accounts/${a.id}/sync`, null, { params: { days: 7 } }), tx("Synced the last 7 days."))}>{tx("Sync 7 days")}</button></td></tr>))}</tbody></table>
           {accts.length === 0 && <p className="text-xs text-gray-500 py-1">{tx("No ad accounts yet.")}</p>}</div>
       </section>
 
@@ -78,7 +78,7 @@ export default function AdsPage() {
         <h3 className="font-semibold">{tx("Campaign drafts")}</h3>
         <form className="flex flex-wrap gap-2" onSubmit={(e) => { e.preventDefault();
           run(() => apiClient.post("/api/v1/ads/drafts", { account_id: nd.account_id, name: nd.name, objective: nd.objective, daily_budget: nd.daily_budget, idempotency_key: nd.idem })
-            .then(() => setNd({ ...nd, name: "", idem: key() })), "Draft saved."); }}>
+            .then(() => setNd({ ...nd, name: "", idem: key() })), tx("Draft saved.")); }}>
           <select aria-label={tx("Draft account")} required className={input} value={nd.account_id} onChange={(e) => setNd({ ...nd, account_id: e.target.value })}>
             <option value="">{tx("Account…")}</option>{accts.map((a) => <option key={a.id} value={a.id}>{LABEL[a.provider]} · {a.name}</option>)}</select>
           <input aria-label={tx("Draft name")} required placeholder={tx("Campaign name")} className={input} value={nd.name} onChange={(e) => setNd({ ...nd, name: e.target.value })} />
@@ -88,8 +88,8 @@ export default function AdsPage() {
         </form>
         <ul className="text-xs space-y-1">{drafts.map((d) => (
           <li key={d.id} className="border-t pt-1 flex flex-wrap gap-2 items-center"><b>{d.name}</b><span>{d.objective} · {d.daily_budget}{tx("/day ·")} {d.status.toLowerCase()}</span>
-            {d.validation && <span className={d.validation.ok === false ? "text-red-600" : "text-emerald-700"}>{d.validation.ok === false ? `Not valid: ${(d.validation.problems ?? []).join(" ") || "see platform response"}` : d.validation.provider_checked ? tx("Checked by the platform") : tx("Passed local checks")}</span>}
-            {(d.status === "DRAFT" || d.status === "REJECTED") && <button className="underline" onClick={() => run(() => apiClient.post(`/api/v1/ads/drafts/${d.id}/request`), "Sent for approval.")}>{tx("Request approval")}</button>}
+            {d.validation && <span className={d.validation.ok === false ? "text-red-600" : "text-emerald-700"}>{d.validation.ok === false ? tx("Not valid: {problems}", { problems: (d.validation.problems ?? []).join(" ") || "see platform response" }) : d.validation.provider_checked ? tx("Checked by the platform") : tx("Passed local checks")}</span>}
+            {(d.status === "DRAFT" || d.status === "REJECTED") && <button className="underline" onClick={() => run(() => apiClient.post(`/api/v1/ads/drafts/${d.id}/request`), tx("Sent for approval."))}>{tx("Request approval")}</button>}
             {d.status === "PENDING" && <><button className="underline" onClick={() => run(() => apiClient.post(`/api/v1/ads/drafts/${d.id}/approve`), "Approved.")}>{tx("Approve")}</button>
               <button className="underline" onClick={() => run(() => apiClient.post(`/api/v1/ads/drafts/${d.id}/reject`), "Rejected.")}>{tx("Reject")}</button></>}
             <button className="underline" onClick={() => run(() => apiClient.post(`/api/v1/ads/drafts/${d.id}/validate`), "Validated.")}>{tx("Validate")}</button>

@@ -8,7 +8,7 @@ import { tx } from "@/lib/i18n/core";
 type Stage = { id: string; name: string; status: string; pauses_sla: boolean; tickets?: { id: string; ticket_no: string; priority: string }[] };
 type Pipeline = { id: string; name: string; is_default: boolean; stages: Stage[] };
 const STATUSES = ["OPEN", "IN_PROGRESS", "ESCALATED", "RESOLVED", "CLOSED"];
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Request failed."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : tx("Request failed."); };
 
 export default function HelpdeskPipelinesPage() {
   const [list, setList] = useState<Pipeline[]>([]);
@@ -26,7 +26,7 @@ export default function HelpdeskPipelinesPage() {
   }).catch((e) => setMsg(err(e))), [sel, loadBoard]);
   useEffect(() => { load(); }, [load]);
   const move = (ticketId: string, stageId: string) => apiClient.post(`/api/v1/helpdesk/${ticketId}/stage`, { stage_id: stageId })
-    .then((r) => { setMsg(`Moved to ${r.data.stage} (${r.data.status}${r.data.sla_paused ? ", SLA paused" : ""}).`); loadBoard(sel); }).catch((e) => setMsg(err(e)));
+    .then((r) => { setMsg(tx("Moved to {stage} ({status}{sla_paused}).", { stage: r.data.stage, status: r.data.status, sla_paused: r.data.sla_paused ? ", SLA paused" : "" })); loadBoard(sel); }).catch((e) => setMsg(err(e)));
   return (
     <div className="p-4 space-y-4 text-sm">
       <h2 className="text-lg font-semibold">{tx("Ticket pipelines")}</h2>
@@ -52,8 +52,8 @@ export default function HelpdeskPipelinesPage() {
         <input aria-label={tx("Pipeline name")} className="border rounded px-2 py-1 text-xs" required maxLength={100} placeholder={tx("e.g. Returns")} value={name} onChange={(e) => setName(e.target.value)} />
         {stages.map((s, i) => (
           <div key={s.id} className="flex gap-2 text-xs">
-            <input aria-label={`Stage ${i + 1} name`} className="border rounded px-1" required maxLength={100} value={s.name} onChange={(e) => setStages(stages.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
-            <select aria-label={`Stage ${i + 1} status`} className="border rounded px-1" value={s.status} onChange={(e) => setStages(stages.map((x, j) => j === i ? { ...x, status: e.target.value } : x))}>{STATUSES.map((st) => <option key={st}>{st}</option>)}</select>
+            <input aria-label={tx("Stage {i} name", { i: i + 1 })} className="border rounded px-1" required maxLength={100} value={s.name} onChange={(e) => setStages(stages.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
+            <select aria-label={tx("Stage {i} status", { i: i + 1 })} className="border rounded px-1" value={s.status} onChange={(e) => setStages(stages.map((x, j) => j === i ? { ...x, status: e.target.value } : x))}>{STATUSES.map((st) => <option key={st}>{st}</option>)}</select>
             <label className="flex items-center gap-1"><input type="checkbox" checked={s.pauses_sla} onChange={(e) => setStages(stages.map((x, j) => j === i ? { ...x, pauses_sla: e.target.checked } : x))} />{tx("pauses SLA")}</label>
           </div>))}
         <div className="flex gap-2 text-xs">

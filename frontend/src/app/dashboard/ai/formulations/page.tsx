@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { aiApi, AIFormulation, FormulationIngredient } from "@/lib/aiApi";
 import { RequirePermission } from "@/components/PermissionGuard";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
 const PRODUCT_CATEGORIES = [
   "liquid_detergent",
@@ -19,13 +19,13 @@ const PRODUCT_CATEGORIES = [
   "toilet_cleaner",
 ];
 
-const PERFORMANCE_PRIORITIES = [
-  { value: "balanced", label: "Balanced" },
-  { value: "cost", label: "Cost-First" },
-  { value: "performance", label: "Performance-First" },
-  { value: "eco", label: "Eco-Friendly" },
-  { value: "premium", label: "Premium" },
-];
+const PERFORMANCE_PRIORITIES = lx(() => [
+  { value: "balanced", label: tx("Balanced") },
+  { value: "cost", label: tx("Cost-First") },
+  { value: "performance", label: tx("Performance-First") },
+  { value: "eco", label: tx("Eco-Friendly") },
+  { value: "premium", label: tx("Premium") },
+]);
 
 const TARGET_PROPERTY_OPTIONS = [
   "foam_level",
@@ -470,9 +470,9 @@ export default function FormulationsPage() {
                     <h3 className="font-semibold text-gray-800 mb-3">{tx("Cost Breakdown")}</h3>
                     <div className="space-y-2">
                       {[
-                        ["Raw Materials", fd.cost_breakdown.raw_materials_per_kg_usd],
-                        ["Packaging", fd.cost_breakdown.packaging_estimate_per_unit_usd],
-                        ["Labor & Overhead", fd.cost_breakdown.labor_overhead_per_kg_usd],
+                        [tx("Raw Materials"), fd.cost_breakdown.raw_materials_per_kg_usd],
+                        [tx("Packaging"), fd.cost_breakdown.packaging_estimate_per_unit_usd],
+                        [tx("Labor & Overhead"), fd.cost_breakdown.labor_overhead_per_kg_usd],
                       ].map(([label, val]) => (
                         <div key={label as string} className="flex items-center justify-between">
                           <span className="text-sm text-gray-600">{label as string}</span>

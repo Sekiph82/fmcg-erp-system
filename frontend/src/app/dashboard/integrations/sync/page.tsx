@@ -150,7 +150,7 @@ function EcommerceSection() {
     const detail = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail;
     if (typeof detail === "string") return detail;
     if (detail && typeof detail === "object" && "detail" in detail) return String((detail as { detail: unknown }).detail);
-    return e instanceof Error ? e.message : "Request failed";
+    return e instanceof Error ? e.message : tx("Request failed");
   };
 
   const { data: orders = [], isLoading } = useQuery({

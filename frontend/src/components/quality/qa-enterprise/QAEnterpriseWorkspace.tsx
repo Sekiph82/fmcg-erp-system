@@ -11,17 +11,17 @@ import { PlansPanel } from "./PlansPanel";
 import { SpecsPanel } from "./SpecsPanel";
 import { SupplierAuditsPanel } from "./SupplierAuditsPanel";
 import { ReadOnlyNotice, useQualityPermissions } from "./shared";
-import { tx } from "@/lib/i18n/core";
+import { tx, lx } from "@/lib/i18n/core";
 
-const SECTIONS = [
-  { key: "specs", label: "Specifications & change", Panel: SpecsPanel },
-  { key: "plans", label: "QC plans", Panel: PlansPanel },
-  { key: "aql-spc", label: "AQL & SPC", Panel: AqlSpcPanel },
-  { key: "concessions", label: "Concessions & cost", Panel: ConcessionsCostsPanel },
-  { key: "lab", label: "Retain samples & methods", Panel: LabPanel },
-  { key: "suppliers", label: "Supplier audits", Panel: SupplierAuditsPanel },
-  { key: "capa", label: "CAPA links", Panel: CapaLinksPanel },
-] as const;
+const SECTIONS = lx(() => [
+  { key: "specs", label: tx("Specifications & change"), Panel: SpecsPanel },
+  { key: "plans", label: tx("QC plans"), Panel: PlansPanel },
+  { key: "aql-spc", label: tx("AQL & SPC"), Panel: AqlSpcPanel },
+  { key: "concessions", label: tx("Concessions & cost"), Panel: ConcessionsCostsPanel },
+  { key: "lab", label: tx("Retain samples & methods"), Panel: LabPanel },
+  { key: "suppliers", label: tx("Supplier audits"), Panel: SupplierAuditsPanel },
+  { key: "capa", label: tx("CAPA links"), Panel: CapaLinksPanel },
+] as const);
 
 export function QAEnterpriseWorkspace() {
   const { canView } = useQualityPermissions();

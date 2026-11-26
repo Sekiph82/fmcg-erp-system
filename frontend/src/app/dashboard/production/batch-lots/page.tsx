@@ -46,7 +46,7 @@ export default function BatchLotsPage() {
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">{tx("Batch / Lot Tracking")}</h1>
-          <p className="text-sm text-gray-500 mt-1">{items.length} {tx("lots —")} <span className="text-yellow-600 font-medium">{quarantine} quarantine</span> · <span className="text-green-600 font-medium">{released} released</span></p>
+          <p className="text-sm text-gray-500 mt-1">{items.length} {tx("lots —")} <span className="text-yellow-600 font-medium">{tx("{n} quarantine", { n: quarantine })}</span> · <span className="text-green-600 font-medium">{tx("{n} released", { n: released })}</span></p>
         </div>
         <div className="flex gap-2">
           <ImportModal module="batch_lots" onSuccess={()=>qc.invalidateQueries({queryKey:["batch-lots"]})}/>

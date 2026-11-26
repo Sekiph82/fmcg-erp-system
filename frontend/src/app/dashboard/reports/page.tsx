@@ -88,7 +88,7 @@ function HubContent() {
     {
       label: tx("Today's Revenue"),
       value: sales ? fmtKES(sales.today_revenue) : "—",
-      sub: `${sales?.today_orders ?? "—"} orders`,
+      sub: tx("{today_orders} orders", { today_orders: sales?.today_orders ?? "—" }),
       color: "text-emerald-400",
       trend: sales?.revenue_trend ?? [],
       trendColor: "#10b981",
@@ -96,7 +96,7 @@ function HubContent() {
     {
       label: tx("Stock Value"),
       value: inv ? fmtKES(inv.total_stock_value) : "—",
-      sub: `${inv?.low_stock_count ?? "—"} low stock`,
+      sub: tx("{low_stock_count} low stock", { low_stock_count: inv?.low_stock_count ?? "—" }),
       color: "text-blue-400",
       trend: inv?.receipts_trend_30d ?? [],
       trendColor: "#3b82f6",
@@ -111,7 +111,7 @@ function HubContent() {
     },
     {
       label: tx("Production"),
-      value: prod ? `${prod.active_orders} active` : "—",
+      value: prod ? tx("{active_orders} active", { active_orders: prod.active_orders }) : "—",
       sub: `${prod?.completion_rate?.toFixed(1) ?? "—"}% completion`,
       color: "text-purple-400",
       trend: prod?.production_trend ?? [],

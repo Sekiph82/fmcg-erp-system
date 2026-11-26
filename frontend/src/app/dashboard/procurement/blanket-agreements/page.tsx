@@ -221,7 +221,7 @@ export default function BlanketAgreementsPage() {
   }
   const totalValue = [...valueByCurrency.entries()]
     .map(([currency, amount]) => `${currency} ${amount.toLocaleString(undefined, { maximumFractionDigits: 2 })}`)
-    .join(" · ") || "No bounded active agreements";
+    .join(" · ") || tx("No bounded active agreements");
 
   return (
     <div className="p-6 space-y-5">

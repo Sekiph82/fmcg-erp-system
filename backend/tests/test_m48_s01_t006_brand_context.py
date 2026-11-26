@@ -19,7 +19,9 @@ BEVERAGE = re.compile(r"\b(drinks?|beverages?|juices?|cola|soda|mango|sugar|soft
 ALLOW = {
     "backend/app/models/master.py": ['BEVERAGE = "BEVERAGE"'],
     "frontend/src/lib/products.ts": ['"FOOD" | "BEVERAGE" | "PERSONAL_CARE"'],
-    "frontend/src/app/dashboard/products/page.tsx": ['{ value: "BEVERAGE", label: "Beverage" }'],
+    "frontend/src/app/dashboard/products/page.tsx": ['{ value: "BEVERAGE", label: "Beverage" }', '{ value: "BEVERAGE", label: tx("Beverage") }'],
+    # M51.S01.T008: the generic category label in the UI catalogs (EN / SW / TR)
+    "frontend/src/lib/i18n/messages/staff_ui.json": ['"Beverage": "Beverage"', '"Beverage": "Kinywaji"', '"Beverage": "İçecek"'],
 }
 
 

@@ -290,7 +290,7 @@ export default function BOMPage() {
   return (
     <ModuleWorkspace
       title={tx("BOM & Formula")}
-      description="Bill of materials, formula versions, substitutes, cost explosion"
+      description={tx("Bill of materials, formula versions, substitutes, cost explosion")}
       permission="bom.view"
       tabs={tabs}
       defaultTab="list"

@@ -20,7 +20,7 @@ function ProductionDashboard() {
   return (
     <DashboardShell
       title={tx("Production / MES Analytics")}
-      subtitle="Plan vs actual, downtime, quality rejections"
+      subtitle={tx("Plan vs actual, downtime, quality rejections")}
       days={days}
       onDaysChange={setDays}
       backHref="/dashboard/reports"

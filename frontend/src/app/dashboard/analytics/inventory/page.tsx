@@ -66,10 +66,10 @@ export default function InventoryAnalyticsPage() {
         </div>
 
         {/* Movement trends */}
-        <ChartCard title={tx("Net Stock Movement")} subtitle={`Last ${days} days (receipts − issues)`}>
+        <ChartCard title={tx("Net Stock Movement")} subtitle={tx("Last {days} days (receipts − issues)", { days })}>
           <LineChart
             series={[
-              { name: "Net Movement", color: "#6366f1", data: data?.movement_trend_30d ?? [] },
+              { name: tx("Net Movement"), color: "#6366f1", data: data?.movement_trend_30d ?? [] },
               { name: "Receipts", color: "#10b981", data: data?.receipts_trend_30d ?? [] },
               { name: "Issues", color: "#ef4444", data: data?.issues_trend_30d ?? [], dashed: true },
             ]}
@@ -78,7 +78,7 @@ export default function InventoryAnalyticsPage() {
         </ChartCard>
 
         {/* Movement type distribution */}
-        <ChartCard title={tx("By Movement Type")} subtitle="Volume distribution">
+        <ChartCard title={tx("By Movement Type")} subtitle={tx("Volume distribution")}>
           <DistributionBar
             data={data?.by_movement_type ?? []}
             formatValue={(v) => fmt(v, 0)}
@@ -86,7 +86,7 @@ export default function InventoryAnalyticsPage() {
         </ChartCard>
 
         {/* Low stock exceptions */}
-        <ChartCard title={tx("Low Stock Alerts")} subtitle="Items at or below reorder point">
+        <ChartCard title={tx("Low Stock Alerts")} subtitle={tx("Items at or below reorder point")}>
           <ExceptionList
             items={data?.low_stock_items ?? []}
             title=""

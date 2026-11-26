@@ -134,7 +134,7 @@ export default function LandedCostAIPage() {
               </div>
               <p className="text-xs text-gray-400">
                 {tx("Created")} {new Date(rec.created_at).toLocaleString()}
-                {rec.actioned_at && ` · Actioned ${new Date(rec.actioned_at).toLocaleString()}`}
+                {rec.actioned_at && tx(" · Actioned {date}", { date: new Date(rec.actioned_at).toLocaleString() })}
               </p>
             </div>
           ))}

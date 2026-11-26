@@ -9,6 +9,7 @@ import {
   MpesaInitiateRequest,
 } from "@/lib/integrations";
 import { RequirePermission } from "@/components/PermissionGuard";
+import { tx as xlate, lx } from "@/lib/i18n/core";
 
 function fmtKES(n: number) {
   if (n >= 1_000_000) return `KES ${(n / 1_000_000).toFixed(1)}M`;
@@ -16,14 +17,14 @@ function fmtKES(n: number) {
   return `KES ${n.toLocaleString()}`;
 }
 
-const STATUS_CFG: Record<MpesaTxStatus, { label: string; cls: string }> = {
-  PENDING: { label: "Pending", cls: "bg-amber-100 text-amber-800" },
-  SUCCESS: { label: "Success", cls: "bg-emerald-100 text-emerald-800" },
-  FAILED: { label: "Failed", cls: "bg-red-100 text-red-800" },
-  CANCELLED: { label: "Cancelled", cls: "bg-gray-100 text-gray-600" },
-  TIMEOUT: { label: "Timeout", cls: "bg-orange-100 text-orange-800" },
-  REVERSED: { label: "Reversed", cls: "bg-purple-100 text-purple-800" },
-};
+const STATUS_CFG: Record<MpesaTxStatus, { label: string; cls: string }> = lx(() => ({
+  PENDING: { label: xlate("Pending"), cls: "bg-amber-100 text-amber-800" },
+  SUCCESS: { label: xlate("Success"), cls: "bg-emerald-100 text-emerald-800" },
+  FAILED: { label: xlate("Failed"), cls: "bg-red-100 text-red-800" },
+  CANCELLED: { label: xlate("Cancelled"), cls: "bg-gray-100 text-gray-600" },
+  TIMEOUT: { label: xlate("Timeout"), cls: "bg-orange-100 text-orange-800" },
+  REVERSED: { label: xlate("Reversed"), cls: "bg-purple-100 text-purple-800" },
+}));
 
 function StatusBadge({ status }: { status: MpesaTxStatus }) {
   const cfg = STATUS_CFG[status] ?? { label: status, cls: "bg-gray-100 text-gray-600" };
@@ -60,16 +61,16 @@ function InitiateModal({
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
-        <h2 className="text-lg font-bold text-gray-900">Initiate M-Pesa Payment</h2>
+        <h2 className="text-lg font-bold text-gray-900">{xlate("Initiate M-Pesa Payment")}</h2>
 
         {error && (
           <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{error}</p>
         )}
 
         {[
-          { label: "Phone (254XXXXXXXXX)", key: "phone_number", type: "tel" },
-          { label: "Amount (KES)", key: "amount", type: "number" },
-          { label: "Merchant Reference", key: "merchant_reference", type: "text" },
+          { label: xlate("Phone (254XXXXXXXXX)"), key: "phone_number", type: "tel" },
+          { label: xlate("Amount (KES)"), key: "amount", type: "number" },
+          { label: xlate("Merchant Reference"), key: "merchant_reference", type: "text" },
         ].map(({ label, key, type }) => (
           <div key={key}>
             <label className="block text-xs font-medium text-gray-700 mb-1">{label}</label>
@@ -92,14 +93,14 @@ function InitiateModal({
             onClick={onClose}
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50"
           >
-            Cancel
+            {xlate("Cancel")}
           </button>
           <button
             onClick={() => mut.mutate(form)}
             disabled={mut.isPending || !form.phone_number || !form.amount || !form.merchant_reference}
             className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50"
           >
-            {mut.isPending ? "Sending..." : "Send STK Push"}
+            {mut.isPending ? xlate("Sending...") : xlate("Send STK Push")}
           </button>
         </div>
       </div>
@@ -155,15 +156,15 @@ function MpesaPageContent() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">📱 M-Pesa Transactions</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{xlate("📱 M-Pesa Transactions")}</h1>
           {configStatus && (
             <p className="text-xs text-gray-500 mt-0.5">
               {configStatus.configured ? (
-                <span className="text-emerald-600">● Live ({configStatus.environment})</span>
+                <span className="text-emerald-600">{xlate("● Live (")}{configStatus.environment})</span>
               ) : (
-                <span className="text-amber-600">● Sandbox mode (credentials not configured)</span>
+                <span className="text-amber-600">{xlate("● Sandbox mode (credentials not configured)")}</span>
               )}
-              {" · "}Shortcode: {configStatus.shortcode || "—"}
+              {" · "}{xlate("Shortcode:")} {configStatus.shortcode || "—"}
             </p>
           )}
         </div>
@@ -171,17 +172,17 @@ function MpesaPageContent() {
           onClick={() => setShowInitiate(true)}
           className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
         >
-          + New Payment
+          {xlate("+ New Payment")}
         </button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Collected", value: fmtKES(totalSuccess), color: "text-emerald-600" },
-          { label: "Successful", value: successCount, color: "text-emerald-600" },
-          { label: "Pending", value: pendingCount, color: "text-amber-600" },
-          { label: "Failed", value: failedCount, color: "text-red-600" },
+          { label: xlate("Collected"), value: fmtKES(totalSuccess), color: "text-emerald-600" },
+          { label: xlate("Successful"), value: successCount, color: "text-emerald-600" },
+          { label: xlate("Pending"), value: pendingCount, color: "text-amber-600" },
+          { label: xlate("Failed"), value: failedCount, color: "text-red-600" },
         ].map((s) => (
           <div key={s.label} className="bg-white border border-gray-200 rounded-xl p-4 text-center">
             <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
@@ -202,7 +203,7 @@ function MpesaPageContent() {
                 : "bg-white text-gray-600 border-gray-200 hover:border-indigo-300"
             }`}
           >
-            {s || "All"}
+            {s || xlate("All")}
           </button>
         ))}
       </div>
@@ -210,15 +211,15 @@ function MpesaPageContent() {
       {/* Table */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-gray-400 text-sm">Loading...</div>
+          <div className="p-8 text-center text-gray-400 text-sm">{xlate("Loading...")}</div>
         ) : transactions.length === 0 ? (
-          <div className="p-8 text-center text-gray-400 text-sm">No transactions found</div>
+          <div className="p-8 text-center text-gray-400 text-sm">{xlate("No transactions found")}</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  {["Reference", "Phone", "Amount", "Status", "Receipt", "Date", "Actions"].map((h) => (
+                  {[xlate("Reference"), xlate("Phone"), xlate("Amount"), xlate("Status"), xlate("Receipt"), xlate("Date"), xlate("Actions")].map((h) => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500">
                       {h}
                     </th>
@@ -251,7 +252,7 @@ function MpesaPageContent() {
                               disabled={checkMut.isPending}
                               className="px-2 py-1 text-xs bg-blue-50 text-blue-700 rounded hover:bg-blue-100"
                             >
-                              Check
+                              {xlate("Check")}
                             </button>
                             {tx.retry_count < 3 && (
                               <button
@@ -259,7 +260,7 @@ function MpesaPageContent() {
                                 disabled={retryMut.isPending}
                                 className="px-2 py-1 text-xs bg-amber-50 text-amber-700 rounded hover:bg-amber-100"
                               >
-                                Retry
+                                {xlate("Retry")}
                               </button>
                             )}
                           </>
@@ -270,7 +271,7 @@ function MpesaPageContent() {
                             disabled={retryMut.isPending}
                             className="px-2 py-1 text-xs bg-amber-50 text-amber-700 rounded hover:bg-amber-100"
                           >
-                            Retry ({tx.retry_count}/3)
+                            {xlate("Retry (")}{tx.retry_count}/3)
                           </button>
                         )}
                       </div>

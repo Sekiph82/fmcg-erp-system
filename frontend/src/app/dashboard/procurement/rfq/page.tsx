@@ -419,7 +419,7 @@ export default function RFQPage() {
                           const line = selected.lines.find((item) => item.id === quote.rfq_line_id);
                           return (
                             <p key={quote.id} className="text-xs text-gray-600 mt-1">
-                              {line ? `${line.line_no}. ${line.description || "RFQ line"} · ` : ""}
+                              {line ? `${line.line_no}. ${line.description || tx("RFQ line")} · ` : ""}
                               {quote.quoted_currency} {Number(quote.quoted_unit_price).toLocaleString()} /unit
                             </p>
                           );
@@ -446,13 +446,13 @@ export default function RFQPage() {
                         return (
                           <label key={key} className="grid grid-cols-[1fr_7rem] items-center gap-2 text-xs text-gray-700">
                             <span>
-                              {line ? `${line.line_no}. ${line.description || "RFQ line"} · ` : ""}
+                              {line ? `${line.line_no}. ${line.description || tx("RFQ line")} · ` : ""}
                               {response.supplier_name ?? response.supplier_id.slice(0, 8)} ·
                               {" "}{lineQuote?.quoted_currency ?? response.quoted_currency}{" "}
                               {lineQuote?.quoted_unit_price ?? response.quoted_unit_price ?? tx("no quote")}
                             </span>
                             <input
-                              aria-label={`Award quantity for ${response.supplier_name ?? response.supplier_id}${line ? ` on line ${line.line_no}` : ""}`}
+                              aria-label={(line ? tx("Award quantity for {supplier_name} on line {line_no}", { supplier_name: response.supplier_name ?? response.supplier_id, line_no: line.line_no }) : tx("Award quantity for {supplier_name}", { supplier_name: response.supplier_name ?? response.supplier_id }))}
                               type="number" min="0" max={line?.quantity ?? selected.quantity ?? undefined} step="0.001"
                               value={awardQuantities[key] ?? ""}
                               onChange={(event) => setAwardQuantities((current) => ({ ...current, [key]: event.target.value }))}
@@ -491,7 +491,7 @@ export default function RFQPage() {
                           {award.allocations.map((allocation) => {
                             const bid = selected.responses.find((response) => response.id === allocation.response_id);
                             const line = selected.lines.find((item) => item.id === allocation.rfq_line_id);
-                            return <li key={allocation.id} className="text-[11px] text-gray-600">{line ? `${line.line_no}. ${line.description || "RFQ line"} · ` : ""}{bid?.supplier_name ?? bid?.supplier_id ?? allocation.response_id}: {allocation.quantity} {line?.unit ?? selected.unit}</li>;
+                            return <li key={allocation.id} className="text-[11px] text-gray-600">{line ? `${line.line_no}. ${line.description || tx("RFQ line")} · ` : ""}{bid?.supplier_name ?? bid?.supplier_id ?? allocation.response_id}: {allocation.quantity} {line?.unit ?? selected.unit}</li>;
                           })}
                         </ul>
                         {award.approvals.map((approval) => (
@@ -531,13 +531,13 @@ export default function RFQPage() {
                     selected.access?.can_edit ? <div className="space-y-2">
                       {criteriaDraft.map((criterion, index) => (
                         <div key={`${criterion.code}-${index}`} className="grid grid-cols-2 gap-2 rounded border p-2">
-                          <input aria-label={`Criterion ${index + 1} code`} value={criterion.code}
+                          <input aria-label={tx("Criterion {index} code", { index: index + 1 })} value={criterion.code}
                             onChange={(event) => setCriteriaDraft((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, code: event.target.value } : row))}
                             className="border rounded px-2 py-1 text-xs" placeholder={tx("Code")} />
-                          <input aria-label={`Criterion ${index + 1} name`} value={criterion.name}
+                          <input aria-label={tx("Criterion {index} name", { index: index + 1 })} value={criterion.name}
                             onChange={(event) => setCriteriaDraft((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, name: event.target.value } : row))}
                             className="border rounded px-2 py-1 text-xs" placeholder={tx("Criterion name")} />
-                          <select aria-label={`Criterion ${index + 1} dimension`} value={criterion.dimension}
+                          <select aria-label={tx("Criterion {index} dimension", { index: index + 1 })} value={criterion.dimension}
                             onChange={(event) => setCriteriaDraft((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, dimension: event.target.value as RFQEvaluationDimension } : row))}
                             className="border rounded px-2 py-1 text-xs">
                             <option value="TECHNICAL">{tx("Technical")}</option>
@@ -545,7 +545,7 @@ export default function RFQPage() {
                           </select>
                           <label className="flex items-center gap-2 text-xs text-gray-600">
                             {tx("Weight %")}
-                            <input aria-label={`Criterion ${index + 1} weight`} type="number" min="0.01" max="100" step="0.01" value={criterion.weight_percent}
+                            <input aria-label={tx("Criterion {index} weight", { index: index + 1 })} type="number" min="0.01" max="100" step="0.01" value={criterion.weight_percent}
                               onChange={(event) => setCriteriaDraft((rows) => rows.map((row, rowIndex) => rowIndex === index ? { ...row, weight_percent: event.target.value } : row))}
                               className="w-20 border rounded px-2 py-1" />
                           </label>
@@ -629,7 +629,7 @@ export default function RFQPage() {
                             <div className="space-y-1">
                               {response.evaluation_history.map((evaluation) => (
                                 <p key={`${evaluation.criterion_id}-${evaluation.revision_no}`} className="text-[11px] text-gray-500">
-                                  {evaluation.criterion_name ?? evaluation.criterion_code}: {Number(evaluation.score).toFixed(2)} {tx("· revision")} {evaluation.revision_no}{evaluation.passes_gate === null || evaluation.passes_gate === undefined ? "" : evaluation.passes_gate ? tx(" · gate passed") : tx(" · gate failed")} · {evaluation.evaluator_id ? `evaluator ${evaluation.evaluator_id.slice(0, 8)}` : tx("unattributed")} · {new Date(evaluation.evaluated_at).toLocaleString()}{evaluation.comments ? ` · ${evaluation.comments}` : ""}
+                                  {evaluation.criterion_name ?? evaluation.criterion_code}: {Number(evaluation.score).toFixed(2)} {tx("· revision")} {evaluation.revision_no}{evaluation.passes_gate === null || evaluation.passes_gate === undefined ? "" : evaluation.passes_gate ? tx(" · gate passed") : tx(" · gate failed")} · {evaluation.evaluator_id ? tx("evaluator {evaluator_id}", { evaluator_id: evaluation.evaluator_id.slice(0, 8) }) : tx("unattributed")} · {new Date(evaluation.evaluated_at).toLocaleString()}{evaluation.comments ? ` · ${evaluation.comments}` : ""}
                                 </p>
                               ))}
                               {selected.access?.can_edit && <button type="button" onClick={() => startEvaluation(response, selected.evaluation_criteria)} className="text-xs text-indigo-700 hover:underline">

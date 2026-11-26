@@ -71,8 +71,8 @@ export default function WastewaterKpiPage() {
 
   // Build simple parameter bar data for visualization
   const paramData = [
-    { name: "COD Removal", value: kpi?.cod_removal_pct ?? 0, target: 90, unit: "%" },
-    { name: "BOD Removal", value: kpi?.bod_removal_pct ?? 0, target: 90, unit: "%" },
+    { name: tx("COD Removal"), value: kpi?.cod_removal_pct ?? 0, target: 90, unit: "%" },
+    { name: tx("BOD Removal"), value: kpi?.bod_removal_pct ?? 0, target: 90, unit: "%" },
     { name: "Compliance", value: kpi?.compliant_pct ?? 0, target: 95, unit: "%" },
   ].filter(d => d.value > 0);
 

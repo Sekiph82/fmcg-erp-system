@@ -119,7 +119,7 @@ export function ImportModal({ module, onSuccess, trigger }: Props) {
                   <button
                     onClick={() =>
                       importApi.downloadTemplate(module).catch((e) =>
-                        setError(`Template download failed: ${e?.message ?? e}`)
+                        setError(tx("Template download failed: {message}", { message: e?.message ?? e }))
                       )
                     }
                     className="shrink-0 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-1.5 text-xs text-indigo-300 hover:bg-indigo-500/20 transition-colors"
@@ -195,7 +195,7 @@ export function ImportModal({ module, onSuccess, trigger }: Props) {
                       disabled={step === "importing"}
                       className="flex-1 rounded-lg bg-emerald-600 py-2 text-xs font-medium text-white hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     >
-                      {step === "importing" ? tx("Importing…") : `Import ${result.valid_rows} row${result.valid_rows !== 1 ? "s" : ""}`}
+                      {step === "importing" ? tx("Importing…") : ((result.valid_rows !== 1) ? tx("Import {valid_rows} rows", { valid_rows: result.valid_rows }) : tx("Import {valid_rows} row", { valid_rows: result.valid_rows }))}
                     </button>
                   )}
                 </div>

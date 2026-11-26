@@ -10,7 +10,7 @@ function errorText(e: unknown) {
   if (typeof detail === "string") return detail;
   if (Array.isArray(detail)) return detail.map((d) => (d as { msg?: string }).msg).join("; ");
   if (detail && typeof detail === "object" && "detail" in detail) return String((detail as { detail: unknown }).detail);
-  return "Request failed.";
+  return tx("Request failed.");
 }
 
 const EMPTY = { slug: "", name: "", title: "", intro: "", consent_text: "I agree to be contacted about products and offers.", require_consent: true, assigned_rep_id: "" };

@@ -543,7 +543,7 @@ function CurrenciesTab() {
       <ToastContainer toasts={toasts} onDismiss={dismiss} />
 
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-sm text-gray-500">{currencies.length} currencies</p>
+        <p className="text-sm text-gray-500">{tx("{n} currencies", { n: currencies.length })}</p>
         <PermissionGuard permission="utilities.manage">
           <Button onClick={() => setCreateOpen(true)}>{tx("+ Add Currency")}</Button>
         </PermissionGuard>

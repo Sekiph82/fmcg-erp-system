@@ -206,7 +206,7 @@ export default function BudgetPage() {
         <div className="bg-white rounded-lg border">
           <div className="px-5 py-3 border-b font-semibold text-gray-800">
             {budgetDetail
-              ? `${budgetDetail.department} ${budgetDetail.year} v${budgetDetail.version ?? 1} — Lines`
+              ? tx("{department} {year} v{version} — Lines", { department: budgetDetail.department, year: budgetDetail.year, version: budgetDetail.version ?? 1 })
               : tx("Select a budget to view lines")}
           </div>
           {budgetDetail ? (

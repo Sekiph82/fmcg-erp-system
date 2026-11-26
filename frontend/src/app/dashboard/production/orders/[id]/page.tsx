@@ -408,7 +408,7 @@ export default function OrderDetailPage() {
                   { value: "", label: tx("Select routing…") },
                   ...availableRoutings.filter((routing) => routing.is_active && routing.steps.length > 0).map((routing) => ({
                     value: routing.id,
-                    label: `${routing.routing_id} v${routing.version} · ${routing.steps.length} steps`,
+                    label: tx("{routing_id} v{version} · {length} steps", { routing_id: routing.routing_id, version: routing.version, length: routing.steps.length }),
                   })),
                 ]}
                 value={selectedRoutingId}
@@ -452,7 +452,7 @@ export default function OrderDetailPage() {
               { header: tx("Rework"), accessor: (workOrder) => workOrder.rework_of_id
                 ? <span title={workOrder.rework_reason}>{tx("Rework ·")} {workOrder.rework_reason}</span>
                 : Number(workOrder.rework_quantity ?? 0) > 0
-                  ? `${Number(workOrder.rework_quantity).toLocaleString()} ${order.uom} sent to rework`
+                  ? tx("{rework_quantity} {uom} sent to rework", { rework_quantity: Number(workOrder.rework_quantity).toLocaleString(), uom: order.uom })
                   : "—" },
               { header: tx("Work Center"), accessor: (workOrder) => workOrder.work_center_name ?? "—" },
               { header: tx("Planned Qty"), accessor: (workOrder) => workOrder.planned_quantity == null ? "—" : `${Number(workOrder.planned_quantity).toLocaleString()} ${order.uom}` },
@@ -720,7 +720,7 @@ export default function OrderDetailPage() {
             <Select
               label={tx("Material Source Warehouse")}
               options={[
-                { value: "", label: order.source_warehouse_id ? "Use order default" : "Skip material consumption" },
+                { value: "", label: order.source_warehouse_id ? tx("Use order default") : tx("Skip material consumption") },
                 ...rmWarehouses.map((w) => ({ value: w.id, label: w.name })),
               ]}
               value={completeForm.source_warehouse_id ?? ""}
@@ -786,7 +786,7 @@ export default function OrderDetailPage() {
       <Modal
         open={Boolean(splitTarget)}
         onClose={() => { setSplitTarget(null); setSplitQuantities(["", ""]); }}
-        title={`Split ${splitTarget?.work_order_id ?? "work order"}`}
+        title={tx("Split {work_order_id}", { work_order_id: splitTarget?.work_order_id ?? "work order" })}
       >
         <form
           onSubmit={(event) => { event.preventDefault(); splitOperation.mutate(); }}

@@ -24,7 +24,7 @@ export function ImportResultView({ result, onDownloadErrors }: Props) {
       {result.imported && (
         <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-300">
           ✓ {result.valid_rows} {tx("record")}{result.valid_rows !== 1 ? tx("s") : ""} {tx("imported successfully.")}
-          {result.failed_rows > 0 && ` ${result.failed_rows} row${result.failed_rows !== 1 ? "s" : ""} skipped due to errors.`}
+          {result.failed_rows > 0 && ((result.failed_rows !== 1) ? tx(" {failed_rows} rows skipped due to errors.", { failed_rows: result.failed_rows }) : tx(" {failed_rows} row skipped due to errors.", { failed_rows: result.failed_rows }))}
         </div>
       )}
 

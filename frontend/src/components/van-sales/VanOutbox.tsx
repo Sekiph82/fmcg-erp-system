@@ -20,13 +20,13 @@ export function VanOutbox({ vanId, version = 0 }: { vanId: string; version?: num
       const r = await vanSalesApi.sync(vanId, { ...ob, device_id: navigator.userAgent.slice(0, 100) });
       if (r.errors.length === 0) {
         writeOutbox(vanId, { transactions: [], payments: [] });
-        setMsg({ ok: true, text: `Synced: ${r.txns_created} sale(s), ${r.payments_created} payment(s)${r.duplicates_skipped ? `, ${r.duplicates_skipped} already on the server` : ""}.` });
+        setMsg({ ok: true, text: `Synced: ${r.txns_created} sale(s), ${r.payments_created} payment(s)${r.duplicates_skipped ? tx(", {duplicates_skipped} already on the server", { duplicates_skipped: r.duplicates_skipped }) : ""}.` });
       } else {
         // keep everything: a resend is safe (sales are matched by offline_id), and nothing is lost
-        setMsg({ ok: false, text: `Sync finished with problems — kept on this device: ${r.errors.join("; ")}` });
+        setMsg({ ok: false, text: tx("Sync finished with problems — kept on this device: {errors}", { errors: r.errors.join("; ") }) });
       }
     } catch (e) {
-      setMsg({ ok: false, text: `Not synced (${(e as Error).message}). Everything is still kept on this device.` });
+      setMsg({ ok: false, text: tx("Not synced ({e}). Everything is still kept on this device.", { e: (e as Error).message }) });
     } finally { setBusy(false); reload(); }
   }
 
