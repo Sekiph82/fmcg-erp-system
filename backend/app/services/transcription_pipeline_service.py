@@ -241,7 +241,8 @@ async def _audio_for(db: AsyncSession, job: TranscriptJob) -> tuple[bytes, str]:
             raise TxError("RECORDING_EXPIRED", "The recording is past its retention date.", 422)
         url = call.recording_url
         auth = None
-        if call.provider == "twilio" and url.startswith(_cfg("VOICE_TWILIO_BASE_URL", "https://api.twilio.com")):
+        u, b = urlsplit(url), urlsplit(_cfg("VOICE_TWILIO_BASE_URL", "https://api.twilio.com"))
+        if call.provider == "twilio" and u.scheme == "https" and u.netloc == b.netloc:      # exact host, never a prefix
             auth = (_cfg("VOICE_TWILIO_ACCOUNT_SID"), _cfg("VOICE_TWILIO_AUTH_TOKEN"))
     else:
         from app.models.meetings import MeetingRecord

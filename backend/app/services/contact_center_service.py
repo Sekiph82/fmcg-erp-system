@@ -221,6 +221,7 @@ async def _route(db: AsyncSession, call: CallLog, queue_id: Optional[str]) -> st
     queue = await db.get(VoiceQueue, uuid.UUID(queue_id)) if queue_id else None
     if queue is None or not queue.is_active:
         await request_callback(db, call.phone_number, None, call.id)
+        call.follow_up_required, call.outcome = True, "NO_ANSWER"     # missed: no agent took it
         return vc.twiml(vc.say("Nobody can take your call right now. We will call you back."), "<Hangup/>")
     d = await decide(db, call, queue, can_hold=True, can_voicemail=True)
     q = {"ref": call.call_ref, "queue": str(queue.id)}
@@ -256,7 +257,8 @@ async def handle_twilio(db: AsyncSession, step: str, form: dict, args: dict) -> 
         if call.status not in FINAL:
             if st in TW_STATUS:
                 call.status = TW_STATUS[st]
-                call.outcome = {"COMPLETED": "ANSWERED", "NO_ANSWER": "NO_ANSWER", "BUSY": "BUSY"}.get(call.status, "FAILED")
+                missed = call.direction == "INBOUND" and call.outcome == "NO_ANSWER"   # the IVR answered, no agent did
+                call.outcome = "NO_ANSWER" if missed else {"COMPLETED": "ANSWERED", "NO_ANSWER": "NO_ANSWER", "BUSY": "BUSY"}.get(call.status, "FAILED")
                 dur = form.get("CallDuration") or form.get("Duration")
                 call.duration_seconds = int(dur) if dur and dur.isdigit() else call.duration_seconds
                 call.ended_at = datetime.utcnow()
@@ -288,6 +290,7 @@ async def handle_twilio(db: AsyncSession, step: str, form: dict, args: dict) -> 
         menu = await db.get(VoiceIvrMenu, call.ivr_menu_id) if call.ivr_menu_id else None
         if menu is None:
             await request_callback(db, call.phone_number, None, call.id)
+            call.follow_up_required, call.outcome = True, "NO_ANSWER"     # missed: no agent took it
             return vc.twiml(vc.say("Thank you for calling POVU. Nobody can take your call right now. We will call you back."), "<Hangup/>")
         q = {"ref": call.call_ref}
         if menu.record_calls and call.consent_note is None:

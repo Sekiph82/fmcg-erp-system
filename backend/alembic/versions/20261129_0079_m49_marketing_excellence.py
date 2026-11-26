@@ -42,7 +42,8 @@ COLUMNS = [
 
 EVIDENCE = ["voice_voicemails", "voice_provider_events", "m49_transcript_jobs", "m49_transcript_edits",
             "calendar_webhook_receipts", "m49_social_optouts", "m49_social_webhook_events", "m49_audience_suppressions",
-            "m49_ad_edits", "m49_studio_budget_requests"]
+            "m49_ad_edits", "m49_studio_budget_requests",
+            "m49_audience_syncs", "m49_audience_sync_members", "voice_call_dispositions", "voice_transfers", "voice_callbacks"]
 
 
 def _tables():
@@ -59,6 +60,21 @@ def upgrade() -> None:
         t.create(bind=bind, checkfirst=True)
 
 
+def _archive_reply_columns(bind) -> None:
+    """Reply approval evidence (who approved which reply, provider id) lives in social_items columns: keep it."""
+    import sqlalchemy as sa
+    insp = sa.inspect(bind)
+    if not insp.has_table("social_items") or "reply_status" not in {c["name"] for c in insp.get_columns("social_items")}:
+        return
+    name, n = "social_items_reply_archived_0079", 1
+    while insp.has_table(name):
+        n += 1
+        name = f"social_items_reply_archived_0079_{n}"
+    cols = ", ".join(c for t, c, _ in COLUMNS if t == "social_items")
+    bind.exec_driver_sql(f"CREATE TABLE {name} AS SELECT id, {cols} FROM social_items WHERE reply_status IS NOT NULL "
+                         "OR reply_external_id IS NOT NULL")
+
+
 def downgrade() -> None:
     from app.db.downgrade_archive import archive_tables
     bind = op.get_bind()
@@ -66,5 +82,6 @@ def downgrade() -> None:
     for t in reversed(_tables()):
         if t.name not in EVIDENCE:
             t.drop(bind=bind, checkfirst=True)
+    _archive_reply_columns(bind)
     for table, col, _ in reversed(COLUMNS):
         op.execute(f"ALTER TABLE {table} DROP COLUMN IF EXISTS {col}")

@@ -281,7 +281,7 @@ export default function SocialPage() {
                 {p.conflicts.map((x, i) => <p key={i} className="text-amber-700">⏱ {x}</p>)}
                 {p.error && <p className="text-red-600">{p.error}{p.fail_reason ? ` (${p.fail_reason})` : ""}</p>}
                 {p.provider_ref && <p className="text-gray-500">Network reference {p.provider_ref}{p.provider_status ? ` · ${p.provider_status}` : ""}{p.status !== "PUBLISHED" ? " — a submission, not yet a live post" : ""}</p>}
-                {p.status === "PUBLISHED" && <p className="text-emerald-700">Live{p.external_post_id ? ` · post ${p.external_post_id}` : " (the network gave no public post id, e.g. a private post)"}{p.published_at ? ` · ${new Date(p.published_at).toLocaleString()}` : ""}</p>}
+                {p.status === "PUBLISHED" && <p className="text-emerald-700">{modeOf(p) === "SIMULATED" ? "Simulated (local simulator only, not on the real network)" : "Live"}{p.external_post_id ? ` · post ${p.external_post_id}` : " (the network gave no public post id, e.g. a private post)"}{p.published_at ? ` · ${new Date(p.published_at).toLocaleString()}` : ""}</p>}
                 {p.status === "EXPORTED" && p.provider_status === "SEND_TO_USER_INBOX" && <p className="text-gray-700">Delivered to the creator&apos;s TikTok inbox as a draft. It is not a post until the creator publishes it in the TikTok app.</p>}
                 {p.network === "tiktok" && ["DRAFT", "PENDING", "APPROVED", "FAILED"].includes(p.status) && <TikTokOptions post={p} run={run} />}
                 {p.status === "PUBLISHED" && <Insights post={p} />}

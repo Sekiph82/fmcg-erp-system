@@ -27,6 +27,7 @@ from sqlalchemy.orm import noload, selectinload
 
 from app.core.config import settings
 from app.core.deps import get_current_user, get_db
+from app.models.m49_calendar_mail import SharedMailbox
 from app.models.email_integration import (
     EmailAccount, EmailThread, EmailMessage, EmailTemplate, EmailProvider,
 )
@@ -75,9 +76,17 @@ def _owns(account: EmailAccount, user: User) -> bool:
     return bool(getattr(user, "is_superuser", False)) or account.created_by_id == user.id
 
 
+# Shared / delegated mailboxes (M49) have their own member-scoped endpoints: never reachable here, not even by a superuser.
+_SHARED = select(SharedMailbox.account_id).where(SharedMailbox.account_id.is_not(None))
+
+
+async def _is_shared(db: AsyncSession, account_id) -> bool:
+    return (await db.execute(select(SharedMailbox.id).where(SharedMailbox.account_id == account_id).limit(1))).first() is not None
+
+
 async def _account_for(db: AsyncSession, account_id: uuid.UUID, user: User) -> EmailAccount:
     account = await db.get(EmailAccount, account_id)
-    if not account or not _owns(account, user):
+    if not account or not _owns(account, user) or await _is_shared(db, account.id):
         raise HTTPException(404, "Account not found")
     return account
 
@@ -88,7 +97,7 @@ async def _thread_for(db: AsyncSession, thread_id: uuid.UUID, user: User, with_m
         q = q.options(selectinload(EmailThread.messages))
     thread = (await db.execute(q)).scalar_one_or_none()
     account = await db.get(EmailAccount, thread.account_id) if thread else None
-    if not thread or account is None or not _owns(account, user):
+    if not thread or account is None or not _owns(account, user) or await _is_shared(db, account.id):
         raise HTTPException(404, "Thread not found")
     return thread
 
@@ -100,7 +109,7 @@ async def list_accounts(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    q = select(EmailAccount).where(EmailAccount.is_active.is_(True)).order_by(EmailAccount.created_at)
+    q = select(EmailAccount).where(EmailAccount.is_active.is_(True), EmailAccount.id.not_in(_SHARED)).order_by(EmailAccount.created_at)
     if not current_user.is_superuser:
         q = q.where(EmailAccount.created_by_id == current_user.id)
     result = await db.execute(q)
@@ -166,6 +175,7 @@ async def list_threads(
 ):
     q = (select(EmailThread).options(noload(EmailThread.messages))  # list view: no messages
          .order_by(EmailThread.last_message_at.desc().nulls_last()).offset(skip).limit(limit))
+    q = q.where(EmailThread.account_id.not_in(_SHARED))
     if not current_user.is_superuser:
         q = q.where(EmailThread.account_id.in_(
             select(EmailAccount.id).where(EmailAccount.created_by_id == current_user.id)))

@@ -39,6 +39,7 @@ ENTRIES: list[tuple[str, str, str, str, tuple[str, ...], tuple[str, ...], str]] 
     ("campaign", "Marketing campaign", "marketing:Campaign", "approval_status", ("PENDING",), ("campaigns.approve", "marketing.approve"), "/dashboard/marketing?tab=campaigns"),
     ("trade_spend", "Trade spend", "marketing:TradeSpend", "approval_status", ("PENDING",), ("trade_spend.approve", "marketing.approve"), "/dashboard/marketing?tab=trade-spend"),
     ("brand_spend", "Brand spend", "marketing:BrandSpend", "approval_status", ("PENDING",), ("brand_spend.approve", "marketing.approve"), "/dashboard/marketing?tab=brand-spend"),
+    ("studio_budget", "Campaign budget above finance cap", "m49_studio:StudioBudgetRequest", "status", ("PENDING",), ("finance.approve",), "/dashboard/my-approvals"),   # M49.S01.T012; requester refused by the endpoint
     ("tpm_claim", "Trade promotion claim", "tpm:TPMClaim", "status", ("SUBMITTED",), ("trade_spend.approve", "promotions.approve", "marketing.approve"), "/dashboard/marketing?tab=tpm"),
     ("brand_asset", "Brand asset review", "brand_assets:AssetApprovalStage", "status", ("PENDING",), ("marketing.approve", "campaigns.approve", "quality.approve"), "/dashboard/quality?tab=brand-assets"),
     ("shelf_life_extension", "Shelf-life extension", "shelf_life:ShelfLifeExtension", "status", ("PENDING",), ("shelf_life.approve", "quality.approve"), "/dashboard/inventory?tab=shelf-life"),

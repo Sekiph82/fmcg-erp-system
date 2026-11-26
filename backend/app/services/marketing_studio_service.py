@@ -102,9 +102,22 @@ async def resolve(db: AsyncSession, kind: str, ref: uuid.UUID, user) -> tuple[st
     return a.name, None
 
 
-async def link_view(db: AsyncSession, l: StudioLink) -> dict:
-    """The live state of one linked record (what its own module says right now)."""
+async def _is_member(db: AsyncSession, user, account_id) -> bool:
+    try:
+        svc.require_member(user, await svc.control(db, await db.get(AdAccount, account_id)))
+        return True
+    except svc.Refused:
+        return False
+
+
+async def link_view(db: AsyncSession, l: StudioLink, user) -> dict:
+    """The live state of one linked record (what its own module says right now). Ad objects of accounts the viewer is
+    not a member of are redacted, as candidates() already does."""
     base = {"link_id": str(l.id), "kind": l.kind, "ref_id": str(l.ref_id), "label": l.label, "linked_by": l.created_by}
+    if l.kind in ("AD_TREE", "AUDIENCE_SYNC"):
+        obj = await db.get(AdCampaignNode if l.kind == "AD_TREE" else AudienceSync, l.ref_id)
+        if obj is not None and not await _is_member(db, user, obj.account_id):
+            return {**base, "label": "Ad account object (not a member of this ad account)", "status": "RESTRICTED", "restricted": True}
     if l.kind == "DAM_ASSET":
         d = await db.get(Document, l.ref_id)
         st = _asset_state(d.status.value, d.is_latest, d.version, l.linked_version, ("APPROVED",)) if d else None
@@ -151,7 +164,7 @@ async def native(db: AsyncSession, c: Campaign, linked: set) -> list[dict]:
 async def studio(db: AsyncSession, c: Campaign, user) -> dict:
     sc = await db.get(StudioCampaign, c.id)
     links = (await db.execute(select(StudioLink).where(StudioLink.campaign_id == c.id).order_by(StudioLink.created_at))).scalars().all()
-    items = [await link_view(db, l) for l in links]
+    items = [await link_view(db, l, user) for l in links]
     nat = await native(db, c, {l.ref_id for l in links if l.kind == "SOCIAL_POST"})
     reqs = (await db.execute(select(StudioBudgetRequest).where(StudioBudgetRequest.campaign_id == c.id)
                              .order_by(StudioBudgetRequest.created_at.desc()).limit(20))).scalars().all()

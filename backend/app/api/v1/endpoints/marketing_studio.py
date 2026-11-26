@@ -24,7 +24,7 @@ from app.models.marketing import Campaign
 from app.services import ads_service as svc
 from app.services import marketing_studio_service as ms
 
-router = APIRouter(dependencies=[Depends(require_any_permission(ms.READ))])
+router = APIRouter(dependencies=[Depends(require_any_permission(ms.READ + ms.FINANCE))])   # finance approvers decide from My Approvals
 
 
 def _w(u) -> None:
@@ -108,7 +108,7 @@ async def add_link(cid: uuid.UUID, body: LinkIn, db: AsyncSession = Depends(get_
     except IntegrityError:
         await db.rollback()
         raise HTTPException(409, "Already linked to this campaign.") from None
-    return await ms.link_view(db, link)
+    return await ms.link_view(db, link, user)
 
 
 @router.delete("/campaigns/{cid}/links/{lid}", status_code=204)

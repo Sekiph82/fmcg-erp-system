@@ -250,6 +250,10 @@ async def merge(db: AsyncSession, entity: str, survivor_id: uuid.UUID, loser_id:
         else:
             c.status, c.source, c.updated_at = plan["after"], f"merge:{user.username}"[:100], _now()
         changes["consent"] = plan
+        if plan["after"] in ("UNSUBSCRIBED", "COMPLAINED", "BOUNCED"):
+            await db.flush()
+            from app.services.audience_sync_service import suppress_now
+            await suppress_now(db, plan["email"])
     if entity == "customer":
         l.is_active = False
         l.notes = ((l.notes or "") + f"\nMerged into {s.code} on {_now().date()} by {user.username}.").strip()

@@ -390,7 +390,7 @@ async def store(db: AsyncSession, acc: EmailAccount, p: Parsed) -> Optional[Emai
             else:  # forged From headers are trivial; leave it to staff (the message stays in the thread)
                 log.info("unverified unsubscribe reply from %s not applied", p.from_email)
     await db.flush()
-    if p.ics_replies and not outbound:      # M49.S01.T001: an invitee's accept / decline of a recurring series
+    if p.ics_replies and not outbound and p.sender_verified:   # M49.S01.T001: an invitee's accept / decline of a recurring series (unverified From: left to staff)
         from app.services.calendar_series_service import apply_reply
         for ics in p.ics_replies[:3]:
             await apply_reply(db, ics, p.from_email)

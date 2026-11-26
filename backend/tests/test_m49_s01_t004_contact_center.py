@@ -146,6 +146,20 @@ async def test_bad_or_missing_signature_is_403_and_nothing_changes(sim, wh, db):
     assert (await db.execute(select(func.count()).select_from(CallLog).where(CallLog.provider_session_id == form["CallSid"]))).scalar() == 1
 
 
+async def test_unanswered_inbound_stays_no_answer_after_completed_status(sim, wh, db):
+    from app.models.m49_voice import VoiceCallback
+    from app.models.voip import CallLog
+    sid, caller, base, r = await _inbound(wh, _num())                    # no IVR menu on this number
+    await db.rollback()
+    call = (await db.execute(select(CallLog).where(CallLog.provider_session_id == sid))).scalar_one()
+    assert call.outcome == "NO_ANSWER" and call.follow_up_required
+    assert (await db.execute(select(VoiceCallback).where(VoiceCallback.phone_number == caller))).scalars().first() is not None
+    assert (await wh("status", {**base, "CallStatus": "completed"})).status_code == 200
+    await db.rollback()
+    await db.refresh(call)
+    assert call.outcome == "NO_ANSWER" and call.follow_up_required and call.status == "COMPLETED"
+
+
 async def test_no_configured_token_fails_closed(sim, wh, monkeypatch):
     monkeypatch.setitem(settings.__dict__, "VOICE_TWILIO_AUTH_TOKEN", "")
     assert (await wh("voice", {"CallSid": "CA1", "Direction": "inbound"}, token="")).status_code == 403
@@ -263,7 +277,7 @@ async def test_missed_call_callback_is_idempotent(sim, wh, db):
 async def test_callback_completion_attempts(sim, db):
     from app.api.v1.endpoints import voice_cc as api
     from app.services import contact_center_service as cc
-    agent = await _agent(db)
+    agent = await _agent(db, perms=("crm.edit_all",))      # F5: completing a callback needs manager rights or queue membership
     cb, _ = await cc.request_callback(db, _num(), None, None)
     await db.commit()
     for _ in range(2):

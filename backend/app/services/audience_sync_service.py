@@ -14,12 +14,14 @@ Rules kept here:
 """
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from sqlalchemy import func, select
+from sqlalchemy import event, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -34,6 +36,7 @@ from app.services import audience_sync_adapters as ad
 from app.services.ads_adapters import AdsError
 from app.services.ads_service import Refused
 
+log = logging.getLogger(__name__)
 SENT = ("IN_SYNC", "PENDING_ADD", "PENDING_REMOVE")
 
 
@@ -209,7 +212,9 @@ async def _mode(db: AsyncSession, sync: AudienceSync, acct: AdAccount, ctrl, for
 async def run_sync(db: AsyncSession, sync: AudienceSync, user) -> dict:
     async with svc.root_lock(db, sync):
         await db.refresh(sync)
-        return await _run(db, sync, user)
+        out = await _run(db, sync, user)
+    await _locked_purge(db, sync)   # a withdrawal that landed while this run held the lock (never leaves IN_SYNC)
+    return out
 
 
 async def _run(db: AsyncSession, sync: AudienceSync, user) -> dict:
@@ -238,6 +243,11 @@ async def _run(db: AsyncSession, sync: AudienceSync, user) -> dict:
         have[h].state = "PENDING_REMOVE"
     _audit(db, user, "audience_sync.run", sync.id, {"mode": mode, "transport": transport, "add": len(d["add"]), "remove": len(d["remove"])})
     await db.commit()
+    sup = await suppressed(db)      # consent withdrawn since the diff: never sent
+    for a in [a for a in d["add"] if a["e"] in sup]:
+        have[a["e"]] = (await sent_members(db, sync))[a["e"]]
+        have[a["e"]].state = "REMOVED"
+    d["add"] = [a for a in d["add"] if a["e"] not in sup]
     rm = [{"e": h, "p": have[h].phone_sha256, "pn": have[h].phone_sha256_np} for h in d["remove"]]
     try:
         if transport == "offline":
@@ -258,7 +268,9 @@ async def _run(db: AsyncSession, sync: AudienceSync, user) -> dict:
         sync.status, sync.last_error = ("UNKNOWN" if unknown else "FAILED"), str(e)[:500]
         await db.commit()
         raise e if isinstance(e, AdsError) else AdsError("PROVIDER", str(e))
-    await _set_members(db, sync, d["add"], "IN_SYNC")
+    sup = await suppressed(db)      # withdrawn while the provider call ran: not IN_SYNC; the purge below removes them
+    await _set_members(db, sync, [a for a in d["add"] if a["e"] not in sup], "IN_SYNC")
+    await _set_members(db, sync, [a for a in d["add"] if a["e"] in sup], "PENDING_REMOVE")
     for h in d["remove"]:
         have[h].state = "REMOVED"
     sync.approval_status, sync.last_sync_at = "USED", datetime.now(timezone.utc)
@@ -371,28 +383,78 @@ async def delete_sync(db: AsyncSession, sync: AudienceSync, user) -> None:
     _audit(db, user, "audience_sync.deleted", sync.id, {"provider": sync.provider})
 
 
-async def withdraw_consent(db: AsyncSession, user, email: str) -> dict:
-    """Consent withdrawn for one e-mail: unsubscribe, suppress for good, remove from every platform list that holds it."""
-    email = (email or "").strip().lower()
-    h = ads.hash_email(email)
+async def suppress_now(db: AsyncSession, email: str) -> Optional[str]:
+    """Local, in-transaction half of a consent withdrawal: write the suppression and mark every platform member
+    holding this address PENDING_REMOVE. No provider call, so it can sit inside any consent write (unsubscribe link,
+    complaint, mail reply, merge). The provider removal runs right after commit (drain) or at the next reconcile."""
+    from sqlalchemy.dialects.postgresql import insert
+    h = ads.hash_email((email or "").strip().lower())
     if not h:
-        raise Refused(422, "A valid e-mail address is needed.")
-    now = datetime.now(timezone.utc)
-    row = (await db.execute(select(CRMContactConsent).where(func.lower(CRMContactConsent.email) == email))).scalar_one_or_none()
-    if row is None:
-        db.add(CRMContactConsent(email=email, status="UNSUBSCRIBED", source=f"manual:{user.username}", updated_at=now))
-    else:
-        row.status, row.updated_at = "UNSUBSCRIBED", now
-    if await db.get(AudienceSuppression, h) is None:
-        db.add(AudienceSuppression(email_sha256=h, created_by=user.username))
+        return None
+    await db.execute(insert(AudienceSuppression).values(email_sha256=h, created_by="consent-change").on_conflict_do_nothing())
+    held = (await db.execute(update(AudienceSyncMember).where(AudienceSyncMember.email_sha256 == h, AudienceSyncMember.state.in_(("IN_SYNC", "PENDING_ADD")))
+                             .values(state="PENDING_REMOVE"))).rowcount
     await db.flush()
-    held = (await db.execute(select(AudienceSyncMember, AudienceSync).join(AudienceSync, AudienceSync.id == AudienceSyncMember.sync_id)
-                             .where(AudienceSyncMember.email_sha256 == h, AudienceSyncMember.state.in_(SENT),
-                                    AudienceSync.status != "DELETED"))).all()
-    results = []
-    for m, s in held:
+    if held and not db.info.get("m49_drain"):      # no platform holds this person: nothing to drain
+        db.info["m49_drain"] = True
+        event.listen(db.sync_session, "after_commit", _schedule_drain, once=True)
+    return h
+
+
+_TASKS: set = set()
+
+
+def _schedule_drain(_session) -> None:
+    try:
+        t = asyncio.get_running_loop().create_task(drain_removals())
+    except RuntimeError:
+        return
+    _TASKS.add(t)
+    t.add_done_callback(_TASKS.discard)
+
+
+async def drain_removals() -> None:
+    """Own session, never raises: provider failure leaves members PENDING_REMOVE (suppressed locally) for Reconcile."""
+    from app.db.session import AsyncSessionLocal
+    try:
+        async with AsyncSessionLocal() as db:
+            syncs = (await db.execute(select(AudienceSync).where(AudienceSync.status != "DELETED", AudienceSync.id.in_(
+                select(AudienceSyncMember.sync_id).where(AudienceSyncMember.state == "PENDING_REMOVE"))))).scalars().all()
+            for s in syncs:
+                await _locked_purge(db, s)
+    except Exception:  # noqa: BLE001
+        log.exception("audience removal drain failed")
+
+
+async def _locked_purge(db: AsyncSession, s: AudienceSync, only: Optional[str] = None) -> Optional[list[dict]]:
+    """Purge suppressed members of one sync under its run lock (waits briefly: a running sync re-checks on its own)."""
+    for _ in range(10):
+        cm = svc.root_lock(db, s)
+        try:
+            await cm.__aenter__()
+        except Refused:
+            await asyncio.sleep(0.3)
+            continue
+        try:
+            await db.refresh(s)
+            res = await _purge(db, s, only)
+            await db.commit()
+            return res
+        finally:
+            await cm.__aexit__(None, None, None)
+    return None
+
+
+async def _purge(db: AsyncSession, s: AudienceSync, only: Optional[str] = None) -> list[dict]:
+    sup = await suppressed(db)
+    todo = [m for m in (await sent_members(db, s)).values() if m.email_sha256 in sup and m.state in SENT
+            and (only is None or m.email_sha256 == only)]
+    acct, results = await db.get(AdAccount, s.account_id), []
+    for m in todo:
+        if m.state == "REMOVED":
+            continue
+        h = m.email_sha256
         r = {"sync_id": str(s.id), "provider": s.provider, "mode": s.mode}
-        acct = await db.get(AdAccount, s.account_id)
         try:
             if not s.external_id or s.external_id.startswith("SIM-"):
                 r["result"] = "REMOVED (simulation: nothing had been sent)"
@@ -418,6 +480,32 @@ async def withdraw_consent(db: AsyncSession, user, email: str) -> dict:
             m.state = "PENDING_REMOVE"
             r["result"] = f"FAILED: {str(e)[:200]} — stays suppressed locally; use Reconcile to retry"
         results.append(r)
+    return results
+
+
+async def withdraw_consent(db: AsyncSession, user, email: str) -> dict:
+    """Consent withdrawn for one e-mail: unsubscribe, suppress for good, remove from every platform list that holds it."""
+    email = (email or "").strip().lower()
+    h = ads.hash_email(email)
+    if not h:
+        raise Refused(422, "A valid e-mail address is needed.")
+    now = datetime.now(timezone.utc)
+    row = (await db.execute(select(CRMContactConsent).where(func.lower(CRMContactConsent.email) == email))).scalar_one_or_none()
+    if row is None:
+        db.add(CRMContactConsent(email=email, status="UNSUBSCRIBED", source=f"manual:{user.username}", updated_at=now))
+    else:
+        row.status, row.updated_at = "UNSUBSCRIBED", now
+    if await db.get(AudienceSuppression, h) is None:
+        db.add(AudienceSuppression(email_sha256=h, created_by=user.username))
+    await db.flush()
+    held = (await db.execute(select(AudienceSyncMember, AudienceSync).join(AudienceSync, AudienceSync.id == AudienceSyncMember.sync_id)
+                             .where(AudienceSyncMember.email_sha256 == h, AudienceSyncMember.state.in_(SENT),
+                                    AudienceSync.status != "DELETED"))).all()
+    results = []
+    for _, s in held:
+        res = await _locked_purge(db, s, h)
+        results += res if res is not None else [{"sync_id": str(s.id), "provider": s.provider, "mode": s.mode,
+                                                 "result": "PENDING: a sync is running; it removes suppressed members itself"}]
     audiences = {s.audience_id for _, s in held} | set((await db.execute(select(MarketingAudienceMember.audience_id).where(
         func.lower(MarketingAudienceMember.email) == email))).scalars())
     for aid in audiences:

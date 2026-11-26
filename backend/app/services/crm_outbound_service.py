@@ -140,6 +140,9 @@ async def record_consent(db: AsyncSession, email: str, status: str, source: str,
         if text:
             row.consent_text = text
     await db.flush()  # sessions run without autoflush: make the event visible to the next check
+    if row is not None and row.status in SUPPRESSING:   # M49 F1: withdrawal also reaches ad-platform audiences
+        from app.services.audience_sync_service import suppress_now
+        await suppress_now(db, email)
     return row
 
 

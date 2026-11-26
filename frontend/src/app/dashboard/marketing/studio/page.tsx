@@ -231,10 +231,10 @@ function StudioWorkspace() {
           {!s.audience.length && <p className="text-xs text-gray-500">Build segments in <Link className="underline" href="/dashboard/crm/audiences">Audiences</Link>; platform uploads are approved in <Link className="underline" href="/dashboard/crm/audiences/sync">Audience sync</Link>. Only consented members are ever uploaded.</p>}
           <Picker kinds={["AUDIENCE", "AUDIENCE_SYNC"]} cands={cands} canWrite={s.user.can_write} onLink={link} />
         </Card>
-        <Card n={5} title="Budget and finance cap"><BudgetCard s={s} say={setMsg} reload={reload} canFinance={s.user.can_finance_approve} /></Card>
+        <Card n={4} title="Budget and finance cap"><BudgetCard s={s} say={setMsg} reload={reload} canFinance={s.user.can_finance_approve} /></Card>
       </div>
 
-      <Card n={4} title="Channels (submitted through their own approval flows)">
+      <Card n={5} title="Channels (submitted through their own approval flows)">
         <div className="grid gap-3 md:grid-cols-3">
           {CH.map((c) => {
             const href = { email: "/dashboard/crm/email-campaigns", social: "/dashboard/marketing/social-media", ads: "/dashboard/marketing/ads/lifecycle" }[c];

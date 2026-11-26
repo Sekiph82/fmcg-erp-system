@@ -64,10 +64,11 @@ async def _my_call(db: AsyncSession, call_id: uuid.UUID, user) -> CallLog:
 async def twilio_webhook(request: Request, step: str = Query("voice", max_length=20), ref: str = Query("", max_length=100),
                          queue: str = Query("", max_length=40), transfer: str = Query("", max_length=40),
                          db: AsyncSession = Depends(get_db)):
-    form = {k: str(v)[:500] for k, v in (await request.form()).items()}
+    raw = await request.form()
     url = settings.PUBLIC_API_URL.rstrip("/") + request.url.path + (f"?{request.url.query}" if request.url.query else "")
-    if not vc.twilio_signature_ok(url, form, request.headers.get("X-Twilio-Signature")):
+    if not vc.twilio_signature_ok(url, raw, request.headers.get("X-Twilio-Signature")):    # whole multi-dict, untruncated
         raise HTTPException(403, "Invalid signature.")
+    form = {k: str(v)[:500] for k, v in raw.items()}
     if step not in STEPS:
         raise HTTPException(422, "Unknown step.")
     try:
@@ -243,11 +244,20 @@ def _cb_out(c: VoiceCallback) -> dict:
             "created_at": c.created_at.isoformat() if c.created_at else None}
 
 
+async def _my_queue_ids(db: AsyncSession, user) -> set:
+    me = str(user.id)
+    return {q.id for q in (await db.execute(select(VoiceQueue))).scalars() if me in [str(u) for u in q.member_user_ids or []]}
+
+
 @router.get("/callbacks")
 async def list_callbacks(state: str = Query("PENDING", pattern="^(PENDING|DONE|EXPIRED|CANCELLED)$"),
                          db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    """Callback numbers are customer phone numbers: viewers see all, queue members see their queues' callbacks."""
     rows = (await db.execute(select(VoiceCallback).where(VoiceCallback.state == state)
-                             .order_by(VoiceCallback.created_at).limit(200))).scalars()
+                             .order_by(VoiceCallback.created_at).limit(200))).scalars().all()
+    if not _viewer(current_user):
+        mine = await _my_queue_ids(db, current_user)
+        rows = [c for c in rows if c.queue_id in mine]
     return [_cb_out(c) for c in rows]
 
 
@@ -267,7 +277,7 @@ async def add_callback(body: CallbackIn, response: Response, db: AsyncSession = 
 @router.post("/callbacks/{callback_id}/complete")
 async def finish_callback(callback_id: uuid.UUID, body: CallbackDone, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     cb = await db.get(VoiceCallback, callback_id, with_for_update=True)
-    if cb is None:
+    if cb is None or not (_manager(current_user) or cb.queue_id in await _my_queue_ids(db, current_user)):
         raise HTTPException(404, "Callback not found")
     try:
         await cc.complete_callback(db, cb, body.outcome, current_user.id)

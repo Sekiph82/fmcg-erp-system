@@ -113,7 +113,7 @@ async def update_campaign(cid: str, data: CampaignUpdate, db: AsyncSession = Dep
     if not obj:
         raise HTTPException(404, "Campaign not found")
     changes = data.model_dump(exclude_unset=True)
-    if "budget" in changes:
+    if "budget" in changes and changes["budget"] != obj.budget:     # an unchanged stored value never re-triggers the cap
         _guard_budget_cap(changes["budget"])
     for k, v in changes.items():
         setattr(obj, k, v)

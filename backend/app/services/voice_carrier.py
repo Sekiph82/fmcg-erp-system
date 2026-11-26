@@ -89,7 +89,8 @@ def matrix_out(provider: Optional[str]) -> dict:
 # ── webhook signature ─────────────────────────────────────────────────────────
 
 def twilio_signature(auth_token: str, url: str, params: dict) -> str:
-    data = url + "".join(f"{k}{params[k]}" for k in sorted(params))
+    items = params.multi_items() if hasattr(params, "multi_items") else params.items()   # duplicate keys all count
+    data = url + "".join(f"{k}{v}" for k, v in sorted((str(k), str(v)) for k, v in items))
     return base64.b64encode(hmac.new(auth_token.encode(), data.encode(), hashlib.sha1).digest()).decode()
 
 

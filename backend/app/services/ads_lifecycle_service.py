@@ -17,6 +17,8 @@ Nothing else is offered for editing (budget keeps its own versioned approval, st
 """
 from __future__ import annotations
 
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
 import hashlib
 import json
 from datetime import date, datetime, timezone
@@ -89,12 +91,22 @@ def _ms_end(d: date) -> int:
     return int(datetime(d.year, d.month, d.day, 23, 59, 59, tzinfo=timezone.utc).timestamp() * 1000) + 999
 
 
+def _off(day: str, tz: Optional[str]) -> str:
+    """ISO offset of the ad account's own time zone on that day (so the stored date reads back the same); UTC ('Z') when
+    the account has no stored zone."""
+    try:
+        o = datetime.fromisoformat(day + "T12:00:00").replace(tzinfo=ZoneInfo(tz)).strftime("%z") if tz else ""
+    except (ValueError, KeyError, ZoneInfoNotFoundError):
+        o = ""
+    return o or "Z"
+
+
 def edit_req(provider: str, level: str, pid: str, fields: dict, node: AdCampaignNode, x: dict, li_start: Optional[int] = None) -> Req:
     name = f"{fields[NAME][:180]} ({svc.tag(node)})" if NAME in fields else None     # the tag keeps reconcile-by-name working
     st, en = fields.get(START), fields.get(END)
     if provider == "meta":
-        data = {k: v for k, v in {"name": name, "start_time": f"{st}T00:00:00+0300" if st else None,
-                                  "end_time": f"{en}T23:59:59+0300" if en else None}.items() if v}
+        data = {k: v for k, v in {"name": name, "start_time": f"{st}T00:00:00{_off(st, x.get('tz'))}" if st else None,
+                                  "end_time": f"{en}T23:59:59{_off(en, x.get('tz'))}" if en else None}.items() if v}
         return Req("POST", ADAPTERS["meta"]._url(pid), data=data)
     if provider == "google":
         b = BUILDERS["google"]
@@ -229,7 +241,7 @@ async def _apply(db, e: AdNodeEdit, node, root, acct, user) -> dict:
     if e.payload_hash != _hash(node, e.fields):
         raise Refused(409, "The change no longer matches the approval.")
     transport = svc._tree_transport(nodes, g, root)
-    x = svc.ctx(acct, root, nodes, node)
+    x = {**svc.ctx(acct, root, nodes, node), "tz": acct.time_zone}
     li_start = None
     try:
         if acct.provider == "linkedin" and END in e.fields and transport != "offline":

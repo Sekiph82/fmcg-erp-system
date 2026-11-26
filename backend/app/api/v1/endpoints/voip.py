@@ -645,11 +645,5 @@ async def remove_clip(playlist_id: uuid.UUID, clip_id: uuid.UUID, db: AsyncSessi
     await db.delete(c)
     await db.commit()
 
-
-# ── M49.S01.T004/T005 contact center and transcription review (sub-routers) ───────────────────────────────────────
-
-from app.api.v1.endpoints.voice_cc import router as _cc_router  # noqa: E402
-from app.api.v1.endpoints.transcripts import router as _tr_router  # noqa: E402
-
-router.include_router(_cc_router, prefix="/cc")
-router.include_router(_tr_router, prefix="/transcripts")
+# M49.S01.T004/T005 contact center (/calls/cc) and transcript review (/calls/transcripts) are registered as their own
+# modules in module_registry (nested include_router hides the public Twilio webhook from the PUBLIC_ROUTES split).

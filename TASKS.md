@@ -3480,6 +3480,30 @@ Dependency: prior major milestone accepted and synchronized; extend actual exist
   - **Acceptance at milestone gate:** Manual synthetic campaign from brief → creative → audience → approved ads/social/email local submission → analytics → ERP order/attribution; role-based approval and finance budget caps.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
 
+- [v] M49.S01.T013 — Gate remediation: independent-review findings F1–F12 (added by the M49 gate)
+  - Implemented 2026-11-26 [v], pending the M49 gate:
+    - F1: consent withdrawal on every suppressing path (`record_consent` choke point, dedupe merge) writes the suppression and queues removal from every platform list. It never blocks the unsubscribe response; Reconcile retries.
+    - F2: withdraw/drain take the sync `root_lock`; suppressed members are filtered before add and re-checked before IN_SYNC.
+    - F3: RSVP is applied only from a verified sender.
+    - F4: BYDAY ordinals are limited to 1–4 and -1 (Graph-compatible).
+    - F5: contact-center callbacks are scoped by viewer, manager or queue membership.
+    - F6: shared mailboxes are excluded from personal email endpoints, superusers included.
+    - F7: the 0079 downgrade archives the audience syncs/members, dispositions, transfers and callbacks, and copies the social reply columns to `social_items_reply_archived_0079`. The shared `downgrade_archive` index-name collision on repeated downgrades is fixed.
+    - F8: Studio redacts ad/audience links for non-members.
+    - F9: Twilio basic auth is sent only to the exact configured https host.
+    - F10: the Twilio signature is verified on the raw multi-dict.
+    - F11: an unchanged over-cap budget may be re-saved.
+    - F12: Meta ad-set times use the account time-zone offset (UTC Z fallback). Read-back still compares the date only.
+  - Tests: test_m49_s01_t013_review_fixes (23 passed), t004 (14 passed), t011 (7), t012 (2), m45 dedupe (3), m48 t022 consent (7).
+- [v] M49.S01.T014 — Gate remediation: browser walkthrough defects (added by the M49 gate)
+  - Implemented 2026-11-26 [v], pending the M49 gate. Defects A–E in coordination/milestones/M49/gate/05_browser_walkthrough.md:
+    - A: Studio budget requests are now in My Approvals.
+    - B: finance approvers can reach the Studio decide route.
+    - C: the public Twilio webhook returned 401 in the real app (a nested `include_router` hid it from the PUBLIC_ROUTES split). `voice_cc` and `transcripts` are now registered as their own modules; `test_route_auth_coverage` passes.
+    - D: a missed inbound call stays NO_ANSWER after Twilio's final "completed" (regression test in t004).
+    - E: a SIMULATED published social post is no longer labelled "Live".
+    - Also: the Studio section numbering follows the on-screen order.
+
 ## M49.S02 — Consolidated milestone gate and synchronization
 - [ ] M49.S02.T001 — Run milestone-only consolidated tests on frozen candidate SHA: full applicable backend, DB-gated integration and legacy regression, migration from empty and prior populated head, local provider contracts, frontend tsc/lint/build, security/roles/company isolation, real local ERP manual UI clicks and screenshots desktop/mobile for every affected persona and feature; evaluate applicable quality categories and original task mappings; add remediation tasks for any gap; independent reviewer on exact source; record commands, counts, skipped-test dispositions, screenshot paths, click logs, reviewer identity and verdict. Fix failures, rerun, [x] only after all applicable checks pass; no account activation needed.
 - [ ] M49.S02.T002 — After successful gate, mark evidence-backed tasks [x], update TASKS.md/Project Status, commit/push main, fetch and verify Desktop HEAD == origin/main, preserve owner changes, record evidence SHA and sync result. Automatically proceed to next milestone; do not stop for missing business accounts.

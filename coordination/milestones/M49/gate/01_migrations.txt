@@ -1,0 +1,17 @@
+# M49 gate migrations, candidate cf26b58, 2026-11-26T16:39:27+03:00
+## empty -> head
+NOTICE:  database "mig49" does not exist, skipping
+contact center and transcription, social formats and listening, ad lifecycle edits, audience synchronisation.
+20261129_0079
+M49 tables: 31
+## populated (seeded template copy) 0079 -> downgrade 0078 (evidence archived) -> upgrade head
+contact center and transcription, social formats and listening, ad lifecycle edits, audience synchronisation.
+20261128_0078
+archives: calendar_webhook_receipts_archived_0079,m49_ad_edits_archived_0079,m49_audience_suppressions_archived_0079,m49_social_optouts_archived_0079,m49_social_webhook_events_archived_0079,m49_studio_budget_requests_archived_0079,m49_transcript_edits_archived_0079,m49_transcript_jobs_archived_0079,voice_provider_events_archived_0079,voice_voicemails_archived_0079
+archived row kept: 1
+social_posts.format after downgrade: 0
+contact center and transcription, social formats and listening, ad lifecycle edits, audience synchronisation.
+20261129_0079
+seed rows kept: customers=2
+new columns present: 11/11
+dropped mig49

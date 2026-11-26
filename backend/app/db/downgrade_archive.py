@@ -35,7 +35,7 @@ def archive_tables(bind, names, revision: str) -> list[str]:
         idx = bind.execute(sa.text("SELECT indexname FROM pg_indexes WHERE schemaname = current_schema() "
                                    "AND tablename = :t"), {"t": name}).scalars().all()
         for i in idx:   # PK / unique constraints are renamed with their index
-            new = f"{target[:40]}_{hashlib.md5(i.encode()).hexdigest()[:12]}"
+            new = f"{target[:40]}_{hashlib.md5((target + i).encode()).hexdigest()[:12]}"   # target in the hash: _2, _3 archives never collide
             bind.exec_driver_sql(f"ALTER INDEX {_q(i)} RENAME TO {_q(new)}")
         bind.exec_driver_sql(f"ALTER TABLE {_q(name)} RENAME TO {_q(target)}")
         done.append(target)
