@@ -1,0 +1,189 @@
+[1/269] PASS             test_bom_explosion_nested_db.py: 1 passed in 5.14s
+[2/269] PASS             test_document_storage_pipeline.py: 18 passed in 7.12s
+[3/269] PASS             test_esign_user_signatures_db.py: 1 passed, 75 warnings in 26.97s
+[4/269] PASS             test_m02_refresh_token_rotation.py: 15 passed in 23.22s
+[5/269] PASS             test_m02_security_runtime.py: 1 passed, 75 warnings in 26.83s
+[6/269] PASS             test_m03_master_duplicate_detection.py: 4 passed in 8.80s
+[7/269] PASS             test_m03_master_lifecycle.py: 5 passed, 1 warning in 7.30s
+[8/269] PASS             test_m03_master_referential_integrity.py: 2 passed, 1 warning in 7.15s
+[9/269] PASS             test_m03_master_stewardship.py: 23 passed in 7.05s
+[10/269] PASS             test_m03_recipe_version_effective_dates.py: 10 passed in 6.55s
+[11/269] PASS             test_m05_s03_t001_reservation_integrity_db.py: 9 passed in 7.64s
+[12/269] PASS             test_m05_s03_t002_transaction_integrity_db.py: 7 passed, 11 warnings in 10.43s
+[13/269] PASS             test_m05_s03_t003_stock_concurrency_db.py: 5 passed, 12 warnings in 8.93s
+[14/269] PASS             test_m06_s03_t001_three_way_match_db.py: 5 passed, 9 warnings in 8.55s
+[15/269] PASS             test_m06_s03_t003_supplier_performance_db.py: 3 passed in 6.18s
+[16/269] PASS             test_m07_s03_t001_order_to_cash_db.py: 2 passed in 8.25s
+[17/269] PASS             test_m08_s03_t001_transition_guards_db.py: 15 passed, 11 warnings in 8.01s
+[18/269] PASS             test_m08_s03_t002_production_inventory_atomicity_db.py: 5 passed, 11 warnings in 13.02s
+[19/269] PASS             test_m08_s03_t003_qc_finance_closure.py: 26 passed, 11 warnings in 12.37s
+[20/269] PASS             test_m09_s02_t004_bom_version_effective_governance_db.py: 2 passed in 5.75s
+[21/269] PASS             test_m10_s02_t004_lot_hold_release_transaction_db.py: 2 passed in 5.94s
+[22/269] PASS             test_m13_landed_cost_posting.py: 12 passed in 11.66s
+[23/269] PASS             test_m13_period_close_rehearsal.py: 5 passed in 12.74s
+[24/269] PASS             test_m17_s02_t003_bank_statement_import_db.py: 1 passed in 7.58s
+[25/269] PASS             test_m17_s02_t004_label_dispatch_db.py: 1 passed in 10.58s
+[26/269] PASS             test_m17_s02_t005_graphql_db.py: 1 passed in 6.62s
+[27/269] PASS             test_m17_s02_t005_mqtt_db.py: 1 passed, 26 warnings in 7.02s
+[28/269] PASS             test_m17_s02_t005_shopify_db.py: 1 passed in 6.26s
+[29/269] PASS             test_m19_s02_t002_company_isolation.py: 1 passed, 75 warnings in 25.26s
+[30/269] PASS             test_m20_auth_transaction_boundary.py: 1 passed, 2 warnings in 7.62s
+[31/269] PASS             test_m20_postgres_scenario_savepoint.py: 1 passed in 6.05s
+[32/269] PASS             test_m20_s01_t001_v03_mps_remediation.py: 6 passed in 7.33s
+[33/269] PASS             test_m20_strict_findings.py: 2 passed in 6.36s
+[34/269] PASS             test_m20_v03_acceptance.py: 20 passed, 75 warnings in 36.30s
+[35/269] PASS             test_m21_s01_t002_conversion_db.py: 1 passed in 6.21s
+[36/269] PASS             test_m21_s01_t003_package_components_db.py: 1 passed in 6.01s
+[37/269] PASS             test_m21_s01_t004_profile_versions_db.py: 1 passed in 5.92s
+[38/269] PASS             test_m21_s02_t001_expected_yield_db.py: 1 passed in 5.74s
+[39/269] PASS             test_m21_s02_t002_loss_categories_db.py: 1 passed in 5.54s
+[40/269] PASS             test_m21_s03_t002_multi_output_db.py: 1 passed in 5.58s
+[41/269] PASS             test_m21_s03_t003_substitution_governance_db.py: 1 passed in 5.84s
+[42/269] PASS             test_m21_s05_t002_mps_mrp_integration_db.py: 1 passed in 5.67s
+[43/269] PASS             test_m21_s05_t003_costing_integration_db.py: 1 passed in 5.66s
+[44/269] PASS             test_m22_s02_t001_routing_sequence_db.py: 2 passed in 5.57s
+[45/269] PASS             test_m22_s02_t002_work_order_split_merge_db.py: 2 passed in 5.45s
+[46/269] PASS             test_m22_s02_t003_partial_backorder_db.py: 4 passed, 11 warnings in 6.67s
+[47/269] PASS             test_m22_s02_t004_work_order_rework_db.py: 3 passed in 5.97s
+[48/269] PASS             test_m22_s03_t001_subcontract_work_order_link_db.py: 2 passed in 6.60s
+[49/269] PASS             test_m22_s03_t002_work_order_predecessors_db.py: 5 passed in 6.08s
+[50/269] PASS             test_m22_s03_t003_material_release_gate_db.py: 6 passed in 6.88s
+[51/269] PASS             test_m22_s03_t004_mps_schedule_linkage_db.py: 3 passed in 5.79s
+[52/269] PASS             test_m22_s04_t001_lifecycle_state_db.py: 2 passed in 5.47s
+[53/269] PASS             test_m22_s04_t003_cross_module_transaction_db.py: 2 passed in 5.88s
+[54/269] PASS             test_m23_s03_t003_execution_idempotency.py: 8 passed, 14 warnings in 6.44s
+[55/269] PASS             test_m23_s04_t003_shop_floor_integration_db.py: 3 passed, 14 warnings in 5.41s
+[56/269] PASS             test_m24_s01_t001_material_reservation_db.py: 9 passed, 16 warnings in 7.05s
+[57/269] PASS             test_m24_s02_t001_material_issue_db.py: 5 passed, 18 warnings in 7.64s
+[58/269] PASS             test_m24_s02_t002_actual_consumption_db.py: 3 passed, 15 warnings in 6.25s
+[59/269] PASS             test_m24_s02_t003_material_return_db.py: 3 passed, 18 warnings in 6.33s
+[60/269] PASS             test_m24_s02_t004_material_scrap_db.py: 3 passed, 19 warnings in 6.14s
+[61/269] PASS             test_m24_s03_t001_wip_location_db.py: 3 passed, 13 warnings in 5.31s
+[62/269] PASS             test_m24_s03_t002_bulk_transfer_db.py: 3 passed, 16 warnings in 5.31s
+[63/269] PASS             test_m24_s03_t003_finished_goods_receipt_db.py: 4 passed, 18 warnings in 5.45s
+[64/269] PASS             test_m24_s03_t004_packaging_genealogy_db.py: 2 passed, 13 warnings in 5.02s
+[65/269] PASS             test_m24_s04_t001_atomic_posting_db.py: 2 passed, 13 warnings in 5.08s
+[66/269] PASS             test_m24_s04_t002_genealogy_db.py: 2 passed, 13 warnings in 5.83s
+[67/269] PASS             test_m24_s04_t003_reversal_guards_db.py: 2 passed, 13 warnings in 4.84s
+[68/269] PASS             test_m25_s01_t001_shipment_linkage_db.py: 1 passed, 75 warnings in 15.72s
+[69/269] PASS             test_m25_s01_t002_shipment_ownership_db.py: 1 passed, 75 warnings in 15.65s
+[70/269] PASS             test_m25_s01_t003_customs_milestones_db.py: 1 passed, 76 warnings in 15.44s
+[71/269] PASS             test_m25_s01_t004_receipt_closure_db.py: 1 passed, 76 warnings in 16.50s
+[72/269] PASS             test_m25_s02_t002_volume_migration_db.py: 1 passed in 0.96s
+[73/269] PASS             test_m25_s02_t003_landed_cost_actuals.py: 4 passed in 6.18s
+[74/269] PASS             test_m25_s02_t004_currency_rates.py: 8 passed in 6.43s
+[75/269] PASS             test_m25_s03_t001_inventory_valuation.py: 16 passed in 9.57s
+[76/269] PASS             test_m25_s03_t002_landed_cost_variance_posting.py: 8 passed in 9.41s
+[77/269] PASS             test_m25_s03_t003_landed_cost_reconciliation.py: 8 passed in 8.64s
+[78/269] PASS             test_m27_s01_t001_gate_definition_db.py: 7 passed, 7 warnings in 6.26s
+[79/269] PASS             test_m27_s02_t001_receiving_gate_db.py: 2 passed in 5.39s
+[80/269] PASS             test_m27_s02_t002_production_gate_db.py: 1 passed in 5.47s
+[81/269] PASS             test_m27_s02_t003_finished_goods_release_gate_db.py: 1 passed in 5.55s
+[82/269] PASS             test_m27_s02_t004_dispatch_gate_db.py: 1 passed in 5.68s
+[83/269] PASS             test_m27_s03_t001_hold_quarantine_db.py: 1 passed in 5.32s
+[84/269] PASS             test_m27_s03_t002_waiver_approval_db.py: 1 passed in 5.46s
+[85/269] PASS             test_m27_s03_t003_ncr_capa_db.py: 1 passed in 5.28s
+[86/269] PASS             test_m27_s03_t004_gate_audit_db.py: 3 passed, 7 warnings in 6.36s
+[87/269] PASS             test_m27_s04_t002_cross_module_blocking_db.py: 1 passed in 5.39s
+[88/269] PASS             test_m28_s04_t003_deep_genealogy_perf_db.py: 1 passed in 8.64s
+[89/269] PASS             test_m31_s01_t001_api_client_registry.py: 4 passed, 76 warnings in 32.45s
+[90/269] PASS             test_m31_s01_t002_credential_lifecycle.py: 2 passed, 78 warnings in 33.21s
+[91/269] PASS             test_m31_s01_t003_scope_rate_policy.py: 2 passed, 82 warnings in 21.33s
+[92/269] PASS             test_m31_s01_t004_partner_audit_usage.py: 2 passed, 79 warnings in 19.82s
+[93/269] PASS             test_m31_s02_t002_event_schema_governance_db.py: 4 passed, 75 warnings in 17.29s
+[94/269] PASS             test_m31_s02_t003_event_idempotency_db.py: 3 passed, 75 warnings in 16.23s
+[95/269] PASS             test_m31_s02_t004_transactional_outbox_db.py: 2 passed, 75 warnings in 16.04s
+[96/269] PASS             test_m31_s03_t003_dead_letter_replay_db.py: 3 passed in 5.36s
+[97/269] PASS             test_m31_s03_t004_webhook_secret_rotation_db.py: 2 passed in 4.94s
+[98/269] PASS             test_m31_s04_t003_failure_replay_idempotency_db.py: 2 passed in 7.59s
+[99/269] PASS             test_m34_s01_t001_sourcing_event.py: 11 passed in 29.23s
+[100/269] PASS             test_m34_s01_t002_rfq_bids.py: 3 passed in 5.40s
+[101/269] PASS             test_m34_s01_t003_rfq_evaluation_matrix.py: 4 passed in 5.38s
+[102/269] PASS             test_m34_s01_t004_rfq_award_approval.py: 3 passed in 5.39s
+[103/269] PASS             test_m34_s02_t001_bpa_governance.py: 3 passed in 5.13s
+[104/269] PASS             test_m34_s02_t002_bpa_price_breaks.py: 3 passed in 5.08s
+[105/269] PASS             test_m34_s02_t003_bpa_release_orders.py: 3 passed in 5.82s
+[106/269] PASS             test_m34_s02_t004_contract_consumption.py: 2 passed, 1 warning in 7.15s
+[107/269] PASS             test_m34_s03_t003_supplier_governance_db.py: 2 passed in 5.59s
+[108/269] PASS             test_m34_s03_t004_supplier_capa_db.py: 2 passed, 7 warnings in 5.82s
+[109/269] PASS             test_m34_s04_t001_invoice_match_db.py: 5 passed, 15 warnings in 6.45s
+[110/269] PASS             test_m34_s04_t002_tolerance_exception_db.py: 7 passed, 18 warnings in 7.21s
+[111/269] PASS             test_m34_s04_t003_landed_cost_linkage_db.py: 5 passed in 7.01s
+[112/269] PASS             test_m34_s04_t004_purchase_invoice_posting_db.py: 9 passed, 12 warnings in 10.11s
+[113/269] PASS             test_m34_s05_t001_sourcing_workflow_db.py: 2 passed, 75 warnings in 21.54s
+[114/269] PASS             test_m34_s05_t002_supplier_scorecard_db.py: 2 passed, 75 warnings in 21.07s
+[115/269] PASS             test_m34_s05_t003_three_way_finance_workflow_db.py: 1 passed, 78 warnings in 22.74s
+[116/269] PASS             test_m35_s06_t003_receive_to_dispatch_db.py: 2 passed, 25 warnings in 7.51s
+[117/269] PASS             test_m36_outbound_consent_db.py: 1 passed, 76 warnings in 21.92s
+[118/269] PASS             test_m36_s01_t001_mailbox_db.py: 1 passed in 5.99s
+[119/269] PASS             test_m36_s01_t002_sequences_db.py: 2 passed, 3 warnings in 5.83s
+[120/269] PASS             test_m36_s01_t003_inbox_db.py: 1 passed in 5.31s
+[121/269] PASS             test_m36_s01_t004_crm_automation_db.py: 1 passed, 37 warnings in 5.88s
+[122/269] PASS             test_m36_s01_t005_meetings_db.py: 3 passed in 6.60s
+[123/269] PASS             test_m36_s02_sales_intelligence_db.py: 1 passed in 5.38s
+[124/269] PASS             test_m36_s02_t001_lead_capture_db.py: 1 passed, 76 warnings in 20.47s
+[125/269] PASS             test_m36_s02_t005_bounce_db.py: 1 passed in 4.62s
+[126/269] PASS             test_m36_s02_t005_campaigns_db.py: 2 passed, 76 warnings in 20.05s
+[127/269] PASS             test_m36_s03_customer_timeline_db.py: 1 passed in 5.09s
+[128/269] PASS             test_m36_s03_t001_document_links_db.py: 2 passed in 6.85s
+[129/269] PASS             test_m36_s03_t003_quick_notes_db.py: 1 passed in 6.07s
+[130/269] PASS             test_m36_s03_t004_workflow_designer_db.py: 1 passed in 5.45s
+[131/269] PASS             test_m36_s03_t005_live_chat_db.py: 1 passed in 6.42s
+[132/269] PASS             test_m36_s04_t001_copilot_db.py: 1 passed in 5.72s
+[133/269] PASS             test_m36_s04_t002_telephony_db.py: 1 passed, 5 warnings in 5.48s
+[134/269] PASS             test_m36_s04_t004_portal_ticket_files_db.py: 1 passed in 5.40s
+[135/269] PASS             test_m36_s04_t005_kb_db.py: 1 passed, 77 warnings in 22.74s
+[136/269] PASS             test_m36_s05_t001_attribution_db.py: 1 passed in 5.37s
+[137/269] PASS             test_m36_s05_t002_landing_ab_db.py: 1 passed in 7.78s
+[138/269] PASS             test_m36_s05_t003_integration_console_db.py: 2 passed in 5.85s
+[139/269] PASS             test_m36_s05_t004_conversation_intel_db.py: 1 passed in 5.57s
+[140/269] PASS             test_m36_s05_t005_abm_db.py: 1 passed, 1 warning in 5.46s
+[141/269] PASS             test_m37_s03_t001_web_push_db.py: 1 passed, 2 warnings in 5.29s
+[142/269] PASS             test_m37_s04_barcode_material_flow_db.py: 3 passed, 14 warnings in 6.01s
+[143/269] PASS             test_m38_clamav_scan_db.py: 1 passed, 75 warnings in 18.04s
+[144/269] PASS             test_m38_s01_distributor_portal_db.py: 6 passed, 114 warnings in 30.02s
+[145/269] PASS             test_m38_s02_field_app_db.py: 1 passed, 77 warnings in 18.67s
+[146/269] PASS             test_m38_s04_ess_self_db.py: 1 passed, 104 warnings in 19.81s
+[147/269] PASS             test_m38_s05_supplier_portal_db.py: 1 passed, 75 warnings in 21.85s
+[148/269] PASS             test_m38_s06_scan_pick_putaway_db.py: 2 passed, 75 warnings in 20.03s
+[149/269] PASS             test_m39_cbk_rates_db.py: 3 passed in 4.61s
+[150/269] PASS             test_m39_invoicing_db.py: 6 passed in 7.10s
+[151/269] PASS             test_m39_payroll_gl_db.py: 10 passed, 2 warnings in 6.59s
+[152/269] PASS             test_m39_screen_endpoints_db.py: 2 passed, 75 warnings in 20.63s
+[153/269] PASS             test_m40_review_fixes_db.py: 1 passed, 79 warnings in 19.24s
+[154/269] PASS             test_m40_s01_t001_feedback_loyalty_db.py: 1 passed, 5 warnings in 4.92s
+[155/269] PASS             test_m40_s01_t002_technician_jobs_db.py: 1 passed in 5.08s
+[156/269] PASS             test_m40_s01_t004_shelf_check_db.py: 1 passed in 4.99s
+[157/269] PASS             test_m40_s02_t001_approval_inbox_db.py: 6 passed, 93 warnings in 20.47s
+[158/269] PASS             test_m40_s02_t001_lookup_db.py: 1 passed in 5.21s
+[159/269] PASS             test_m40_s02_t001_route_guard_db.py: 2 passed, 75 warnings in 22.56s
+[160/269] PASS             test_m41_s01_db.py: 5 passed, 16 warnings in 7.86s
+[161/269] PASS             test_m42_business_cards_db.py: 2 passed in 5.98s
+[162/269] PASS             test_m43_s00_t004_harness.py: 16 passed in 5.41s
+[163/269] PASS             test_m43_s01_t001_t002_oauth_mail_db.py: 5 passed in 5.96s
+[164/269] PASS             test_m43_s01_t003_t004_calendar_sync_db.py: 6 passed in 5.83s
+[165/269] PASS             test_m43_s01_t005_booking_db.py: 4 passed, 75 warnings in 19.71s
+[166/269] PASS             test_m43_s01_t006_engagement_db.py: 5 passed in 4.75s
+[167/269] PASS             test_m43_s01_t007_quotas_db.py: 1 passed in 4.61s
+[168/269] PASS             test_m43_s01_t008_t009_voice_db.py: 6 passed, 82 warnings in 20.38s
+[169/269] PASS             test_m43_s01_t010_playbooks_db.py: 4 passed, 75 warnings in 19.70s
+[170/269] PASS             test_m43_s01_t011_pipelines_db.py: 1 passed in 5.49s
+[171/269] PASS             test_m43_s01_t012_deal_score_db.py: 1 passed in 5.66s
+[172/269] PASS             test_m43_s01_t013_workspace_db.py: 2 passed in 5.54s
+[173/269] PASS             test_m43_s01_t014_routing_db.py: 4 passed in 6.04s
+[174/269] PASS             test_m43_s01_t015_contacts_db.py: 2 passed in 5.85s
+[175/269] PASS             test_m43_s01_t016_teams_views_db.py: 2 passed in 5.98s
+[176/269] PASS             test_m43_s01_t017_coaching_db.py: 1 passed, 2 warnings in 5.85s
+[177/269] PASS             test_m44_s01_t002_t005_ads.py: 6 passed in 7.02s
+[178/269] PASS             test_m44_s01_t006_t008_social.py: 6 passed in 7.04s
+[179/269] PASS             test_m44_s01_t009_web_analytics_db.py: 2 passed in 5.64s
+[180/269] PASS             test_m44_s01_t010_audiences_db.py: 2 passed in 6.55s
+[181/269] PASS             test_m44_s01_t011_deliverability_db.py: 4 passed in 5.42s
+[182/269] PASS             test_m44_s01_t012_governance_db.py: 4 passed in 5.97s
+[183/269] PASS             test_m44_s01_t013_messaging.py: 4 passed, 75 warnings in 20.35s
+[184/269] PASS             test_m44_s01_t014_residuals.py: 2 passed, 77 warnings in 30.93s
+[185/269] PASS             test_m45_s01_t001_t003_customer_data.py: 3 passed in 6.28s
+[186/269] PASS             test_m45_s01_t004_t006_customer_intel.py: 5 passed in 7.41s
+[187/269] PASS             test_m45_s01_t007_service_agent.py: 2 passed in 5.70s
+[188/269] PASS             test_m45_s01_t008_t009_agents.py: 4 passed, 13 warnings in 13.28s
+[189/269] PASS             test_m45_s01_t010_dedupe_merge.py: 3 passed in 8.57s

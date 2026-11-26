@@ -1,9 +1,7 @@
 tsc exit 0
 eslint(errors only) exit 0
   "ok": true
-ℹ todo 0
-ℹ duration_ms 2349.1186
-○  (Static)   prerendered as static content
-ƒ  (Dynamic)  server-rendered on demand
-
-build exit 0
+[]
+ℹ pass 5
+ℹ fail 0
+next build: exit 0 on 787c968 (run before commit)
