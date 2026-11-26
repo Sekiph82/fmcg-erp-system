@@ -159,9 +159,8 @@ async def settle(rid: str, status: str = "SETTLED", note: Optional[str] = None, 
             return False
         agent_id, user_id, day, rc, rt, ac, at, _ = r
         over = max(Decimal(ac) - Decimal(rc), Decimal(0))      # measured spend beyond the hold (provider ignored max tokens)
-        if over:                                              # the counter never passes the cap: charge the hold, log the rest
-            ac = rc
-            note = f"{note or ''} OVERAGE {over} not charged (exceeded the reserved worst case)".strip()
+        if over:     # M50 re-review N1: charge the real spend (the counter must reflect it); the cap is guarded at hold time
+            note = f"{note or ''} OVERAGE {over} charged beyond the reserved worst case".strip()
             import logging
             logging.getLogger(__name__).warning("AI budget overage %s on reservation %s", over, rid)
         for t, i in [("COMPANY", "all")] + ([("USER", user_id)] if user_id else []) + [("AGENT", agent_id)]:

@@ -144,7 +144,11 @@ def _is_ip(host: str) -> bool:
 
 def pinned_transport() -> httpx.AsyncHTTPTransport:
     t = httpx.AsyncHTTPTransport()
-    t._pool._network_backend = PinnedBackend()      # httpx exposes no public hook for the network backend
+    pool = getattr(t, "_pool", None)
+    if pool is None or not hasattr(pool, "_network_backend"):   # M50 re-review N2: fail closed if httpcore internals change
+        raise RuntimeError("httpcore pool has no _network_backend: DNS pinning unavailable, refusing live egress")
+    pool._network_backend = PinnedBackend()      # httpx exposes no public hook for the network backend
+    assert isinstance(pool._network_backend, PinnedBackend)
     return t
 
 

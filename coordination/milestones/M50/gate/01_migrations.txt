@@ -1,0 +1,12 @@
+# M50 gate migrations, candidate 507dc03, 2026-11-26T19:57:14+03:00
+## empty -> head
+20261130_0080
+M50 tables: 27
+## populated template copy: insert evidence + parquet job, downgrade 0079, upgrade, twice
+round 1 down: 20261129_0079; file_format len: 6; archives: 18
+round 1 up: 20261130_0080; file_format len: 10
+round 2 down: 20261129_0079; file_format len: 6; archives: 36
+round 2 up: 20261130_0080; file_format len: 10
+agent_runs row kept in archive: 1
+seed customers kept: 2
+dropped mig50

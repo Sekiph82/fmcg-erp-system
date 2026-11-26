@@ -486,12 +486,12 @@ async def test_i1_worst_case_is_reserved_before_each_call_and_the_counter_never_
     assert reserved <= cap and sum(ok) == 4 and not all(ok)               # 0.4 held + 4 x 0.15 more = 1.0 fits, the rest are refused BEFORE a call
     # the refused runs hold nothing beyond their first reservation
     assert reserved == Decimal("0.2") * 4 + Decimal("0.05") * 4
-    # settle clamps measured spend to the hold; the overage is logged on the reservation, never charged
+    # settle charges the real measured spend (re-review N1) and records the overage on the reservation
     r = meters[0].res
     await bud.record_usage(r.id, 5000, Decimal("0.9"))
     assert await bud.settle(r.id)
     c = (await _counters())[("AGENT", str(agent))]
-    assert c[2] == meters[0].reserved and c[2] < Decimal("0.9") and c[1] <= c[0]
+    assert c[2] == Decimal("0.9")
     from sqlalchemy import text
     from app.db.session import AsyncSessionLocal
     async with AsyncSessionLocal() as s:
@@ -601,3 +601,9 @@ def test_m1_migration_archives_sa_actions_on_downgrade():
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
     assert "sa_actions" in m.EVIDENCE and "sa_actions" in m.TABLES and set(m.EVIDENCE) <= set(m.TABLES)
+
+
+def test_n2_pinned_transport_really_installs_the_pinned_backend():
+    from app.core import provider_http as ph
+    t = ph.pinned_transport()
+    assert isinstance(t._pool._network_backend, ph.PinnedBackend)

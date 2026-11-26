@@ -1,0 +1,3 @@
+# candidate 507dc03
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1997 passed, 778 skipped, 159 warnings in 119.07s (0:01:59)

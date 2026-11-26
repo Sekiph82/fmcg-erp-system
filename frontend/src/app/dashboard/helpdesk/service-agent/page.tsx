@@ -186,7 +186,7 @@ function ReviewsTab() {
   const verdicts: [string, string][] = [["CORRECT", "Correct"], ["WRONG_CITATION", "Wrong citation"], ["INACCURATE", "Inaccurate"], ["UNSUPPORTED", "Not supported by source"]];
   return (
     <div className="space-y-3">
-      <p className="text-sm text-gray-600">Check each answer against the cited article. Any verdict other than "Correct" needs a note.</p>
+      <p className="text-sm text-gray-600">Check each answer against the cited article. Any verdict other than &ldquo;Correct&rdquo; needs a note.</p>
       {(q.data ?? []).length === 0 && <p className="text-sm text-gray-500">Nothing waiting for review.</p>}
       {(q.data ?? []).map((t) => {
         const hasNote = (note[t.id] ?? "").trim().length > 0;

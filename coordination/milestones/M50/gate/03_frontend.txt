@@ -1,0 +1,9 @@
+tsc exit 0
+eslint initially: 2 errors (react/no-unescaped-entities in helpdesk/service-agent/page.tsx:189) -> fixed, re-run: 0 errors
+
+
+  "ok": true
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+build exit 0
