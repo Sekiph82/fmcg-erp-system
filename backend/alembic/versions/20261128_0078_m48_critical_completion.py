@@ -61,10 +61,18 @@ def upgrade() -> None:
         t.create(bind=bind, checkfirst=True)
 
 
+# Money, signature and provider-mutation evidence: archived (renamed) on downgrade, never dropped (audit F3 rule).
+EVIDENCE = ["card_payments", "card_refunds", "esign_envelopes", "esign_webhook_events", "ads_mutations",
+            "ads_approvals", "crm_send_approvals", "mail_webhook_tokens"]
+
+
 def downgrade() -> None:
+    from app.db.downgrade_archive import archive_tables
     bind = op.get_bind()
+    archive_tables(bind, [n for n in reversed(TABLES) if n in EVIDENCE], "0078")
     for t in reversed(_tables()):
-        t.drop(bind=bind, checkfirst=True)
+        if t.name not in EVIDENCE:
+            t.drop(bind=bind, checkfirst=True)
     for name, _, _ in INDEXES:
         op.execute(f"DROP INDEX IF EXISTS {name}")
     for table, col, _ in reversed(COLUMNS):

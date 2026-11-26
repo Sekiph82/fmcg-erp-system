@@ -11,3 +11,15 @@ providers, warehouse run mode.
 INFO  [alembic.runtime.migration] Running downgrade 20261029_0039 -> 20261029_0038, track estimated and actual landed-cost line amounts
 providers, warehouse run mode.
 20261128_0078
+## populated 0078 -> downgrade 0077 -> upgrade head (candidate 040074c)
+providers, warehouse run mode.
+providers, warehouse run mode.
+20261128_0078
+new columns present: 5/5
+seed rows kept: customers=2
+## 0078 evidence archiving on downgrade (candidate after 040074c)
+providers, warehouse run mode.
+archives: ads_approvals_archived_0078,ads_mutations_archived_0078,card_payments_archived_0078,card_refunds_archived_0078,crm_send_approvals_archived_0078,esign_envelopes_archived_0078,esign_webhook_events_archived_0078,mail_webhook_tokens_archived_0078
+archived row kept: 1
+providers, warehouse run mode.
+20261128_0078
