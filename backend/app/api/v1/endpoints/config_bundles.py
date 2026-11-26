@@ -23,9 +23,9 @@ def _admin(u):
 
 
 @router.get("/export")
-async def export(db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+async def export(include_cms: bool = False, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     _admin(current_user)
-    b = await cbs.export(db)
+    b = await cbs.export(db, include_cms)
     pats.audit(db, current_user, "CONFIG_BUNDLE_EXPORTED", "config_bundle", b["sha256"][:16],
                {"counts": {k: len(v) for k, v in b["items"].items()}})
     await db.commit()
@@ -35,17 +35,18 @@ async def export(db: AsyncSession = Depends(get_db), current_user=Depends(get_cu
 class BundleIn(BaseModel):
     bundle: dict
     mode: Literal["overwrite", "skip_existing"] = "overwrite"
+    site_keys: dict[str, str] = {}          # CMS: bundle site key → target site key (import into another site)
 
 
 @router.post("/plan")
 async def plan(body: BundleIn, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     _admin(current_user)
     try:
-        steps = await cbs.plan(db, body.bundle, body.mode)
+        steps = await cbs.plan(db, body.bundle, body.mode, body.site_keys)
     except cbs.BundleError as e:
         raise HTTPException(e.status, str(e))
     await db.rollback()
-    return {"steps": [{k: v for k, v in s.items() if k not in ("row", "graph", "id")} for s in steps],
+    return {"steps": [{k: v for k, v in s.items() if k not in ("row", "graph", "id") and not k.startswith("_")} for s in steps],
             "summary": {a: sum(1 for s in steps if s["action"] == a) for a in ("create", "update", "unchanged", "skip", "error")}}
 
 
@@ -53,7 +54,7 @@ async def plan(body: BundleIn, db: AsyncSession = Depends(get_db), current_user=
 async def apply(body: BundleIn, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     _admin(current_user)
     try:
-        out = await cbs.apply(db, body.bundle, current_user.username, body.mode)
+        out = await cbs.apply(db, body.bundle, current_user.username, body.mode, body.site_keys)
     except cbs.BundleError as e:
         await db.rollback()
         raise HTTPException(e.status, str(e))

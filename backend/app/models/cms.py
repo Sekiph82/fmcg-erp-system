@@ -210,6 +210,8 @@ class CmsMedia(Base):
     access_list_id = Column(UUID(as_uuid=True), ForeignKey("cms_access_lists.id", ondelete="SET NULL"), nullable=True)
     public         = Column(Boolean, nullable=False, default=False)
     duration_s     = Column(Integer, nullable=True)
+    page_id        = Column(UUID(as_uuid=True), ForeignKey("cms_pages.id", ondelete="SET NULL"), nullable=True, index=True)   # narration of a page (M47)
+    poster_path    = Column(String(40), nullable=True)               # PNG poster frame (storage key), served with the media's access
     created_by     = Column(String(100), nullable=True)
     created_at     = _ts()
 

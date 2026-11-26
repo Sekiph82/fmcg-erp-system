@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.access_control import can_view_record, get_effective_permission_codes
 from app.models.cms import CmsMediaView
+from app.models.m47_sales_depth import SalesVideoMessage, SalesVideoView
 from app.models.crm import CRMActivity, CRMRecord
 from app.models.portal import PortalAccount
 from app.models.email_integration import EmailAccount, EmailThread
@@ -117,6 +118,10 @@ SOURCES = [
            .where(PortalAccount.linked_customer_id == str(cid)),
            lambda v: _render("media_view", "Watched or listened to member content", detail=f"{v.seconds} s",
                              link="/dashboard/marketing?tab=members-media")),
+    Source("video_view", "crm", "crm", SalesVideoView.at,                   # M47.S01.T009 1-to-1 video message views
+           lambda cid, u: select(SalesVideoView).join(SalesVideoMessage, SalesVideoMessage.id == SalesVideoView.video_id)
+           .where(SalesVideoMessage.customer_id == cid),
+           lambda v: _render("video_view", "Watched a video message", detail=f"{v.seconds} s", link="/dashboard/crm/workspace")),
     Source("email", "email", "", EmailThread.last_message_at, _email_query,
            lambda t: _render("email", f"E-mail: {t.subject}", link="/dashboard/communication", detail=t.snippet)),
 ]

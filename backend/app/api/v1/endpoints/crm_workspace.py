@@ -46,6 +46,15 @@ async def today(queue: Optional[str] = None, db: AsyncSession = Depends(get_db),
             "deals_without_next_step": [{"id": str(d.id), "company_name": d.company_name} for d in deals if d.id not in planned]}
 
 
+@router.post("/tasks/calendar-sync")
+async def task_calendar_sync(db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    """M47.S01.T009: push my open tasks with due times to my connected calendar now (the 5-minute loop does it too)."""
+    from app.services.calendar_sync_service import push_tasks_safely
+    out = await push_tasks_safely(db, current_user.id)
+    await db.commit()
+    return out
+
+
 @router.get("/records/{record_id}/summary")
 async def summary(record_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     from app.api.v1.endpoints.crm_pipeline import _scoped_record

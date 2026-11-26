@@ -225,6 +225,91 @@ async def create_ticket(
     return await _build_read(await _get_or_404(db, ticket.id))
 
 
+# ── M47.S01.T010 ticket pipelines (declared before /{ticket_id}) ──────────────
+
+def _pipeline_admin(u):
+    from app.core.access_control import has_any_permission
+    if not (u.is_superuser or has_any_permission(u, ("crm.edit_all", "helpdesk.edit_all"))):
+        raise HTTPException(403, "Only service administrators define pipelines.")
+
+
+@router.get("/pipelines")
+async def list_pipelines(db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from sqlalchemy.orm import selectinload as _sl
+    from app.models.helpdesk import HelpdeskPipeline
+    from app.services import service_desk_service as sd
+    _require(current_user, _FILES_READ)
+    await sd.default_pipeline(db)
+    await db.commit()
+    ps = (await db.execute(select(HelpdeskPipeline).options(_sl(HelpdeskPipeline.stages)).order_by(
+        HelpdeskPipeline.is_default.desc(), HelpdeskPipeline.name))).scalars()
+    return [{"id": str(p.id), "name": p.name, "is_default": p.is_default,
+             "stages": [{"id": str(s.id), "name": s.name, "status": s.status, "pauses_sla": s.pauses_sla} for s in p.stages]}
+            for p in ps]
+
+
+@router.post("/pipelines", status_code=201)
+async def create_pipeline(body: dict = Body(...), db: AsyncSession = Depends(get_db),
+                          current_user: User = Depends(get_current_user)):
+    from app.models.helpdesk import HelpdeskPipeline
+    from app.services import pat_service as pats
+    from app.services import service_desk_service as sd
+    _pipeline_admin(current_user)
+    name = str(body.get("name") or "").strip()
+    if not name or len(name) > 100:
+        raise HTTPException(422, "Name: 1–100 characters.")
+    if (await db.execute(select(HelpdeskPipeline.id).where(HelpdeskPipeline.name == name))).first():
+        raise HTTPException(409, "A pipeline with this name exists.")
+    try:
+        p = await sd.create_pipeline(db, name, list(body.get("stages") or []))
+    except ValueError as e:
+        raise HTTPException(422, str(e))
+    pats.audit(db, current_user, "HELPDESK_PIPELINE_CREATED", "helpdesk_pipeline", str(p.id), {"name": name})
+    await db.commit()
+    return {"id": str(p.id), "name": p.name}
+
+
+@router.get("/pipelines/{pipeline_id}/board")
+async def pipeline_board(pipeline_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from app.services import service_desk_service as sd
+    _require(current_user, _FILES_READ)
+    try:
+        return await sd.board(db, pipeline_id)
+    except LookupError as e:
+        raise HTTPException(404, str(e))
+
+
+@router.get("/{ticket_id}/stage")
+async def get_ticket_stage(ticket_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from app.services import service_desk_service as sd
+    _require(current_user, _FILES_READ)
+    t = await db.get(HelpdeskTicket, ticket_id)
+    if t is None:
+        raise HTTPException(404, "Ticket not found")
+    pid, st = await sd.ticket_stage(db, t)
+    await db.commit()
+    return {"pipeline_id": str(pid), "stage_id": str(st.id) if st else None, "stage": st.name if st else None,
+            "status": getattr(t.status, "value", t.status)}
+
+
+@router.post("/{ticket_id}/stage")
+async def move_ticket_stage(ticket_id: uuid.UUID, stage_id: uuid.UUID = Body(..., embed=True), db: AsyncSession = Depends(get_db),
+                            current_user: User = Depends(get_current_user)):
+    from app.services import pat_service as pats
+    from app.services import service_desk_service as sd
+    _require(current_user, _FILES_WRITE)
+    t = await db.get(HelpdeskTicket, ticket_id, with_for_update=True)
+    if t is None:
+        raise HTTPException(404, "Ticket not found")
+    try:
+        out = await sd.move_ticket(db, t, stage_id)
+    except LookupError as e:
+        raise HTTPException(404, str(e))
+    pats.audit(db, current_user, "TICKET_STAGE_MOVED", "helpdesk_ticket", str(t.id), {"stage": out["stage"], "status": out["status"]})
+    await db.commit()
+    return out
+
+
 # ── Get ───────────────────────────────────────────────────────────────────────
 
 @router.get("/{ticket_id}", response_model=TicketRead)

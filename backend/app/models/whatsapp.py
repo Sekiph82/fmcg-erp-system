@@ -40,7 +40,9 @@ class WhatsAppConfig(Base, TimestampMixin):
     display_name         = Column(String(255), nullable=False)
     business_phone_id    = Column(String(100), nullable=True)   # Meta WABA phone number ID
     business_phone_no    = Column(String(20),  nullable=True)   # e.g. +254700000000
-    api_token            = Column(Text, nullable=True)          # Bearer token (store encrypted in prod)
+    # Bearer token, encrypted at rest (enc:v2: Fernet envelope, webhook-secret key). Legacy plaintext rows stay readable
+    # and are encrypted when the token is next saved. Read/write through .api_token only; never returned by the API.
+    api_token_stored     = Column("api_token", Text, nullable=True)
     webhook_verify_token = Column(String(100), nullable=True)
     provider             = Column(String(50), nullable=False, default="META")  # META / TWILIO / AFRICASTALKING
     is_active            = Column(Boolean, default=True, nullable=False)
@@ -49,6 +51,42 @@ class WhatsAppConfig(Base, TimestampMixin):
 
     created_by = relationship("User", foreign_keys=[created_by_id])
     messages   = relationship("WhatsAppMessage", back_populates="config", cascade="all, delete-orphan")
+
+    @property
+    def api_token(self):
+        from app.services.webhook_service import _read_webhook_secret
+        return _read_webhook_secret(self.api_token_stored)
+
+    @api_token.setter
+    def api_token(self, value):
+        from app.services.webhook_service import _store_webhook_secret
+        self.api_token_stored = _store_webhook_secret(value) if value else None
+
+    @property
+    def api_token_hint(self):
+        """Masked: last 4 characters only, or None when no token is stored."""
+        if not self.api_token_stored:
+            return None
+        try:
+            token = self.api_token or ""
+        except Exception:
+            return "set (cannot be read with the current key)"
+        return "••••" + token[-4:] if len(token) > 8 else "••••"
+
+
+class WhatsAppConsent(Base):
+    """WhatsApp permission per phone (E.164, '+digits'). OPTED_OUT (customer replied STOP/UNSUBSCRIBE/ACHA/DUR, or staff
+    recorded it) blocks every outbound message; only the customer's own START lifts it. OPTED_IN is required for
+    business-initiated messages outside the 24-hour window after the customer's last message."""
+    __tablename__ = "whatsapp_consents"
+
+    id             = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    phone          = Column(String(20), nullable=False, unique=True, index=True)
+    status         = Column(String(12), nullable=False)    # OPTED_IN | OPTED_OUT
+    source         = Column(String(100), nullable=True)    # inbound:STOP | manual:<user> ...
+    consent_text   = Column(Text, nullable=True)           # proof / wording the customer agreed to
+    recorded_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    updated_at     = Column(DateTime(timezone=True), nullable=False)
 
 
 class WhatsAppMessage(Base, TimestampMixin):

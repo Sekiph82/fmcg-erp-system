@@ -190,6 +190,7 @@ const BYPASS_PREFIX_REDIRECT = new Set([
   "/dashboard/report-builder/viewer",
   "/dashboard/report-builder/dashboards",
   "/dashboard/report-builder/schedules",
+  "/dashboard/report-builder/datasets",   // M47.S01.T011
   "/dashboard/chatter/feed",
   "/dashboard/chatter/search",
   "/dashboard/calendar/events",

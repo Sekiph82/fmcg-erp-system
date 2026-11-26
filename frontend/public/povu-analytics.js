@@ -20,9 +20,32 @@
   var vid = get(localStorage, V) || rid(); var sid = get(sessionStorage, S) || rid();
   var qs = new URLSearchParams(location.search);
   var utm = { utm_source: qs.get("utm_source") || undefined, utm_medium: qs.get("utm_medium") || undefined, utm_campaign: qs.get("utm_campaign") || undefined };
-  function track(kind, name) {
+  function track(kind, name, props) {
     if (!consent || !consent.analytics) return;
-    send("collect", { visitor: vid, session: sid, events: [Object.assign({ event_id: rid(), kind: kind, name: name || null, path: location.pathname, referrer: document.referrer || null }, utm)] });
+    send("collect", { visitor: vid, session: sid, events: [Object.assign({ event_id: rid(), kind: kind, name: name || null, path: location.pathname, referrer: document.referrer || null, properties: props || undefined }, utm)] });
+  }
+  // M47.S01.T011 point-and-click tagging: staff open a page with ?povu_tagger=1, click an element and copy its selector
+  // into POVU (Web analytics → Event tags). Tag rules are fetched from the API; nothing is sent in tagger mode.
+  var tags = [];
+  function loadTags() {
+    fetch(api + "/api/v1/public/web/tags").then(function (r) { return r.ok ? r.json() : []; }).then(function (t) { tags = Array.isArray(t) ? t : []; }).catch(function () { tags = []; });
+  }
+  function selectorOf(el) {
+    var parts = [];
+    while (el && el.nodeType === 1 && parts.length < 4) {
+      if (el.id) { parts.unshift("#" + CSS.escape(el.id)); break; }
+      var s = el.tagName.toLowerCase(), cls = Array.prototype.slice.call(el.classList, 0, 2);
+      if (cls.length) s += "." + cls.map(function (c) { return CSS.escape(c); }).join(".");
+      var sib = el.parentElement ? Array.prototype.filter.call(el.parentElement.children, function (x) { return x.tagName === el.tagName; }) : [];
+      if (sib.length > 1) s += ":nth-of-type(" + (sib.indexOf(el) + 1) + ")";
+      parts.unshift(s); el = el.parentElement;
+    }
+    return parts.join(" > ");
+  }
+  if (qs.get("povu_tagger") === "1") {
+    var last = null;
+    document.addEventListener("mouseover", function (e) { if (last) last.style.outline = ""; last = e.target; last.style.outline = "2px solid #f59e0b"; }, true);
+    document.addEventListener("click", function (e) { e.preventDefault(); e.stopPropagation(); window.prompt("POVU event tag — copy this selector:", selectorOf(e.target)); }, true);
   }
   function decide(analytics, marketing) {
     consent = { analytics: analytics, marketing: marketing };
@@ -44,14 +67,17 @@
     d.querySelector("#povu-c-all").onclick = function () { decide(true, true); };
     d.querySelector("#povu-c-save").onclick = function () { decide(d.querySelector("#povu-c-a").checked, d.querySelector("#povu-c-m").checked); };
   }
-  document.addEventListener("click", function (e) { var t = e.target.closest && e.target.closest("[data-povu-cta]"); if (t) track("CTA", t.getAttribute("data-povu-cta")); });
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest && e.target.closest("[data-povu-cta]"); if (t) track("CTA", t.getAttribute("data-povu-cta"));
+    for (var i = 0; i < tags.length; i++) { try { if (e.target.closest(tags[i].selector)) track("CUSTOM", tags[i].event); } catch (x) { /* bad selector */ } }
+  });
   document.addEventListener("submit", function (e) { var f = e.target; if (f && f.getAttribute && f.getAttribute("data-povu-form")) track("FORM", f.getAttribute("data-povu-form")); });
   window.povuAnalytics = {
-    track: function (kind, name) { track(kind === "PAGE" ? "PAGE" : kind === "FORM" || kind === "CTA" ? kind : "CUSTOM", name); },
+    track: function (kind, name, props) { track(kind === "PAGE" ? "PAGE" : kind === "FORM" || kind === "CTA" ? kind : "CUSTOM", name, props); },
     identify: function (email) { if (consent && consent.marketing) send("identify", { visitor: vid, email: email }); },
     openConsent: banner,
     forget: function () { send("forget", { visitor: vid }); try { localStorage.removeItem(K); localStorage.removeItem(V); sessionStorage.removeItem(S); } catch (e) { /* ignore */ } consent = null; }
   };
-  function start() { if (consent) { if (consent.analytics) track("PAGE"); } else banner(); }
+  function start() { if (qs.get("povu_tagger") === "1") return; if (consent) { if (consent.analytics) { track("PAGE"); loadTags(); } } else banner(); }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 })();

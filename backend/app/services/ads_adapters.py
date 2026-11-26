@@ -383,3 +383,219 @@ def verify_tiktok_callback(raw: bytes, signature_header: str, now: Optional[floa
 
 
 ADAPTERS: dict[str, Adapter] = {a.provider: a for a in (MetaAds(), GoogleAds(), LinkedInAds(), TikTokAds())}
+
+
+# ── M47.S01.T010 customer lists and offline conversions ─────────────────────
+# Only SHA-256 hashes of normalised identifiers leave the ERP: e-mail trimmed + lower-cased; phone in E.164 (Google:
+# "+254712345678") or digits with country code (Meta: "254712345678"), as each platform documents. Only people with
+# marketing consent on record (SUBSCRIBED) are ever sent, checked at upload time, for audiences and conversions alike.
+# Meta: Custom Audience (act_<id>/customaudiences + <audience>/users), Conversions API (<pixel>/events).
+# Google: Customer Match (userLists:mutate, offlineUserDataJobs create / addOperations / run), offline conversions
+# (customers/<id>:uploadClickConversions with hashed user identifiers). Extra settings: META_PIXEL_ID,
+# GOOGLE_ADS_CONVERSION_ACTION (resource name); missing → NOT_CONFIGURED.
+CHUNK = 5000
+
+
+def _setting(name: str) -> str:
+    import os
+    return getattr(settings, name, "") or os.environ.get(name, "")
+
+
+def sha256_hex(v: str) -> str:
+    return hashlib.sha256(v.encode()).hexdigest()
+
+
+def hash_email(email: Optional[str]) -> Optional[str]:
+    e = (email or "").strip().lower()
+    return sha256_hex(e) if "@" in e else None
+
+
+def hash_phone(phone: Optional[str], plus: bool) -> Optional[str]:
+    from app.services.customer_data_service import norm_phone
+    p = norm_phone(phone)
+    if not p:
+        return None
+    return sha256_hex(p if plus else p.lstrip("+"))
+
+
+def _google_ids(email: Optional[str], phone: Optional[str]) -> list[dict]:
+    out = []
+    if hash_email(email):
+        out.append({"hashedEmail": hash_email(email)})
+    if hash_phone(phone, plus=True):
+        out.append({"hashedPhoneNumber": hash_phone(phone, plus=True)})
+    return out
+
+
+async def meta_audience_upload(account_id: str, name: str, people: list[tuple[Optional[str], Optional[str]]]) -> dict:
+    """people: (email, phone) in the clear → hashed here, before anything is sent."""
+    a = ADAPTERS["meta"]
+    a._need()
+    rows = [[hash_email(e) or "", hash_phone(p, plus=False) or ""] for e, p in people]
+    rows = [r for r in rows if r[0] or r[1]]
+    async with provider_client() as c:
+        body = a._check(await c.post(a._url(f"act_{account_id}/customaudiences"), headers=a._h(),
+                                     json={"name": name[:200], "subtype": "CUSTOM", "customer_file_source": "USER_PROVIDED_ONLY",
+                                           "description": "POVU ERP consented audience"}))
+        aud = str(body.get("id") or "")
+        if not aud:
+            raise AdsError("PROVIDER", "Meta did not return an audience id.")
+        for i in range(0, len(rows), CHUNK):
+            a._check(await c.post(a._url(f"{aud}/users"), headers=a._h(),
+                                  json={"payload": {"schema": ["EMAIL", "PHONE"], "data": rows[i:i + CHUNK]}}))
+    return {"external_id": aud, "sent": len(rows)}
+
+
+async def google_audience_upload(customer_id: str, name: str, people: list[tuple[Optional[str], Optional[str]]]) -> dict:
+    g = ADAPTERS["google"]
+    g._need()
+    cid = customer_id.replace("-", "")
+    ops = [{"create": {"userIdentifiers": ids}} for ids in (_google_ids(e, p) for e, p in people) if ids]
+    async with provider_client() as c:
+        body = g._check(await c.post(g._url(f"customers/{cid}/userLists:mutate"), headers=g._h(), json={"operations": [
+            {"create": {"name": name[:200], "membershipLifeSpan": 10000, "crmBasedUserList": {"uploadKeyType": "CONTACT_INFO"}}}]}))
+        lst = ((body.get("results") or [{}])[0]).get("resourceName")
+        if not lst:
+            raise AdsError("PROVIDER", "Google Ads did not return a user list.")
+        job = g._check(await c.post(g._url(f"customers/{cid}/offlineUserDataJobs:create"), headers=g._h(), json={
+            "job": {"type": "CUSTOMER_MATCH_USER_LIST", "customerMatchUserListMetadata": {"userList": lst}}})).get("resourceName")
+        if not job:
+            raise AdsError("PROVIDER", "Google Ads did not return an upload job.")
+        for i in range(0, len(ops), CHUNK):
+            g._check(await c.post(g._url(f"{job}:addOperations"), headers=g._h(), json={"operations": ops[i:i + CHUNK]}))
+        g._check(await c.post(g._url(f"{job}:run"), headers=g._h(), json={}))
+    return {"external_id": lst, "sent": len(ops)}
+
+
+async def meta_conversions(events: list[dict]) -> int:
+    """events: {id, email, phone, value, currency, at}. Purchase events; event_id lets Meta deduplicate."""
+    a = ADAPTERS["meta"]
+    a._need()
+    pixel = _setting("META_PIXEL_ID")
+    if not pixel:
+        raise AdsError("NOT_CONFIGURED", "META_PIXEL_ID is not set.")
+    data = []
+    for ev in events:
+        ud = {}
+        if hash_email(ev.get("email")):
+            ud["em"] = [hash_email(ev.get("email"))]
+        if hash_phone(ev.get("phone"), plus=False):
+            ud["ph"] = [hash_phone(ev.get("phone"), plus=False)]
+        data.append({"event_name": "Purchase", "event_time": int(ev["at"].timestamp()), "action_source": "system_generated",
+                     "event_id": ev["id"], "user_data": ud, "custom_data": {"currency": ev["currency"], "value": float(ev["value"])}})
+    sent = 0
+    async with provider_client() as c:
+        for i in range(0, len(data), 1000):        # Meta: at most 1000 events per request
+            body = a._check(await c.post(a._url(f"{pixel}/events"), headers=a._h(), json={"data": data[i:i + 1000]}))
+            sent += int(body.get("events_received") or 0)
+    return sent
+
+
+async def google_conversions(customer_id: str, events: list[dict]) -> int:
+    g = ADAPTERS["google"]
+    g._need()
+    action = _setting("GOOGLE_ADS_CONVERSION_ACTION")
+    if not action:
+        raise AdsError("NOT_CONFIGURED", "GOOGLE_ADS_CONVERSION_ACTION is not set.")
+    convs = [{"conversionAction": action, "conversionDateTime": ev["at"].strftime("%Y-%m-%d %H:%M:%S+00:00"),
+              "conversionValue": float(ev["value"]), "currencyCode": ev["currency"], "orderId": ev["id"],
+              "userIdentifiers": _google_ids(ev.get("email"), ev.get("phone"))} for ev in events]
+    ok = 0
+    async with provider_client() as c:
+        for i in range(0, len(convs), 2000):
+            body = g._check(await c.post(g._url(f"customers/{customer_id.replace('-', '')}:uploadClickConversions"),
+                                         headers=g._h(), json={"conversions": convs[i:i + 2000], "partialFailure": True}))
+            if body.get("partialFailureError"):
+                raise AdsError("VALIDATION", f"Google Ads: {body['partialFailureError'].get('message', 'partial failure')}")
+            ok += len(body.get("results") or [])
+    return ok
+
+
+async def _account(db, provider: str):
+    from sqlalchemy import select
+    from app.models.crm import AdAccount
+    if provider not in ("meta", "google"):
+        raise AdsError("VALIDATION", "Customer lists and conversions support meta and google.")
+    acct = (await db.execute(select(AdAccount).where(AdAccount.provider == provider, AdAccount.status == "ACTIVE")
+                             .order_by(AdAccount.created_at))).scalars().first()
+    if acct is None or not ADAPTERS[provider].configured():
+        raise AdsError("NOT_CONFIGURED", f"No active {provider} ad account is connected.")
+    return acct
+
+
+async def upload_audience(db, audience, provider: str, user) -> dict:
+    """Upload the audience's consented members (hashed) and record the upload. Does not commit."""
+    from sqlalchemy import select
+    from app.models.crm import MarketingAudienceMember
+    from app.models.m47_platform import AdsAudienceUpload
+    from app.models.sales import Customer
+    from app.services import audience_service as aus
+    acct = await _account(db, provider)
+    rows = (await db.execute(select(MarketingAudienceMember.email, Customer.phone).join(
+        Customer, Customer.id == MarketingAudienceMember.customer_id).where(MarketingAudienceMember.audience_id == audience.id))).all()
+    # ad uploads always need marketing consent (SUBSCRIBED), whatever the audience's require_consent says:
+    # unsubscribed, bounced, complained and never-consented people are never sent (T003 audit)
+    ok = await aus._consented(db)
+    people = [(e, p) for e, p in rows if (e or "").strip().lower() in ok]
+    rec = AdsAudienceUpload(audience_id=audience.id, provider=provider, account_id=acct.id, status="FAILED",
+                            created_by_id=getattr(user, "id", None))
+    db.add(rec)
+    try:
+        fn = meta_audience_upload if provider == "meta" else google_audience_upload
+        out = await fn(acct.external_id, f"POVU {audience.name}", people)
+    except AdsError as e:
+        rec.error = str(e)[:500]
+        raise
+    rec.status, rec.external_audience_id, rec.sent_count = "UPLOADED", out["external_id"], out["sent"]
+    return {"status": "UPLOADED", "provider": provider, "external_audience_id": out["external_id"], "sent": out["sent"]}
+
+
+async def conversion_events(db, since) -> list[tuple[str, dict]]:
+    """Won deals and paid invoices changed since `since` whose e-mail has marketing consent: (source_type, event)."""
+    from sqlalchemy import select
+    from app.models.crm import CRMRecord, CRMStatus
+    from app.models.sales import Customer, Invoice, InvoiceStatus
+    from app.services import audience_service as aus
+    ok = await aus._consented(db)
+    out: list[tuple[str, dict]] = []
+    for r in (await db.execute(select(CRMRecord).where(CRMRecord.status == CRMStatus.WON, CRMRecord.updated_at >= since)
+                               .limit(2000))).scalars():
+        if (r.contact_email or "").lower() in ok:
+            out.append(("DEAL", {"id": str(r.id), "email": r.contact_email, "phone": r.contact_phone,
+                                 "value": r.expected_revenue or 0, "currency": r.currency or "KES", "at": r.updated_at}))
+    for i, c in (await db.execute(select(Invoice, Customer).join(Customer, Customer.id == Invoice.customer_id).where(
+            Invoice.status == InvoiceStatus.PAID, Invoice.updated_at >= since).limit(2000))).all():
+        if (c.email or "").lower() in ok:
+            out.append(("INVOICE", {"id": str(i.id), "email": c.email, "phone": c.phone, "value": i.total_amount or 0,
+                                    "currency": i.currency or "KES", "at": i.updated_at}))
+    return out
+
+
+async def upload_conversions(db, provider: str, since) -> dict:
+    """Upload conversions not yet uploaded to this provider (one row per source in ads_conversion_uploads). No commit."""
+    from datetime import timezone
+    from sqlalchemy import select
+    from sqlalchemy.dialects.postgresql import insert
+    from app.models.m47_platform import AdsConversionUpload
+    acct = await _account(db, provider)
+    done = {(t, str(i)) for t, i in (await db.execute(select(AdsConversionUpload.source_type, AdsConversionUpload.source_id)
+                                                      .where(AdsConversionUpload.provider == provider,
+                                                             AdsConversionUpload.status == "UPLOADED"))).all()}
+    todo = [(t, ev) for t, ev in await conversion_events(db, since) if (t, ev["id"]) not in done]
+    if not todo:
+        return {"status": "OK", "uploaded": 0}
+    for _, ev in todo:
+        ev["at"] = ev["at"] if ev["at"].tzinfo else ev["at"].replace(tzinfo=timezone.utc)
+    events = [e for _, e in todo]
+    try:
+        n = await (meta_conversions(events) if provider == "meta" else google_conversions(acct.external_id, events))
+        status, err = "UPLOADED", None
+    except AdsError as e:
+        if e.kind == "NOT_CONFIGURED":
+            raise
+        n, status, err = 0, "FAILED", str(e)[:500]
+    for t, ev in todo:
+        await db.execute(insert(AdsConversionUpload).values(provider=provider, source_type=t, source_id=ev["id"], status=status,
+                                                            error=err).on_conflict_do_update(
+            constraint="uq_ads_conversion_upload", set_={"status": status, "error": err}))
+    return {"status": "OK" if status == "UPLOADED" else "FAILED", "uploaded": n, "error": err}

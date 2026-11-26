@@ -7,10 +7,10 @@ from __future__ import annotations
 
 import json
 from collections import defaultdict, deque
-from typing import Optional
+from typing import Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, ValidationError, field_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.v1.endpoints.business_cards_public import _client, _count
@@ -32,6 +32,14 @@ class EventIn(BaseModel):
     utm_source: Optional[str] = UTM
     utm_medium: Optional[str] = UTM
     utm_campaign: Optional[str] = UTM
+    properties: Optional[dict[str, Union[bool, int, float, str]]] = None   # M47.S01.T008: kept only for defined events
+
+    @field_validator("properties")
+    @classmethod
+    def _small(cls, v):
+        if v and (len(v) > 20 or any(len(k) > 40 for k in v)):
+            raise ValueError("at most 20 properties with short names")
+        return v
 
 
 class CollectIn(BaseModel):
@@ -96,3 +104,9 @@ async def forget(request: Request, db: AsyncSession = Depends(get_db)):
     n = await wa.forget(db, b.visitor)
     await db.commit()
     return {"deleted_events": n}
+
+
+@router.get("/tags")
+async def public_tags(db: AsyncSession = Depends(get_db)):
+    """Event tag rules for the website script (selectors and event names only; no visitor data)."""
+    return await wa.event_tags(db, active_only=True)

@@ -24,7 +24,7 @@ PER_FORM_LIMIT = (30, timedelta(minutes=1))
 
 
 class LeadSubmission(BaseModel):
-    company_name: str = Field(min_length=1, max_length=200)
+    company_name: Optional[str] = Field(None, max_length=200)   # required unless left out for a known visitor
     contact_person_name: Optional[str] = Field(None, max_length=200)
     contact_email: Optional[EmailStr] = None
     contact_phone: Optional[str] = Field(None, max_length=50, pattern=r"^[0-9+()\-\s]{6,50}$")
@@ -38,6 +38,66 @@ class LeadSubmission(BaseModel):
     utm_content: Optional[str] = Field(None, max_length=100)
     referrer: Optional[str] = Field(None, max_length=500)
     landing_page: Optional[str] = Field(None, max_length=500)
+    visitor: Optional[str] = Field(None, min_length=16, max_length=64, pattern=r"^[A-Za-z0-9-]+$")   # analytics visitor id
+
+
+class MissingField(Exception):
+    pass
+
+
+# ── M47.S01.T010 form shortening ("skip if known") ──────────────────────────
+SKIPPABLE = ("company_name", "contact_person_name", "contact_email", "contact_phone")
+
+
+async def skip_list(db: AsyncSession, form: CRMLeadForm) -> list[str]:
+    from app.models.m47_platform import LeadFormSetting
+    row = await db.get(LeadFormSetting, form.id)
+    return [f for f in (row.skip_if_known if row else []) if f in SKIPPABLE]
+
+
+async def set_skip_list(db: AsyncSession, form: CRMLeadForm, fields: list[str]) -> list[str]:
+    from app.models.m47_platform import LeadFormSetting
+    bad = [f for f in fields if f not in SKIPPABLE]
+    if bad:
+        raise ValueError(f"Cannot skip: {', '.join(bad)}.")
+    row = await db.get(LeadFormSetting, form.id)
+    clean = sorted(set(fields))
+    if row is None:
+        db.add(LeadFormSetting(form_id=form.id, skip_if_known=clean))
+    else:
+        row.skip_if_known = clean
+    return clean
+
+
+async def known_values(db: AsyncSession, visitor: Optional[str]) -> dict[str, str]:
+    """Values we already hold for a recognised visitor: a web identity (exists only with marketing consent) whose
+    latest consent still allows marketing, linked by e-mail to a CRM contact. Server-side only, never sent back."""
+    from app.models.crm import CRMContact, CRMContactAssociation, WebIdentity
+    from app.models.sales import Customer
+    from app.services import web_analytics_service as wa
+    if not visitor:
+        return {}
+    vh = wa.hashed("v", visitor)
+    consent = await wa._latest_consent(db, vh)
+    ident = await db.get(WebIdentity, vh)
+    if consent is None or not consent.marketing or ident is None:
+        return {}
+    c = (await db.execute(select(CRMContact).where(func.lower(CRMContact.email) == ident.email.lower()))).scalars().first()
+    if c is None:
+        return {}
+    company = (await db.execute(select(Customer.name).join(CRMContactAssociation, CRMContactAssociation.object_id == Customer.id)
+                                .where(CRMContactAssociation.contact_id == c.id, CRMContactAssociation.object_type == "customer")
+                                .limit(1))).scalar()
+    vals = {"company_name": company, "contact_person_name": c.full_name, "contact_email": c.email, "contact_phone": c.phone}
+    return {k: v for k, v in vals.items() if v}
+
+
+async def omitted(db: AsyncSession, form: CRMLeadForm, visitor: Optional[str]) -> list[str]:
+    skip = await skip_list(db, form)
+    if not skip:
+        return []
+    known = await known_values(db, visitor)
+    return [f for f in skip if f in known]
 
 
 class RateLimited(Exception):
@@ -79,6 +139,13 @@ async def submit(db: AsyncSession, form: CRMLeadForm, body: LeadSubmission, ip: 
     now = datetime.now(timezone.utc)
     hashed = ip_hash(ip)
     await _check_rate(db, form, hashed, now)
+    if body.visitor:   # fields the form left out for a recognised visitor are filled from what we hold
+        skipped = await omitted(db, form, body.visitor)
+        if skipped:
+            known = await known_values(db, body.visitor)
+            body = body.model_copy(update={f: known[f] for f in skipped if not getattr(body, f)})
+    if not (body.company_name or "").strip() and not _clean(body.website):
+        raise MissingField("Company is required.")
     email = str(body.contact_email).lower() if body.contact_email else None
     sub = CRMLeadSubmission(
         form_id=form.id, received_at=now, ip_hash=hashed, status="ACCEPTED", contact_email=email,
@@ -139,6 +206,8 @@ async def submit(db: AsyncSession, form: CRMLeadForm, body: LeadSubmission, ip: 
                 raise
     sub.crm_record_id = lead.id
     db.add(sub)
+    from app.services import crm_routing_service
+    await crm_routing_service.route(db, lead)          # M47.S01.T002: form leads go through lead routing too
     await intel.rescore(db, lead, await intel.active_rules(db), "web-form", has_history=False)
     await db.commit()
     return sub

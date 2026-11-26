@@ -64,9 +64,11 @@ async def list_events(
     event_type: Optional[str] = None,
     status: Optional[str] = None,
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
+    """Events the user organises or attends; calendar admins see everyone's, without others' private details."""
     start_dt, end_dt = _naive_utc(start), _naive_utc(end)
-    return await calendar_service.list_events(db, start_dt, end_dt, event_type, status)
+    return await calendar_service.list_events(db, start_dt, end_dt, event_type, status, viewer=current_user)
 
 
 @router.post("/events", response_model=EventOut)
@@ -79,10 +81,12 @@ async def create_event(data: EventCreate, db: AsyncSession = Depends(get_db), cu
 
 
 @router.get("/events/{event_id}", response_model=EventOut)
-async def get_event(event_id: str, db: AsyncSession = Depends(get_db)):
+async def get_event(event_id: str, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     e = await calendar_service.get_event(db, event_id)
-    if not e:
+    if not e or not (calendar_service.is_mine(e, current_user) or calendar_service.sees_all(current_user)):
         raise HTTPException(404, "Event not found")
+    if not calendar_service.is_mine(e, current_user):
+        return calendar_service.redact(calendar_service._event_to_dict(e))
     return e
 
 

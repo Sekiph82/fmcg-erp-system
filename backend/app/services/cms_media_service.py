@@ -14,6 +14,8 @@ import asyncio
 import hashlib
 import hmac
 import re
+import shutil
+import subprocess
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -84,6 +86,58 @@ def file_path(m: CmsMedia) -> Path:
     if not re.fullmatch(r"[a-f0-9]{32}", m.storage_path):
         raise HTTPException(404, "Not found")
     return root() / m.storage_path
+
+
+def poster_file(m: CmsMedia) -> Path:
+    if not m.poster_path or not re.fullmatch(r"[a-f0-9]{32}", m.poster_path):
+        raise HTTPException(404, "No poster")
+    return root() / m.poster_path
+
+
+def store_bytes(data: bytes, mime: str) -> tuple[str, int, str]:
+    """Store generated media (narration, trim); the bytes must really be the declared type."""
+    ok = data[:8] == b"\x89PNG\r\n\x1a\n" if mime == "image/png" else sniff(data[:16], ".m4a" if mime == "audio/mp4" else "") == mime
+    if not ok:
+        raise HTTPException(422, "The generated file is not the expected media type")
+    if len(data) > settings.MEDIA_MAX_UPLOAD_BYTES:
+        raise HTTPException(413, "Generated media is over the size limit")
+    key = uuid.uuid4().hex
+    (root() / key).write_bytes(data)
+    return key, len(data), hashlib.sha256(data).hexdigest()
+
+
+# ── ffmpeg tools (poster frame, trim) — only when ffmpeg is installed ──────────
+
+FORMATS = {"video/mp4": "mp4", "video/webm": "webm", "audio/mp4": "mp4", "audio/mpeg": "mp3", "audio/ogg": "ogg", "audio/wav": "wav"}
+
+
+def ffmpeg() -> Optional[str]:
+    return shutil.which("ffmpeg")
+
+
+def not_available() -> HTTPException:
+    return HTTPException(409, {"status": "NOT_AVAILABLE", "detail": "ffmpeg is not installed on the server; poster frames and trimming are unavailable."})
+
+
+async def _ffmpeg(args: list[str]) -> bytes:
+    exe = ffmpeg()
+    if not exe:
+        raise not_available()
+    r = await asyncio.to_thread(subprocess.run, [exe, "-hide_banner", "-loglevel", "error", "-nostdin", *args], capture_output=True, timeout=300)
+    if r.returncode != 0 or not r.stdout:
+        raise HTTPException(422, f"ffmpeg could not process this media: {r.stderr.decode(errors='replace')[:200]}")
+    return r.stdout
+
+
+async def poster_frame(m: CmsMedia, t: float) -> bytes:
+    return await _ffmpeg(["-ss", f"{t:.3f}", "-i", str(file_path(m)), "-frames:v", "1", "-f", "image2pipe", "-vcodec", "png", "pipe:1"])
+
+
+async def trim(m: CmsMedia, start: float, end: float) -> bytes:
+    """Stream copy (no re-encode) of [start, end) into the same container; the original file is not touched."""
+    fmt = FORMATS[m.mime]
+    extra = ["-movflags", "frag_keyframe+empty_moov"] if fmt == "mp4" else []   # mp4 to a pipe needs a fragmented layout
+    return await _ffmpeg(["-ss", f"{start:.3f}", "-i", str(file_path(m)), "-t", f"{end - start:.3f}", "-c", "copy", *extra, "-f", fmt, "pipe:1"])
 
 
 VTT_TIME = re.compile(r"^\d{2}:\d{2}(:\d{2})?\.\d{3} --> \d{2}:\d{2}(:\d{2})?\.\d{3}")

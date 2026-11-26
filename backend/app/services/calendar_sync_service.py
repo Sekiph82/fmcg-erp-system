@@ -17,10 +17,15 @@ the host; otherwise the ERP version wins and the conflict is recorded on the lin
 All other events become busy blocks (start/end only — titles, attendees and bodies of private events are never
 stored) that the booking checks (overlapping / free_slots / public booking) treat as busy. Free/transparent events
 are not busy; all-day events block the day in the meeting's time zone.
+
+Tasks (M47.S01.T009): open CRM tasks (PLANNED crm_activities with a due time) assigned to a user with a connected
+calendar are pushed as 30-minute free (transparent / showAs=free) events — created, updated when subject or due time
+change, deleted when the task is completed, cancelled, reassigned or deleted. Without a calendar link: NOT_CONFIGURED.
 """
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Optional
@@ -273,10 +278,15 @@ async def pull(db: AsyncSession, conn: OAuthConnection) -> dict:
     events, cursor = await (_google_pull if conn.provider == "google" else _graph_pull)(db, conn)
     links = {l.external_event_id: l for l in (await db.execute(select(CalendarEventLink).where(
         CalendarEventLink.connection_id == conn.id))).scalars()}
+    from app.models.m47_sales_depth import CRMTaskCalendarLink
+    task_events = set((await db.execute(select(CRMTaskCalendarLink.external_event_id).where(
+        CRMTaskCalendarLink.connection_id == conn.id))).scalars())
     if cursor.get("full"):                         # full window: rebuild busy blocks from scratch
         await db.execute(delete(CalendarBusyBlock).where(CalendarBusyBlock.connection_id == conn.id))
     moved = cancelled = busy = conflicts = 0
     for e in events:
+        if e["id"] in task_events:
+            continue                               # our own task reminders are never busy time
         link = links.get(e["id"])
         if link is None and e.get("tx", "") and str(e.get("tx")).startswith("povu-"):
             continue                               # our own create echoed back before the link id was stored
@@ -329,8 +339,103 @@ async def sync_connection(db: AsyncSession, conn: OAuthConnection) -> dict:
         async with db.begin_nested():
             await push_meeting(db, m, conn)
             pushed += 1
+    tasks = await sync_tasks(db, conn)
     result = await pull(db, conn)
-    return {"pushed": pushed, **result}
+    return {"pushed": pushed, "tasks": tasks, **result}
+
+
+# ── CRM tasks (M47.S01.T009) ──────────────────────────────────────────────────
+
+TASK_MINUTES = 30
+
+
+def _task_hash(act) -> str:
+    return hashlib.sha256(f"{act.subject}|{act.due_datetime.isoformat()}".encode()).hexdigest()
+
+
+def _task_body(act, google: bool) -> dict:
+    start = act.due_datetime.replace(tzinfo=None)              # crm_activities times are naive UTC
+    end = start + timedelta(minutes=TASK_MINUTES)
+    text = f"CRM task. Open: {settings.PUBLIC_APP_URL.rstrip('/')}/dashboard/crm/records/{act.crm_record_id}"
+    if google:
+        return {"summary": f"Task: {act.subject}"[:300], "description": text, "transparency": "transparent",
+                "start": {"dateTime": start.replace(tzinfo=UTC).isoformat(), "timeZone": "UTC"},
+                "end": {"dateTime": end.replace(tzinfo=UTC).isoformat(), "timeZone": "UTC"},
+                "extendedProperties": {"private": {"povuTaskId": str(act.id)}}}
+    return {"subject": f"Task: {act.subject}"[:255], "body": {"contentType": "text", "content": text}, "showAs": "free",
+            "start": {"dateTime": start.isoformat(), "timeZone": "UTC"}, "end": {"dateTime": end.isoformat(), "timeZone": "UTC"},
+            "transactionId": f"povu-task-{act.id}"}
+
+
+async def push_task(db: AsyncSession, conn: OAuthConnection, activity_id, act=None) -> str:
+    """act = the open task when it should be on this calendar; None = remove its event (done, deleted, reassigned)."""
+    from app.models.m47_sales_depth import CRMTaskCalendarLink
+    link = (await db.execute(select(CRMTaskCalendarLink).where(
+        CRMTaskCalendarLink.activity_id == activity_id, CRMTaskCalendarLink.connection_id == conn.id))).scalar_one_or_none()
+    base, google = _cal_base(conn), conn.provider == "google"
+    if act is None:
+        if link is None:
+            return "SKIPPED"
+        if link.external_event_id:
+            r = await _call(db, conn, "DELETE", f"{base}/{link.external_event_id}",
+                            params={"sendUpdates": "none"} if google else None)
+            if r.status_code not in (200, 204, 404, 410):
+                raise CalendarApiError(f"Calendar delete failed ({r.status_code}).")
+        await db.delete(link)
+        return "DELETED"
+    h = _task_hash(act)
+    if link is not None and link.pushed_hash == h and link.external_event_id:
+        return "UNCHANGED"
+    if link is None:
+        link = CRMTaskCalendarLink(activity_id=act.id, connection_id=conn.id)
+        db.add(link)
+        await db.flush()
+    body, params = _task_body(act, google), ({"sendUpdates": "none"} if google else None)
+    r = None
+    if link.external_event_id:
+        r = await _call(db, conn, "PATCH", f"{base}/{link.external_event_id}", json=body, params=params)
+        if r.status_code in (404, 410):
+            link.external_event_id = None
+    if not link.external_event_id:
+        r = await _call(db, conn, "POST", base, json=body, params=params)
+    if r.status_code not in (200, 201):
+        raise CalendarApiError(f"Calendar write failed ({r.status_code}).")
+    link.external_event_id, link.pushed_hash, link.updated_at = r.json().get("id"), h, clock.utcnow()
+    return "SYNCED"
+
+
+async def sync_tasks(db: AsyncSession, conn: OAuthConnection) -> dict:
+    """Push the user's open tasks with due times; remove events of tasks that are no longer open for them."""
+    from app.models.crm import CRMActivity, CRMActivityResult
+    from app.models.m47_sales_depth import CRMTaskCalendarLink
+    from app.models.user import User
+    user = await db.get(User, conn.user_id)
+    if user is None:
+        return {}
+    acts = (await db.execute(select(CRMActivity).where(
+        CRMActivity.assigned_to.in_((str(user.id), user.username)), CRMActivity.result_status == CRMActivityResult.PLANNED,
+        CRMActivity.due_datetime.is_not(None), CRMActivity.due_datetime >= clock.utcnow().replace(tzinfo=None) - WINDOW_PAST)
+        .limit(500))).scalars().all()
+    open_ids = {a.id for a in acts}
+    stale = [i for i in (await db.execute(select(CRMTaskCalendarLink.activity_id).where(
+        CRMTaskCalendarLink.connection_id == conn.id))).scalars() if i not in open_ids]
+    out: dict = {}
+    for act_id, act in [(a.id, a) for a in acts] + [(i, None) for i in stale]:
+        async with db.begin_nested():
+            res = await push_task(db, conn, act_id, act)
+        out[res] = out.get(res, 0) + 1
+    return out
+
+
+async def push_tasks_safely(db: AsyncSession, user_id) -> dict:
+    conn = await _host_calendar(db, user_id)
+    if conn is None:
+        return {"status": "NOT_CONFIGURED", "detail": "Connect your Google or Outlook calendar first."}
+    try:
+        return {"status": "SYNCED", **await sync_tasks(db, conn)}
+    except (oauth.OAuthError, CalendarApiError) as e:
+        conn.last_error = str(e)[:500]
+        return {"status": "PENDING", "detail": str(e)[:300]}
 
 
 async def run_calendar_sync(interval: float = 300.0) -> None:

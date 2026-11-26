@@ -566,5 +566,50 @@ def translation_stub(source: CmsPage, locale: str) -> dict:
             "translation_note": f"Copied from {source.locale}; translate and review before publishing."}
 
 
+TRANSLATABLE = {"heading": ("text",), "text": ("text",), "hero": ("title", "subtitle"), "button": ("label",)}
+
+
+def _walk_texts(doc: dict, fn) -> None:
+    """Visit every translatable string of a validated document in a fixed order (fn returns the replacement)."""
+    def blocks(bs: list) -> None:
+        for b in bs:
+            for k in TRANSLATABLE.get(b["type"], ()):
+                if b.get(k):
+                    b[k] = fn(b[k])
+            if b["type"] == "faq":
+                for i in b["items"]:
+                    i["q"] = fn(i["q"])
+                    i["a"] = fn(i["a"])
+            if b["type"] == "columns":
+                blocks(b["left"])
+                blocks(b["right"])
+    blocks(doc["blocks"])
+    for k in ("meta_title", "meta_description"):
+        if doc["seo"].get(k):
+            doc["seo"][k] = fn(doc["seo"][k])
+
+
+async def ai_translation(db: AsyncSession, source: CmsPage, locale: str, profile) -> tuple[dict, str, float]:
+    """A translation draft written by the brand's AI provider within its budget; otherwise the plain copy. The result
+    is always a draft marked NEEDS_REVIEW by the caller. Returns (draft, engine, cost)."""
+    import copy
+    from app.services import content_studio_service as cs
+    stub = translation_stub(source, locale)
+    doc, _ = validate_doc(stub)
+    texts: list[str] = []
+    _walk_texts(copy.deepcopy(doc), lambda s: texts.append(s) or s)
+    out, engine, cost = await cs.translate_texts(db, profile, texts, source.locale, locale)
+    if out is None:
+        return stub, "copy", cost
+    it = iter(out)
+    new = copy.deepcopy(doc)
+    _walk_texts(new, lambda s: next(it))
+    try:
+        new, _ = validate_doc(new)                 # translated links must still be safe
+    except CmsError:
+        return stub, "copy", cost
+    return {**new, "translation_note": f"Machine translated from {source.locale} by {engine}; review before publishing."}, engine, cost
+
+
 def dumps_ld(obj: Any) -> str:
     return json.dumps(obj, ensure_ascii=False).replace("<", "\\u003c")

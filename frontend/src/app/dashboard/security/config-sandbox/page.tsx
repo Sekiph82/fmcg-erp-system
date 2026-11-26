@@ -11,17 +11,24 @@ export default function ConfigSandboxPage() {
   const [mode, setMode] = useState<"overwrite" | "skip_existing">("overwrite");
   const [plan, setPlan] = useState<{ steps: Step[]; summary: Record<string, number> } | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
-  const download = () => apiClient.get("/api/v1/config-bundles/export").then((r) => {
+  const [cms, setCms] = useState(false);                     // M47.S01.T007 include website content
+  const [siteMap, setSiteMap] = useState("");                // "source-key=target-key, ..."
+  const siteKeys = () => Object.fromEntries(siteMap.split(",").map((p) => p.split("=").map((x) => x.trim())).filter((p) => p.length === 2 && p[0] && p[1]));
+  const download = () => apiClient.get(`/api/v1/config-bundles/export${cms ? "?include_cms=true" : ""}`).then((r) => {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(r.data, null, 2)], { type: "application/json" }));
     a.download = `config-${String(r.data.sha256).slice(0, 8)}.json`; a.click();
   }).catch((e) => setMsg(err(e)));
   const load = (f: File | undefined) => f && f.text().then((t) => { try { setBundle(JSON.parse(t)); setPlan(null); setMsg(null); } catch { setMsg("Not a JSON file."); } });
-  const dry = () => bundle && apiClient.post("/api/v1/config-bundles/plan", { bundle, mode }).then((r) => setPlan(r.data)).catch((e) => setMsg(err(e)));
-  const apply = () => bundle && apiClient.post("/api/v1/config-bundles/apply", { bundle, mode }).then((r) => { setMsg(`Applied: ${r.data.created} created, ${r.data.updated} updated. Workflows arrive as drafts: publish them.`); setPlan(null); }).catch((e) => setMsg(err(e)));
+  const dry = () => bundle && apiClient.post("/api/v1/config-bundles/plan", { bundle, mode, site_keys: siteKeys() }).then((r) => setPlan(r.data)).catch((e) => setMsg(err(e)));
+  const apply = () => bundle && apiClient.post("/api/v1/config-bundles/apply", { bundle, mode, site_keys: siteKeys() }).then((r) => { setMsg(`Applied: ${r.data.created} created, ${r.data.updated} updated. Workflows arrive as drafts: publish them.`); setPlan(null); }).catch((e) => setMsg(err(e)));
   return (
     <div className="p-4 space-y-3 text-sm max-w-4xl">
       <h2 className="text-lg font-semibold">Configuration sandbox</h2>
+      <div className="flex flex-wrap gap-3 items-center text-xs">
+        <label className="flex items-center gap-1"><input type="checkbox" checked={cms} onChange={(e) => setCms(e.target.checked)} />Include website content (live public pages as drafts, tables, redirects, CTAs; media by reference)</label>
+        <label>Site key mapping<input aria-label="Site key mapping" className="border rounded px-1 ml-1" placeholder="povu=povu-staging" value={siteMap} onChange={(e) => setSiteMap(e.target.value)} /></label>
+      </div>
       <p className="text-xs text-gray-500">Try configuration changes on a staging copy, export them here, then dry-run and apply them in production. Bundles contain pipelines, custom fields and objects, templates, sequences, forms, scoring and routing rules and workflows: never customer or transaction data.</p>
       {msg && <p role="status" className="text-xs">{msg}</p>}
       <button className="border rounded px-3 py-1 text-xs" onClick={download}>Export this system&apos;s configuration</button>

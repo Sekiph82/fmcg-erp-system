@@ -3886,7 +3886,91 @@ class ConversionProfileAdapter(BaseImportAdapter):
 
 # ── Adapter registry ──────────────────────────────────────────────────────────
 
+# ── M47.S01.T009 contracts (feed the renewals job, cpq_renewals) ──────────────
+
+import contextvars as _ctxvars
+
+# per request: PDF file names uploaded with the CSV (None = plain CSV import) and the contracts created that need one
+_CONTRACT_FILES: _ctxvars.ContextVar[Optional[set]] = _ctxvars.ContextVar("contract_files", default=None)
+_CONTRACT_ATTACH: _ctxvars.ContextVar[Optional[list]] = _ctxvars.ContextVar("contract_attach", default=None)
+
+
+class ContractImportRow(BaseModel):
+    contract_code: str = Field(min_length=1, max_length=50)
+    customer_code: str = Field(min_length=1, max_length=50)
+    contract_name: Optional[str] = Field(None, max_length=200)
+    start_date: date
+    end_date: date
+    value: Decimal = Field(ge=0)
+    currency: str = Field("KES", min_length=3, max_length=3)
+    auto_renew: bool = False
+    renewal_notice_days: int = Field(30, ge=1, le=365)
+    attachment: Optional[str] = Field(None, max_length=255)
+
+    @field_validator("end_date")
+    @classmethod
+    def _after_start(cls, v, info):
+        start = info.data.get("start_date")
+        if start and v <= start:
+            raise ValueError("end_date must be after start_date")
+        return v
+
+
+class ContractImportAdapter(BaseImportAdapter):
+    module       = "contracts"
+    perm_module  = "sales"
+    schema_class = ContractImportRow
+    model        = None
+    unique_key   = ["contract_code"]
+    field_overrides: dict = {}
+    example_row  = {"contract_code": "CT-POVU-001", "customer_code": "CUST-DUKA-MOJA", "contract_name": "Duka Moja supply 2027",
+                    "start_date": "2027-01-01", "end_date": "2027-12-31", "value": "1200000.00", "currency": "KES",
+                    "auto_renew": "true", "renewal_notice_days": "60", "attachment": "duka-moja-2027.pdf"}
+
+    async def resolve_relations(self, row: dict, db: AsyncSession) -> tuple[dict, list[str]]:
+        from app.models.sales import Customer
+        errors: list[str] = []
+        code = row.pop("customer_code", None)
+        cust = (await db.execute(select(Customer).where(Customer.code == code))).scalar_one_or_none()
+        if cust is None:
+            errors.append(f"customer_code '{code}' not found")
+        else:
+            row["party_id"], row["_customer_name"] = cust.id, cust.name
+        row["currency"] = str(row.get("currency") or "KES").upper()
+        att = row.get("attachment")
+        files = _CONTRACT_FILES.get()
+        if att:
+            if files is None:
+                errors.append("attachment: upload the PDF files with the CSV (contracts/import-with-files)")
+            elif att not in files:
+                errors.append(f"attachment '{att}' was not among the uploaded PDF files")
+        return row, errors
+
+    async def exists_in_db(self, row: dict, db: AsyncSession) -> bool:
+        from app.models.contracts import Contract
+        return (await db.execute(select(Contract.id).where(Contract.contract_code == row["contract_code"]))).first() is not None
+
+    async def insert(self, data: dict, db: AsyncSession) -> Any:
+        from app.models.contracts import Contract, ContractTerm
+        from app.models.cpq import ContractRenewal
+        from app.services.cpq_service import NOT_NOTIFIED
+        c = Contract(contract_code=data["contract_code"], contract_name=(data.get("contract_name") or f"Contract — {data['_customer_name']}")[:200],
+                     contract_type="CUSTOMER_SALES", party_type="CUSTOMER", party_id=data["party_id"], start_date=data["start_date"],
+                     end_date=data["end_date"], currency=data["currency"], auto_renew=bool(data.get("auto_renew")),
+                     renewal_notice_days=data.get("renewal_notice_days") or 30, notes="Imported (M47 contract import)")
+        db.add(c)
+        await db.flush()
+        db.add(ContractTerm(contract_id=c.id, term_type="OTHER", value_type="FIXED", value=data["value"], notes="Contract value (imported)"))
+        db.add(ContractRenewal(contract_id=c.id, source_quote_id=None, notified_at=NOT_NOTIFIED))
+        pending = _CONTRACT_ATTACH.get()
+        if data.get("attachment") and pending is not None:
+            pending.append((c, data["attachment"]))
+        await db.flush()
+        return c
+
+
 ADAPTERS: dict[str, BaseImportAdapter] = {
+    "contracts":             ContractImportAdapter(),
     "products":              ProductAdapter(),
     "materials":             MaterialAdapter(),
     "suppliers":             SupplierAdapter(),
@@ -3978,6 +4062,63 @@ def _get_adapter(module: str) -> BaseImportAdapter:
             detail=f"No import adapter for module '{module}'. Supported: {supported}",
         )
     return adapter
+
+
+# ── M47.S01.T009 contracts with PDF attachments ───────────────────────────────
+
+@router.post("/contracts/import-with-files")
+async def import_contracts_with_files(
+    file:         UploadFile        = File(...),
+    attachments:  list[UploadFile]  = File(default=[]),
+    dry_run:      bool              = Form(True),
+    current_user: User              = Depends(get_current_user),
+    db:           AsyncSession      = Depends(get_db),
+):
+    """CSV of contracts plus PDFs matched by the `attachment` column. dry_run=true validates only (nothing stored);
+    otherwise valid rows are imported, each matched PDF is stored as a document linked to its contract."""
+    from app.models.documents import Document, DocumentCategory, DocumentStatus
+    from app.services.document_storage_service import get_document_storage, scan_document
+    adapter = ADAPTERS["contracts"]
+    await _assert_perm(adapter.perm_module, "import", current_user, db)
+    by_name = {}
+    for up in attachments[:200]:
+        name = (up.filename or "").replace("\\", "/").split("/")[-1]
+        if not name.lower().endswith(".pdf"):
+            raise HTTPException(422, f"Attachments must be PDF files: {name or '(no name)'}")
+        if name in by_name:
+            raise HTTPException(422, f"Attachment uploaded twice: {name}")
+        by_name[name] = up
+    content = await validate_upload(file, allowed_types=ALLOWED_IMPORT_TYPES, max_bytes=MAX_BYTES_IMPORT)
+    pending: list = []
+    t1, t2 = _CONTRACT_FILES.set(set(by_name)), _CONTRACT_ATTACH.set(pending)
+    try:
+        result = await import_engine.run(
+            content=content, adapter=adapter, mode=ImportMode.VALIDATE_ONLY if dry_run else ImportMode.IMPORT_VALID_ONLY,
+            db=db, user_id=current_user.id, username=current_user.username,
+            user_roles=[r.name for r in getattr(current_user, "roles", [])], file_name=file.filename or "contracts.csv",
+            actor=current_user)
+    finally:
+        _CONTRACT_FILES.reset(t1)
+        _CONTRACT_ATTACH.reset(t2)
+    stored = []
+    if not dry_run and pending:
+        storage = get_document_storage()
+        used = set()
+        for contract, name in pending:
+            if name in used:
+                continue                    # one PDF belongs to one contract
+            used.add(name)
+            f = await storage.store_upload(by_name[name])
+            scan = await scan_document(storage.path_for(f.storage_key))
+            db.add(Document(title=f"Contract {contract.contract_code}"[:255], category=DocumentCategory.OTHER, document_type="CONTRACT",
+                            status=DocumentStatus.DRAFT, customer_id=contract.party_id, related_entity_type="contract",
+                            related_entity_id=str(contract.id), file_name=f.file_name, file_size_bytes=f.file_size_bytes,
+                            mime_type=f.mime_type, storage_provider="local", storage_key=f.storage_key,
+                            file_checksum_sha256=f.sha256, file_scan_status=scan.status, file_scan_result=scan.result,
+                            created_by_id=current_user.id, owner_user_id=current_user.id, confidentiality_level="CONFIDENTIAL"))
+            stored.append({"contract_code": contract.contract_code, "file_name": f.file_name, "scan": scan.status})
+    await db.commit()
+    return {**result.to_response(), "dry_run": dry_run, "attachments_stored": stored}
 
 
 # ── Template download ─────────────────────────────────────────────────────────

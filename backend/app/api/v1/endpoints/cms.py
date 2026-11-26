@@ -371,11 +371,14 @@ async def aeo_audit(page_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 
 class TranslateIn(BaseModel):
     locale: str
+    ai: bool = False                            # machine-translate with a content-studio brand profile's AI budget
+    profile_id: Optional[uuid.UUID] = None      # default: the first profile (by name) with a budget
 
 
 @router.post("/pages/{page_id}/translate", status_code=201)
 async def translate(page_id: uuid.UUID, b: TranslateIn, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
-    """Start a translation: a draft copy in the target locale, linked for hreflang, marked NEEDS_REVIEW."""
+    """Start a translation: a draft in the target locale, linked for hreflang, marked NEEDS_REVIEW. With ai=true the
+    texts are machine-translated inside a brand profile's budget, otherwise (or when that is not possible) copied."""
     _need(user, EDIT)
     src = await _get(db, CmsPage, page_id)
     s = await db.get(CmsSite, src.site_id)
@@ -398,10 +401,56 @@ async def translate(page_id: uuid.UUID, b: TranslateIn, db: AsyncSession = Depen
     except cms.CmsError as e:
         await db.rollback()
         _fail(e)
-    cms.audit(db, user, "cms.page.translation_started", "cms_page", t.id, {"from": src.locale, "to": b.locale})
+    engine, cost = "copy", 0.0
+    if b.ai:
+        from app.models.cms import CsBrandProfile
+        prof = (await db.get(CsBrandProfile, b.profile_id) if b.profile_id else
+                (await db.execute(select(CsBrandProfile).where(CsBrandProfile.monthly_budget > 0).order_by(CsBrandProfile.name).limit(1))).scalar_one_or_none())
+        if b.profile_id and prof is None:
+            await db.rollback()
+            raise HTTPException(404, "Brand profile not found")
+        t.draft, engine, cost = await cms.ai_translation(db, src, b.locale, prof)
+    cms.audit(db, user, "cms.page.translation_started", "cms_page", t.id,
+              {"from": src.locale, "to": b.locale, "ai": b.ai, "engine": engine, "cost": round(cost, 4)})
     await db.commit()
     await db.refresh(t)
-    return _page_out(t)
+    return {**_page_out(t), "engine": engine, "cost": round(cost, 4)}
+
+
+@router.get("/tools")
+async def tools():
+    """Which optional local engines are installed (narration, ffmpeg poster/trim)."""
+    from app.services import tts_adapter as tts
+    return {"tts": tts.status(), "ffmpeg": {"status": "AVAILABLE" if media.ffmpeg() else "NOT_AVAILABLE"}}
+
+
+@router.post("/pages/{page_id}/narrate", status_code=201)
+async def narrate(page_id: uuid.UUID, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    """Read the page draft aloud with the local TTS engine into a staff-only AUDIO media item linked to the page.
+    An approver makes it public or gated like any other media. 409 NOT_AVAILABLE without an engine."""
+    from app.services import tts_adapter as tts
+    _need(user, EDIT)
+    p = await _get(db, CmsPage, page_id)
+    if not tts.engine():
+        raise HTTPException(409, tts.status())
+    try:
+        doc, _ = cms.validate_doc(p.draft or {})
+    except cms.CmsError as e:
+        _fail(e)
+    text = f"{p.title}. {cms._all_text(doc['blocks'])}".strip()
+    try:
+        wav = await tts.synthesize(text, p.locale)
+    except tts.TtsUnavailable as e:
+        raise HTTPException(409, {"status": "NOT_AVAILABLE", "detail": str(e)})
+    key, size, sha = media.store_bytes(wav, "audio/wav")
+    m = CmsMedia(kind="AUDIO", title=f"Narration: {p.title}"[:200], mime="audio/wav", size=size, sha256=sha, storage_path=key, captions={},
+                 public=False, access_list_id=None, page_id=p.id, created_by=user.username)
+    db.add(m)
+    await db.flush()
+    cms.audit(db, user, "cms.page.narrated", "cms_page", p.id, {"media_id": str(m.id), "engine": tts.engine(), "chars": len(text)})
+    await db.commit()
+    await db.refresh(m)
+    return _media_out(m)
 
 
 class TranslationState(BaseModel):
@@ -748,6 +797,8 @@ def _media_out(m: CmsMedia, views: int = 0) -> dict:
     return {"id": str(m.id), "kind": m.kind, "title": m.title, "mime": m.mime, "size": m.size, "sha256": m.sha256,
             "captions": sorted((m.captions or {}).keys()), "podcast": m.podcast, "public": m.public,
             "access_list_id": str(m.access_list_id) if m.access_list_id else None, "duration_s": m.duration_s,
+            "page_id": str(m.page_id) if m.page_id else None, "poster": bool(m.poster_path),
+            "poster_url": f"/api/v1/public/cms/media/{m.id}/poster" if m.poster_path else None,
             "created_at": m.created_at.isoformat() if m.created_at else None, "views": views}
 
 
@@ -835,6 +886,63 @@ async def put_captions(media_id: uuid.UUID, locale: str, b: CaptionIn, db: Async
 async def media_file(media_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     m = await _get(db, CmsMedia, media_id)
     return FileResponse(media.file_path(m), media_type=m.mime, headers={"X-Content-Type-Options": "nosniff"})
+
+
+class PosterIn(BaseModel):
+    t: float = Field(0, ge=0, le=86400)
+
+
+@router.post("/media/{media_id}/poster")
+async def make_poster(media_id: uuid.UUID, b: PosterIn, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    """Poster frame at t seconds (PNG, ffmpeg). It is served with the same access as the video. 409 without ffmpeg."""
+    m = await _get(db, CmsMedia, media_id)
+    _need(user, APPROVE if (m.public or m.access_list_id) else EDIT)    # the poster of served media is live
+    if m.kind != "VIDEO":
+        raise HTTPException(422, "Posters are for videos")
+    if not media.ffmpeg():
+        raise media.not_available()
+    png = await media.poster_frame(m, b.t)
+    key, _, _ = media.store_bytes(png, "image/png")
+    old, m.poster_path = m.poster_path, key
+    cms.audit(db, user, "cms.media.poster", "cms_media", m.id, {"t": b.t})
+    await db.commit()
+    if old:
+        (media.root() / old).unlink(missing_ok=True)
+    await db.refresh(m)
+    return _media_out(m)
+
+
+@router.get("/media/{media_id}/poster")
+async def poster(media_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    m = await _get(db, CmsMedia, media_id)
+    return FileResponse(media.poster_file(m), media_type="image/png", headers={"X-Content-Type-Options": "nosniff"})
+
+
+class TrimIn(BaseModel):
+    start: float = Field(ge=0, le=86400)
+    end: float = Field(gt=0, le=86400)
+    title: Optional[str] = Field(None, max_length=200)
+
+
+@router.post("/media/{media_id}/trim", status_code=201)
+async def trim_media(media_id: uuid.UUID, b: TrimIn, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    """A NEW staff-only media item holding [start, end) of the original (stream copy); the original is untouched."""
+    _need(user, EDIT)
+    if b.end <= b.start:
+        raise HTTPException(422, "end must be after start")
+    m = await _get(db, CmsMedia, media_id)
+    if not media.ffmpeg():
+        raise media.not_available()
+    data = await media.trim(m, b.start, b.end)
+    key, size, sha = media.store_bytes(data, m.mime)
+    n = CmsMedia(kind=m.kind, title=(b.title or f"{m.title} ({b.start:g}–{b.end:g} s)")[:200], mime=m.mime, size=size, sha256=sha, storage_path=key,
+                 captions={}, podcast=None, public=False, access_list_id=None, duration_s=int(b.end - b.start), created_by=user.username)
+    db.add(n)
+    await db.flush()
+    cms.audit(db, user, "cms.media.trimmed", "cms_media", n.id, {"source": str(m.id), "start": b.start, "end": b.end})
+    await db.commit()
+    await db.refresh(n)
+    return _media_out(n)
 
 
 @router.get("/media/{media_id}/views")

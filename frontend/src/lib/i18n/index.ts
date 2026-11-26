@@ -10,8 +10,10 @@
 // - Missing keys fall back to English and are collected in window.__i18nMissing for the report screen/tests.
 import { useSyncExternalStore } from "react";
 import common from "./messages/common.json";
+import docs from "./messages/docs.json";
 import portal from "./messages/portal.json";
 import publicPages from "./messages/public.json";
+import staff from "./messages/staff.json";
 
 export const LOCALES = ["en", "sw", "tr"] as const;
 export type Locale = (typeof LOCALES)[number];
@@ -20,7 +22,7 @@ const TAG: Record<Locale, string> = { en: "en-KE", sw: "sw-KE", tr: "tr-TR" };
 const KEY = "povu.lang";
 
 type Catalog = Record<Locale, Record<string, string>>;
-const CATALOGS: Catalog[] = [common as Catalog, portal as Catalog, publicPages as Catalog];
+const CATALOGS: Catalog[] = [common as Catalog, docs as Catalog, portal as Catalog, publicPages as Catalog, staff as Catalog];
 export const MESSAGES: Catalog = LOCALES.reduce((acc, l) => {
   acc[l] = Object.assign({}, ...CATALOGS.map((c) => c[l] ?? {}));
   return acc;

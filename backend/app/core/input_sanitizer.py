@@ -21,6 +21,7 @@ import re
 from typing import Any
 
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
 from starlette.requests import Request
 from starlette.responses import Response
 
@@ -52,16 +53,28 @@ def _sanitize_value(v: Any) -> Any:
     return v
 
 
+JSON_BODY_MAX_BYTES = 12 * 1024 * 1024   # largest legitimate JSON: config bundles / dataset CSV text
+
+
 class InputSanitizerMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         # Only sanitize JSON bodies on mutating methods
         if request.method in ("POST", "PUT", "PATCH") and "application/json" in (
             request.headers.get("content-type", "")
         ):
+            # M47.S01.T003: cap JSON bodies before buffering them (file uploads are multipart, limited by their own setting)
+            try:
+                declared = int(request.headers.get("content-length") or 0)
+            except ValueError:
+                declared = 0
+            if declared > JSON_BODY_MAX_BYTES:
+                return JSONResponse(status_code=413, content={"error": "payload_too_large", "detail": "Request body is too large."})
             path = request.url.path
             if not any(path.startswith(skip) for skip in _SKIP_PATHS):
                 try:
                     raw = await request.body()
+                    if len(raw) > JSON_BODY_MAX_BYTES:      # chunked bodies without a declared length
+                        return JSONResponse(status_code=413, content={"error": "payload_too_large", "detail": "Request body is too large."})
                     if raw:
                         parsed = json.loads(raw)
                         sanitized = _sanitize_value(parsed)

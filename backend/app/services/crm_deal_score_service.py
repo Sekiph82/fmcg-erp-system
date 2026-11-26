@@ -6,6 +6,11 @@ Weights are configurable (SystemConfig "crm.deal_score_weights"); defaults below
 score, not a trained model: no accuracy is claimed. History rows (at most one per record per day) give the trend.
 
 Native ERP signals beyond a CRM: the linked customer's overdue invoices and past confirmed orders.
+Trained deal-win model (M47.S01.T009): a logistic regression on closed (won/lost) deals, trained only when there are at
+least MIN_PER_CLASS deals of each outcome; version, holdout AUC/accuracy and sample sizes are stored and shown with the
+probability. With too few closed deals the rule score stands alone, labelled "not enough data". Before go-live the data
+is synthetic, so the metrics say nothing about real deals.
+
 Buying group: contacts associated with the deal (crm_contact_associations, object_type crm_record) with role labels;
 coverage counts decision maker, buyer/finance and champion, and warns about missing roles and known blockers.
 """
@@ -20,7 +25,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.crm import (CRMActivity, CRMContactAssociation, CRMDealScoreHistory, CRMEmailEvent, CRMOutboundMessage,
-                            CRMPipelineStage, CRMRecord, CRMStageHistory)
+                            CRMPipelineStage, CRMRecord, CRMStageHistory, CRMStatus, CRMWinLoss)
 
 DEFAULT_WEIGHTS = {"stage": 25, "activity": 20, "engagement": 10, "buying_group": 20, "quote": 10, "stage_age": 10,
                    "customer": 5}
@@ -109,7 +114,7 @@ async def score(db: AsyncSession, rec: CRMRecord, today: Optional[date] = None) 
     total_w = sum(f["weight"] for f in factors) or 1.0
     value = round(sum(f["value"] * f["weight"] for f in factors) / total_w * 100)
     return {"record_id": str(rec.id), "score": value, "factors": factors, "missing": missing, "buying_group": bg,
-            "method": "Transparent weighted rules; not a trained prediction."}
+            "method": "Transparent weighted rules; not a trained prediction.", "trained": await win_probability(db, rec)}
 
 
 async def score_with_trend(db: AsyncSession, rec: CRMRecord) -> dict:
@@ -124,3 +129,105 @@ async def score_with_trend(db: AsyncSession, rec: CRMRecord) -> dict:
         CRMDealScoreHistory.crm_record_id == rec.id).order_by(CRMDealScoreHistory.computed_at).limit(90))).all()
     result["trend"] = [{"at": at.isoformat(), "score": s} for at, s in hist]
     return result
+
+
+# ── M47.S01.T009 trained deal-win model ───────────────────────────────────────
+
+MIN_PER_CLASS = 10
+WIN_FEATURES = ["log_amount", "days_open", "stage_changes", "activities", "completed_activities", "prior_orders"]
+
+
+def _aware(v: datetime) -> datetime:
+    return v if v.tzinfo else v.replace(tzinfo=timezone.utc)
+
+
+async def _features(db: AsyncSession, recs: list, as_of: Optional[dict] = None) -> list[list[float]]:
+    """One vector per record. as_of: record id -> end time (close time for closed deals; now for open ones)."""
+    import math
+
+    from app.models.crm import CRMActivityResult
+    from app.models.sales import SalesOrder
+    from app.services.customer_intel_service import LIVE_ORDERS
+    ids = [r.id for r in recs]
+    acts = {rid: (n, done) for rid, n, done in (await db.execute(select(
+        CRMActivity.crm_record_id, func.count(), func.count().filter(CRMActivity.result_status == CRMActivityResult.COMPLETED))
+        .where(CRMActivity.crm_record_id.in_(ids)).group_by(CRMActivity.crm_record_id))).all()}
+    stages = dict((await db.execute(select(CRMStageHistory.crm_record_id, func.count()).where(
+        CRMStageHistory.crm_record_id.in_(ids), CRMStageHistory.to_stage_id.is_not(None))
+        .group_by(CRMStageHistory.crm_record_id))).all())
+    custs = {r.assigned_customer_id for r in recs if r.assigned_customer_id}
+    orders: dict = {}
+    if custs:
+        for cid, d in (await db.execute(select(SalesOrder.customer_id, SalesOrder.order_date).where(
+                SalesOrder.customer_id.in_(custs), SalesOrder.status.in_(LIVE_ORDERS)))).all():
+            orders.setdefault(cid, []).append(d)
+    now = datetime.now(timezone.utc)
+    out = []
+    for r in recs:
+        start = _aware(r.created_at)
+        end = (as_of or {}).get(r.id) or now
+        n, done = acts.get(r.id, (0, 0))
+        prior = sum(1 for d in orders.get(r.assigned_customer_id, []) if d < start.date())
+        out.append([math.log1p(float(r.expected_revenue or 0)), max(0.0, (end - start).total_seconds() / 86400),
+                    float(stages.get(r.id, 0)), float(n), float(done), float(prior)])
+    return out
+
+
+async def _closed(db: AsyncSession) -> list[tuple]:
+    """(record, label 1=won 0=lost, close time) for closed deals, oldest close first."""
+    rows = (await db.execute(select(CRMRecord, CRMWinLoss.close_date).outerjoin(CRMWinLoss, CRMWinLoss.crm_record_id == CRMRecord.id)
+                             .where(CRMRecord.status.in_((CRMStatus.WON, CRMStatus.LOST))).limit(20000))).all()
+    out = [(rec, 1.0 if rec.status == CRMStatus.WON else 0.0,
+            datetime.combine(close, datetime.min.time(), timezone.utc) if close else _aware(rec.updated_at)) for rec, close in rows]
+    return sorted(out, key=lambda t: (t[2], str(t[0].id)))
+
+
+async def train_win_model(db: AsyncSession, user: str) -> dict:
+    import numpy as np
+
+    from app.models.customer_intel import CIModel
+    from app.services.customer_intel_service import auc, fit_logistic, predict
+    rows = await _closed(db)
+    won, lost = sum(1 for r in rows if r[1] == 1), sum(1 for r in rows if r[1] == 0)
+    if won < MIN_PER_CLASS or lost < MIN_PER_CLASS:
+        return {"trained": False, "status": "NOT_ENOUGH_DATA", "won": won, "lost": lost, "min_per_class": MIN_PER_CLASS,
+                "reason": f"Need at least {MIN_PER_CLASS} won and {MIN_PER_CLASS} lost deals; have {won} won and {lost} lost."}
+    X = np.array(await _features(db, [r[0] for r in rows], {r[0].id: r[2] for r in rows}))
+    y = np.array([r[1] for r in rows])
+    cut = int(len(rows) * 0.75)                                 # newest quarter of closes is the holdout (time-aware)
+    if len(set(y[:cut].tolist())) < 2:
+        return {"trained": False, "status": "NOT_ENOUGH_DATA", "won": won, "lost": lost,
+                "reason": "The training period has only one outcome."}
+    params = fit_logistic(X[:cut], y[:cut])
+    p = predict(params, X[cut:])
+    yv = y[cut:]
+    metrics = {"n_train": cut, "n_holdout": int(len(yv)), "won": won, "lost": lost, "auc": auc(yv, p),
+               "accuracy": round(float(np.mean((p >= 0.5) == (yv == 1))), 3), "holdout_win_rate": round(float(yv.mean()), 3),
+               "note": "Measured on a time-ordered holdout of the deals in this database. Before go-live that is synthetic "
+                       "data, so these numbers say nothing about real deals."}
+    version = (await db.execute(select(func.count()).select_from(CIModel).where(CIModel.kind == "DEAL_WIN"))).scalar_one() + 1
+    for old in (await db.execute(select(CIModel).where(CIModel.kind == "DEAL_WIN", CIModel.status == "ACTIVE"))).scalars():
+        old.status = "RETIRED"
+    m = CIModel(kind="DEAL_WIN", params={**params, "features": WIN_FEATURES, "version": version}, metrics=metrics, trained_by=user)
+    db.add(m)
+    await db.flush()
+    return {"trained": True, "model_id": str(m.id), "version": version, "metrics": metrics}
+
+
+async def active_win_model(db: AsyncSession):
+    from app.models.customer_intel import CIModel
+    return (await db.execute(select(CIModel).where(CIModel.kind == "DEAL_WIN", CIModel.status == "ACTIVE")
+                             .order_by(CIModel.trained_at.desc()).limit(1))).scalar_one_or_none()
+
+
+async def win_probability(db: AsyncSession, rec: CRMRecord) -> dict:
+    import numpy as np
+
+    from app.services.customer_intel_service import predict
+    m = await active_win_model(db)
+    if m is None:
+        return {"status": "NOT_ENOUGH_DATA", "probability": None,
+                "label": f"Not enough data: a model needs {MIN_PER_CLASS} won and {MIN_PER_CLASS} lost deals; rule score only."}
+    x = np.array(await _features(db, [rec]))
+    return {"status": "TRAINED", "probability": round(float(predict(m.params, x)[0]), 3), "model_version": m.params.get("version"),
+            "trained_at": m.trained_at.isoformat() if m.trained_at else None, "metrics": m.metrics}

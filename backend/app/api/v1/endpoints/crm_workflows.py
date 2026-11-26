@@ -77,7 +77,12 @@ async def get_workflow(workflow_id: uuid.UUID, db: AsyncSession = Depends(get_db
                              .order_by(CRMWorkflowVersion.version_no.desc()))).scalars().all()
     runs = (await db.execute(select(CRMWorkflowRun).join(CRMWorkflowVersion, CRMWorkflowVersion.id == CRMWorkflowRun.version_id)
                              .where(CRMWorkflowVersion.workflow_id == wf.id).order_by(CRMWorkflowRun.created_at.desc()).limit(50))).scalars().all()
-    return {"id": str(wf.id), "name": wf.name, "versions": [_ver(v) for v in vers],
+    from app.models.m47_automation import CRMWorkflowHook
+    hook = await db.get(CRMWorkflowHook, wf.id)
+    return {"id": str(wf.id), "name": wf.name, "trigger_event": wf.trigger_event, "versions": [_ver(v) for v in vers],
+            "webhook": ({"path": f"/api/v1/public/crm-workflow-hooks/{wf.id}", "token_hint": hook.token_hint,
+                         "rotated_at": hook.rotated_at.isoformat(),
+                         "last_used_at": hook.last_used_at.isoformat() if hook.last_used_at else None} if hook else None),
             "runs": [{"id": str(r.id), "crm_record_id": str(r.crm_record_id), "status": r.status, "log": r.log,
                       "resume_at": r.resume_at.isoformat() if r.resume_at else None} for r in runs]}
 
@@ -130,3 +135,23 @@ async def decide(run_id: uuid.UUID, body: DecisionIn, db: AsyncSession = Depends
         raise HTTPException(e.status, e.detail)
     await db.commit()
     return {"id": str(run.id), "status": run.status, "log": run.log}
+
+
+# ── M47.S01.T008 inbound webhook token (approvers only: it opens an entry point into the workflow) ──────────
+
+@router.post("/{workflow_id}/webhook-token", status_code=201)
+async def issue_webhook_token(workflow_id: uuid.UUID, db: AsyncSession = Depends(get_db), user=Depends(PUBLISH)):
+    """Create or rotate the token. It is shown once here; only its digest is stored, the old token stops working."""
+    wf = await _wf(db, workflow_id)
+    token = await wfs.issue_hook_token(db, wf, user)
+    await db.commit()
+    return {"token": token, "path": f"/api/v1/public/crm-workflow-hooks/{wf.id}", "shown_once": True,
+            "usage": "POST JSON {event_id, record_id | email} with header Authorization: Bearer <token>"}
+
+
+@router.delete("/{workflow_id}/webhook-token", status_code=204)
+async def revoke_webhook_token(workflow_id: uuid.UUID, db: AsyncSession = Depends(get_db), user=Depends(PUBLISH)):
+    wf = await _wf(db, workflow_id)
+    if not await wfs.revoke_hook(db, wf, user):
+        raise HTTPException(404, "This workflow has no webhook token.")
+    await db.commit()

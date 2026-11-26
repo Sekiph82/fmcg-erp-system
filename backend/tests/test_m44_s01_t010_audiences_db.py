@@ -76,8 +76,6 @@ async def test_consent_blocking_recompute_and_export_gates():
         with pytest.raises(HTTPException) as e:
             await ep.export(a.id, db, editor)
         assert e.value.status_code == 403
-        with pytest.raises(HTTPException) as e:
-            await ep.upload(a.id, "meta", editor)
-        assert e.value.status_code == 503
+        assert (await ep.upload(a.id, "meta", editor))["status"] == "NOT_CONFIGURED"   # M47.S01.T010: honest state, not a 503 stub
         assert "not an ad-platform lookalike" in (await aus.similar(db, a))["label"]
         await db.rollback()

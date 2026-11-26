@@ -173,16 +173,123 @@ async def _collect(db: AsyncSession, since: datetime) -> list[tuple[str, str, st
         # titles can carry customer or amount text: only the kind of item goes to Slack (M44 review)
         kind = rtype.split(":", 1)[1].replace("_", " ")
         out.append(("APPROVAL", str(ref)[:200], f":hourglass: A {kind} is waiting for approval. Open My Approvals in the ERP."))
+    if slack_signing_secret():   # M47.S01.T010 interactive notices for the generic approval engine
+        from app.models.workflow import ApprovalRequest, ApprovalStatus
+        for rid, module, level in (await db.execute(select(ApprovalRequest.id, ApprovalRequest.module, ApprovalRequest.current_level)
+                                                    .where(ApprovalRequest.status == ApprovalStatus.PENDING,
+                                                           ApprovalRequest.updated_at >= since).limit(100))).all():
+            kind = getattr(module, "value", module).replace("_", " ").lower()
+            out.append(("APPROVE", f"{rid}:{level}", f":hourglass: A {kind} approval (level {level}) is waiting. Ref {str(rid)[:8]}."))
     return out
+
+
+# ── M47.S01.T010 Slack app: routing rules and interactive approvals ─────────
+SLACK_EVENTS = ("DEAL", "TICKET", "APPROVAL", "APPROVE")
+SLACK_WINDOW = 300   # seconds: Slack's replay window for signed requests
+
+
+def slack_signing_secret() -> str:
+    import os
+    return getattr(settings, "SLACK_SIGNING_SECRET", "") or os.environ.get("SLACK_SIGNING_SECRET", "")
+
+
+def valid_webhook(url: str) -> bool:
+    """Slack incoming webhooks only (https://hooks.slack.com/services/...); a local simulator host only while egress
+    is not live."""
+    from urllib.parse import urlsplit
+    from app.core import provider_http
+    u = urlsplit(url or "")
+    if u.scheme == "https" and u.hostname == "hooks.slack.com" and u.path.startswith("/services/"):
+        return True
+    return provider_http.egress_mode() != "live" and provider_http._is_local_host(u.hostname or "")
+
+
+def _blocks(d) -> Optional[list]:
+    if d.kind != "APPROVE":
+        return None
+    rid = d.ref.split(":", 1)[0]
+    return [{"type": "section", "text": {"type": "mrkdwn", "text": d.text}},
+            {"type": "actions", "block_id": "erp_approval", "elements": [
+                {"type": "button", "action_id": "approve", "style": "primary", "text": {"type": "plain_text", "text": "Approve"},
+                 "value": f"approve:{rid}"},
+                {"type": "button", "action_id": "reject", "style": "danger", "text": {"type": "plain_text", "text": "Reject"},
+                 "value": f"reject:{rid}"}]}]
+
+
+def verify_slack(raw: bytes, timestamp: str, signature: str, now: Optional[float] = None) -> bool:
+    """Slack v0 signature: HMAC-SHA256(signing secret, "v0:{timestamp}:{body}"), within 5 minutes."""
+    import hmac
+    import time
+    secret = slack_signing_secret()
+    if not secret:
+        raise MessagingError("NOT_CONFIGURED: SLACK_SIGNING_SECRET is not set.", 503)
+    if not str(timestamp or "").isdigit() or abs((now or time.time()) - int(timestamp)) > SLACK_WINDOW:
+        return False
+    mac = hmac.new(secret.encode(), b"v0:" + timestamp.encode() + b":" + raw, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(f"v0={mac}", signature or "")
+
+
+async def slack_interaction(db: AsyncSession, payload: dict) -> str:
+    """An Approve / Reject click. The Slack user must be linked to an active ERP user (same e-mail as when linked), who
+    must hold the step's role and must not be the requester (second person). Returns the text for Slack. No commit."""
+    import uuid as _uuid
+    from fastapi import HTTPException
+    from sqlalchemy.orm import selectinload
+    from app.models.m47_platform import SlackUserLink
+    from app.models.user import User
+    from app.models.workflow import ApprovalRequest, ApprovalStatus
+    from app.services import approval_service as aps
+    from app.services import pat_service as pats
+    action = ((payload.get("actions") or [{}])[0] or {}).get("value") or ""
+    verb, _, rid = action.partition(":")
+    slack_user = str((payload.get("user") or {}).get("id") or "")[:40]
+    if verb not in ("approve", "reject"):
+        return "Unknown action."
+    link = await db.get(SlackUserLink, slack_user) if slack_user else None
+    user = None
+    if link is not None:
+        user = (await db.execute(select(User).options(selectinload(User.roles)).where(User.id == link.user_id))).scalars().first()
+    if user is None or not user.is_active or (user.email or "").lower() != link.email.lower():
+        return "Your Slack account is not linked to an ERP user. Link it under Messaging channels in the ERP."
+    try:
+        req = await db.get(ApprovalRequest, _uuid.UUID(rid), options=[selectinload(ApprovalRequest.steps)], with_for_update=True)
+    except ValueError:
+        req = None
+    if req is None or req.status != ApprovalStatus.PENDING:
+        return "This request is no longer waiting for a decision."
+    step = next((s for s in req.steps if s.level == req.current_level and s.status == ApprovalStatus.PENDING), None)
+    roles = {r.name for r in user.roles if getattr(r, "is_active", True)}
+    if step is None or not (user.is_superuser or step.required_role in roles):
+        pats.audit(db, user, "SLACK_APPROVAL_REFUSED", "approval_request", rid, {"reason": "role"})
+        return "You may not decide this request."
+    if req.requested_by_id and req.requested_by_id == user.id:
+        pats.audit(db, user, "SLACK_APPROVAL_REFUSED", "approval_request", rid, {"reason": "own request"})
+        return "Someone other than the requester must decide."
+    try:
+        if verb == "approve":
+            await aps.approve_request(db, req.id, user.id, notes="Approved in Slack")
+        else:
+            await aps.reject_request(db, req.id, user.id, reason="Rejected in Slack")
+    except HTTPException as e:
+        return str(e.detail)
+    done = "Approved" if verb == "approve" else "Rejected"
+    pats.audit(db, user, f"SLACK_APPROVAL_{done.upper()}", "approval_request", rid, {"slack_user": slack_user})
+    return f"{done} by {user.full_name or user.username}."
 
 
 async def slack_tick(db: AsyncSession, now: Optional[datetime] = None) -> dict:
     """Queue new notices (last 24 h) and post queued / failed ones (≤5 attempts). Without SLACK_WEBHOOK_URL nothing
     is queued or sent."""
-    if not settings.SLACK_WEBHOOK_URL:
+    from app.models.m47_platform import SlackRoute
+    routes = {} if db is None else {   # db None: configuration check only (unit tests)
+        r.event_type: r.webhook_url for r in (await db.execute(select(SlackRoute).where(SlackRoute.active.is_(True)))).scalars()
+        if valid_webhook(r.webhook_url)}
+    if not settings.SLACK_WEBHOOK_URL and not routes:
         return {"status": "NOT_CONFIGURED", "sent": 0}
     now = now or datetime.now(timezone.utc)
     for kind, ref, text in await _collect(db, now - timedelta(hours=24)):
+        if not (routes.get(kind) or settings.SLACK_WEBHOOK_URL):
+            continue                       # no destination for this event type
         await db.execute(insert(SlackDelivery).values(kind=kind, ref=ref, text=text[:1000])
                          .on_conflict_do_nothing(constraint="uq_crm_slack_delivery"))
     due = list((await db.execute(select(SlackDelivery).where(SlackDelivery.status != "SENT", SlackDelivery.attempts < 5)
@@ -190,9 +297,13 @@ async def slack_tick(db: AsyncSession, now: Optional[datetime] = None) -> dict:
     sent = 0
     async with provider_client(timeout=10.0) as c:
         for d in due:
+            url = routes.get(d.kind) or settings.SLACK_WEBHOOK_URL
+            if not url:
+                continue
             d.attempts += 1
+            blocks = _blocks(d)
             try:
-                r = await c.post(settings.SLACK_WEBHOOK_URL, json={"text": d.text})
+                r = await c.post(url, json={"text": d.text, **({"blocks": blocks} if blocks else {})})
                 ok = r.status_code == 200
                 d.error = None if ok else f"HTTP {r.status_code}: {r.text[:200]}"
             except Exception as e:   # network / egress refusal: keep for retry

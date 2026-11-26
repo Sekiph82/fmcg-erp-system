@@ -515,9 +515,17 @@ async def use_recovery_code(
     session = await tfa_crud.get_2fa_session(db, session_id)
     if not session or session.status != TwoFASessionStatus.PENDING:
         raise HTTPException(status_code=401, detail="Invalid 2FA session")
+    if session.expires_at.replace(tzinfo=timezone.utc) < datetime.now(timezone.utc):
+        session.status = TwoFASessionStatus.EXPIRED
+        await db.commit()
+        raise HTTPException(status_code=401, detail="2FA session expired")
+    # same cap as login-verify: OTP and recovery-code guesses share the session's attempt counter
+    if int(session.attempt_count) >= MAX_ATTEMPTS:
+        raise HTTPException(status_code=429, detail="Too many failed attempts. Request a new login.")
 
     success = await tfa_crud.use_recovery_code(db, user_id, body.code)
     if not success:
+        await tfa_crud.mark_session_failed(db, session)
         await audit_crud.log_event(
             db,
             event_type=AuditEvent.TWO_FA_RECOVERY_FAILED,

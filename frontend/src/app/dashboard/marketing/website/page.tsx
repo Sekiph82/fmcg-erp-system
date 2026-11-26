@@ -11,7 +11,7 @@ type Page = { id: string; title: string; path: string; slug: string; kind: strin
   translation_state: string; parent_id: string | null; table_id: string | null; author: string | null; category: string | null; tags: string[]; submitted_by: string | null; approved_by: string | null };
 type Detail = Page & { draft: { blocks: Block[]; seo: any }; versions: { version: number; title: string; note: string | null; published_by: string; published_at: string; live: boolean }[];
   translations: { id: string; locale: string; path: string; status: string; translation_state: string }[] };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : Array.isArray(d) ? String(d[0]?.msg ?? "Invalid input") : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : Array.isArray(d) ? String(d[0]?.msg ?? "Invalid input") : typeof (d as { detail?: unknown })?.detail === "string" ? (d as { detail: string }).detail : "Something went wrong."; };
 const LOC = ["en", "sw", "tr"];
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
@@ -50,6 +50,7 @@ function Editor({ id, site, pages, acls, tables, reload, say }: { id: string; si
   const [audit, setAudit] = useState<any>(null);
   const [aeo, setAeo] = useState<any>(null);
   const [exps, setExps] = useState<any[]>([]);
+  const [aiTr, setAiTr] = useState(false);
   const load = useCallback(() => apiClient.get(`/api/v1/cms/pages/${id}`).then((r) => {
     setD(r.data); setBlocks(r.data.draft?.blocks ?? []); setSeo(r.data.draft?.seo ?? {});
     setMeta({ title: r.data.title, slug: r.data.slug, author: r.data.author ?? "", category: r.data.category ?? "", tags: (r.data.tags ?? []).join(", "), parent_id: r.data.parent_id ?? "" });
@@ -104,6 +105,7 @@ function Editor({ id, site, pages, acls, tables, reload, say }: { id: string; si
           {d.status === "IN_REVIEW" && <><button className="border rounded px-3 py-1 bg-green-50" onClick={() => act("approve", { ok: true })}>Approve</button>
             <button className="border rounded px-3 py-1" onClick={() => act("approve", { ok: false, note: "Changes needed" })}>Send back</button></>}
           {(d.status === "APPROVED" || !site.require_approval) && <button className="bg-green-600 text-white rounded px-3 py-1" onClick={() => act("publish", { note: "" })}>Publish</button>}
+          <button className="border rounded px-3 py-1" onClick={() => apiClient.post(`/api/v1/cms/pages/${id}/narrate`).then(() => say("Narration saved in Members & media as staff-only audio; an approver decides who may hear it.")).catch((e) => say(err(e)))}>Narrate (audio)</button>
           {d.live_version && <button className="border rounded px-3 py-1 text-red-600" onClick={() => act("unpublish")}>Unpublish</button>}
           {d.live_version && <a className="underline self-center" target="_blank" rel="noreferrer" href={`/site/${site.key}/${d.locale}${d.path === "/" ? "" : d.path}`}>Open live page</a>}
         </div>
@@ -134,7 +136,8 @@ function Editor({ id, site, pages, acls, tables, reload, say }: { id: string; si
         <Panel title="Translations">
           <ul className="text-xs">{d.translations.map((t) => <li key={t.id}>{t.locale} · {t.path} · {t.status.toLowerCase()} · {t.translation_state.replace("_", " ").toLowerCase()}</li>)}</ul>
           <div className="flex gap-2 text-xs flex-wrap">{site.locales.filter((l) => l !== d.locale && !d.translations.some((t) => t.locale === l)).map((l) =>
-            <button key={l} className="border rounded px-2 py-1" onClick={() => apiClient.post(`/api/v1/cms/pages/${id}/translate`, { locale: l }).then(() => { say(`Translation draft for ${l} created — translate and review it.`); load(); reload(); }).catch((e) => say(err(e)))}>Translate to {l}</button>)}
+            <button key={l} className="border rounded px-2 py-1" onClick={() => apiClient.post(`/api/v1/cms/pages/${id}/translate`, { locale: l, ai: aiTr }).then((r) => { say(r.data.engine === "copy" ? `Translation draft for ${l} created as a copy${aiTr ? " (no AI budget or provider)" : ""} — translate and review it.` : `Translation draft for ${l} written by ${r.data.engine} (≈ $${Number(r.data.cost).toFixed(4)}) — review it before publishing.`); load(); reload(); }).catch((e) => say(err(e)))}>Translate to {l}</button>)}
+            <label className="flex items-center gap-1"><input type="checkbox" checked={aiTr} onChange={(e) => setAiTr(e.target.checked)} />Draft with AI (brand budget)</label>
             {d.translation_state !== "SOURCE" && d.translation_state !== "REVIEWED" && <button className="border rounded px-2 py-1" onClick={() => apiClient.post(`/api/v1/cms/pages/${id}/translation-state`, { state: "REVIEWED" }).then(load).catch((e) => say(err(e)))}>Mark translation reviewed</button>}</div>
         </Panel>
         {exps.length > 0 && <Panel title="Experiments">{exps.map((e) => <div key={e.id} className="text-xs space-y-1">

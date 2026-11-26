@@ -82,6 +82,10 @@ class Settings(BaseSettings):
     DOCUMENT_STORAGE_PATH: str = "data/documents"
     DOCUMENT_MAX_UPLOAD_BYTES: int = 26_214_400  # 25 MiB
     MEDIA_STORAGE_PATH: str = "data/media"           # M46 CMS video/audio (local)
+    SLACK_SIGNING_SECRET: str = ""                    # M47 Slack interactive approvals (NOT_CONFIGURED when empty)
+    META_PIXEL_ID: str = ""                           # M47 Meta CAPI conversions
+    GOOGLE_ADS_CONVERSION_ACTION: str = ""            # M47 customers/<id>/conversionActions/<id>
+    METRICS_TOKEN: str = ""                           # M47: /metrics needs this bearer token when set; else loopback only
     MEDIA_MAX_UPLOAD_BYTES: int = 209_715_200        # 200 MiB
     DOCUMENT_CLAMAV_HOST: str = ""
     DOCUMENT_CLAMAV_PORT: int = 3310
@@ -405,6 +409,11 @@ class Settings(BaseSettings):
                 raise ValueError("SEED_DEMO_DATA must be false in production")
             if self.SEED_INITIAL_ADMIN and (not self.INITIAL_ADMIN_PASSWORD or self.INITIAL_ADMIN_PASSWORD.startswith("CHANGE_ME")):
                 raise ValueError("INITIAL_ADMIN_PASSWORD is required in production when SEED_INITIAL_ADMIN=true")
+            if self.SEED_INITIAL_ADMIN:   # M47.S01.T003: documented/default passwords are refused in production
+                pw = self.INITIAL_ADMIN_PASSWORD or ""
+                weak = {"admin1234!", "admin123!", "admin1234", "password1!", "changeme1!", "povu1234!"}
+                if pw.lower() in weak or len(pw) < 12:
+                    raise ValueError("INITIAL_ADMIN_PASSWORD must be a unique password of at least 12 characters in production")
             if not self.AUTH_COOKIE_SECURE:
                 raise ValueError("AUTH_COOKIE_SECURE must be true in production")
             if self.SYNC_INITIAL_ADMIN_PASSWORD:

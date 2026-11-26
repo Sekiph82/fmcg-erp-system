@@ -72,12 +72,14 @@ services:
       DATABASE_MAX_OVERFLOW: "20"
       DOCUMENT_STORAGE_PROVIDER: ${DOCUMENT_STORAGE_PROVIDER:-local}
       DOCUMENT_STORAGE_PATH: /var/lib/fmcg-erp/documents
+      MEDIA_STORAGE_PATH: /var/lib/fmcg-erp/media   # M47: CMS video/audio survive redeploys
       DOCUMENT_CLAMAV_HOST: ${DOCUMENT_CLAMAV_HOST:-clamav}
       FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-127.0.0.1}
     ports:
       - "8000:8000"
     volumes:
       - documents_data:/var/lib/fmcg-erp/documents
+      - media_data:/var/lib/fmcg-erp/media
     depends_on:
       db:
         condition: service_healthy
@@ -131,4 +133,5 @@ services:
 volumes:
   postgres_data:
   documents_data:
+  media_data:
   clamav_db:

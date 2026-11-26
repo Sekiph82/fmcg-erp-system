@@ -22,6 +22,24 @@ from app.schemas.report_builder import (
 
 
 # ── Metadata Catalog ──────────────────────────────────────────────────────────
+# A field's "path" is its public name (saved reports use it); "sql" is the trusted expression it is read from when the
+# column has another name or the value is derived (M47.S01.T003 fix: several sources named columns that do not exist).
+SQL_MAP: Dict[str, Dict[str, str]] = {
+    "sales_orders": {"channel": "source::text",
+                     "total_amount": "(SELECT COALESCE(SUM(l.ordered_quantity * l.unit_price * (1 - COALESCE(l.discount_pct, 0) / 100)), 0) "
+                                     "FROM so_lines l WHERE l.so_id = sales_orders.id)"},
+    "customers": {"customer_code": "code", "customer_name": "name",
+                  "outstanding_balance": "(SELECT COALESCE(SUM(i.total_amount - COALESCE(i.paid_amount, 0)), 0) FROM invoices i "
+                                         "WHERE i.customer_id = customers.id AND i.status::text NOT IN ('PAID', 'CANCELLED', 'VOID', 'DRAFT'))"},
+    "products": {"product_code": "sku", "product_name": "name", "unit_price": "selling_price", "active_flag": "is_active"},
+    "stock": {"quantity": "quantity_on_hand", "reserved_quantity": "quantity_reserved", "last_movement_date": "updated_at"},
+    "invoices": {"amount": "total_amount"},
+    "purchase_orders": {"po_date": "order_date",
+                        "total_amount": "(SELECT COALESCE(SUM(l.ordered_quantity * l.unit_price), 0) FROM po_lines l WHERE l.po_id = purchase_orders.id)"},
+    "expenses": {"submission_date": "submitted_at", "total_amount": "total_claimed_amount", "approved_amount": "total_approved_amount"},
+    "crm_records": {"record_code": "COALESCE(opportunity_code, lead_code)"},
+}
+
 
 DATA_SOURCES: Dict[str, Dict[str, Any]] = {
     "sales_orders": {
@@ -280,6 +298,11 @@ def _apply_filter_python(rows: List[Dict], field: str, op: str, value: str, valu
 
 async def _execute_query(db: AsyncSession, data_source: str, fields: List[Dict], filters: List[Dict], limit: int, offset: int,
                          user=None) -> Dict:
+    if data_source.startswith("ds:"):   # M47.S01.T011 uploaded dataset, optionally blended with a catalog source
+        from app.services import report_dataset_service as rds
+        if user is None:
+            return {"columns": [], "rows": [], "total": 0, "error": "Dataset reports run only for a signed-in user."}
+        return await rds.report_rows(db, data_source[3:], user, [f["path"] for f in fields], filters, limit, offset)
     if data_source.startswith("co:"):   # M46.S01.T008 custom objects: only with a user, filtered by that user's access
         from app.services import custom_object_service as cos
         if user is None:
@@ -294,7 +317,8 @@ async def _execute_query(db: AsyncSession, data_source: str, fields: List[Dict],
     allowed_fields = {f["path"] for f in ds_info["fields"]}
     select_fields = [f["path"] for f in fields if f["path"] in allowed_fields] or [f["path"] for f in ds_info["fields"][:5]]
 
-    col_sql = ", ".join(f'"{col}"' for col in select_fields)
+    sql_map = SQL_MAP.get(data_source, {})
+    col_sql = ", ".join(f'{sql_map[col]} AS "{col}"' if col in sql_map else f'"{col}"' for col in select_fields)
     count_sql = f'SELECT COUNT(*) FROM "{table_name}"'
     data_sql = f'SELECT {col_sql} FROM "{table_name}" LIMIT {int(limit)} OFFSET {int(offset)}'
 

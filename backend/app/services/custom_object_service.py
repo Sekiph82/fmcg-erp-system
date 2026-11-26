@@ -157,7 +157,16 @@ async def clean(db: AsyncSession, t: CustomObjectType, data: dict, record_id: Op
 async def upsert(db: AsyncSession, t: CustomObjectType, data: dict, user, record: Optional[CustomObjectRecord] = None,
                  company_id: Optional[uuid.UUID] = None) -> CustomObjectRecord:
     from app.services import agent_service as ags
+    from app.services import sensitive_service as sens
+    rules = await sens.field_rules(db, f"co:{t.key}", user)     # M47.S01.T010 field-level permissions
+    old = dict(record.data) if record else {}
+    if rules:
+        data = {**data, **{k: old.get(k) for k in rules if k not in data}}   # left out → keeps the stored value
     vals = await clean(db, t, data, record.id if record else None)
+    try:
+        sens.check_write(rules, {k: vals.get(k) for k in rules if k in vals}, old)
+    except PermissionError as e:
+        raise COError(403, str(e)) from None
     display = str(vals.get(t.display_field) or "—")[:255]
     if record is None:
         comp = companies(user)

@@ -96,6 +96,8 @@ def record_request(method: str, path: str, status_code: int, duration_ms: int) -
     global _slow_request_count, _error_request_count
     key = f"{method.upper()} {path}"
     with _metrics_lock:
+        if key not in _request_counts and len(_request_counts) >= 5000:   # bounded cardinality
+            key = "OTHER"
         _request_counts[key] += 1
         _status_counts[str(status_code)] += 1
         if duration_ms > 500:

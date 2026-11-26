@@ -12,7 +12,11 @@ const root = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 const msgDir = join(root, "src/lib/i18n/messages");
 const LOCALES = ["en", "sw", "tr"];
 const CUSTOMER = ["src/app/portal", "src/app/chat", "src/app/kb", "src/app/book", "src/app/nps", "src/app/survey", "src/app/pay",
-  "src/components/site/SiteView.tsx", "src/components/PartnerLogin.tsx", "src/components/PartnerActivate.tsx", "src/components/LanguageSwitcher.tsx"];
+  "src/components/site/SiteView.tsx", "src/components/PartnerLogin.tsx", "src/components/PartnerActivate.tsx", "src/components/LanguageSwitcher.tsx",
+  // M47.S01.T011 staff shell
+  "src/components/Sidebar.tsx", "src/components/DashboardShell.tsx", "src/app/login/page.tsx", "src/app/dashboard/page.tsx",
+  // M47.S01.T003 shared quotation / e-signature and shared sales document
+  "src/app/d/[token]/page.tsx", "src/app/docs/[token]/page.tsx"];
 
 const catalogs = readdirSync(msgDir).filter((f) => f.endsWith(".json")).map((f) => ({ file: f, data: JSON.parse(readFileSync(join(msgDir, f), "utf8")) }));
 const en = Object.assign({}, ...catalogs.map((c) => c.data.en));

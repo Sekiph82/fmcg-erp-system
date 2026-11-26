@@ -9,18 +9,32 @@ interface PublicForm { slug: string; title: string; intro: string | null; consen
 
 const UTM = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"] as const;
 
+// M47.S01.T010 form shortening: the analytics visitor id (same-origin povu-analytics.js, set only after consent) lets the
+// server leave out fields it already knows. Only field names come back, never the stored values.
+function visitorId(): string | null {
+  try { return localStorage.getItem("povu_vid"); } catch { return null; }
+}
+
 export default function PublicLeadForm() {
   const { slug } = useParams<{ slug: string }>();
   const [form, setForm] = useState<PublicForm | null>(null);
   const [state, setState] = useState<"loading" | "missing" | "ready" | "sending" | "sent">("loading");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [omit, setOmit] = useState<string[]>([]);
 
   useEffect(() => {
     fetch(`${API_ORIGIN}/api/v1/public/lead-forms/${encodeURIComponent(slug)}`)
       .then(async (r) => {
         if (!r.ok) throw new Error();
         setForm(await r.json());
+        const vid = visitorId();
+        if (vid) {
+          const k = await fetch(`${API_ORIGIN}/api/v1/public/lead-forms/${encodeURIComponent(slug)}/known`, {
+            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ visitor: vid }),
+          }).then((x) => (x.ok ? x.json() : { omit: [] })).catch(() => ({ omit: [] }));
+          setOmit(Array.isArray(k.omit) ? k.omit : []);
+        }
         setState("ready");
       })
       .catch(() => setState("missing"));
@@ -32,7 +46,7 @@ export default function PublicLeadForm() {
     const data = new FormData(e.currentTarget);
     const params = new URLSearchParams(window.location.search);
     const body: Record<string, unknown> = {
-      company_name: data.get("company_name"), contact_person_name: data.get("contact_person_name") || null,
+      visitor: visitorId(), company_name: data.get("company_name") || null, contact_person_name: data.get("contact_person_name") || null,
       contact_email: data.get("contact_email") || null, contact_phone: data.get("contact_phone") || null,
       message: data.get("message") || null, consent: data.get("consent") === "on", website: data.get("website") || null,
       referrer: document.referrer || null, landing_page: (params.get("page") || window.location.href).slice(0, 500),
@@ -63,10 +77,11 @@ export default function PublicLeadForm() {
       <h1 className="text-xl font-bold mb-1">{form.title}</h1>
       {form.intro && <p className="text-sm text-gray-600 mb-4">{form.intro}</p>}
       <form aria-label={form.title} onSubmit={submit} className="space-y-3">
-        <label className="block text-sm">Company *<input name="company_name" required maxLength={200} className={input} /></label>
-        <label className="block text-sm">Your name<input name="contact_person_name" maxLength={200} className={input} /></label>
-        <label className="block text-sm">E-mail<input name="contact_email" type="email" maxLength={200} className={input} /></label>
-        <label className="block text-sm">Phone<input name="contact_phone" type="tel" maxLength={50} className={input} /></label>
+        {!omit.includes("company_name") && <label className="block text-sm">Company *<input name="company_name" required maxLength={200} className={input} /></label>}
+        {!omit.includes("contact_person_name") && <label className="block text-sm">Your name<input name="contact_person_name" maxLength={200} className={input} /></label>}
+        {!omit.includes("contact_email") && <label className="block text-sm">E-mail<input name="contact_email" type="email" maxLength={200} className={input} /></label>}
+        {!omit.includes("contact_phone") && <label className="block text-sm">Phone<input name="contact_phone" type="tel" maxLength={50} className={input} /></label>}
+        {omit.length > 0 && <p className="text-xs text-gray-500">We already have some of your details, so this form is shorter.</p>}
         <label className="block text-sm">Message<textarea name="message" maxLength={2000} rows={4} className={input} /></label>
         {/* honeypot: hidden from people and screen readers, bots fill it */}
         <div aria-hidden="true" style={{ position: "absolute", left: "-10000px" }}>

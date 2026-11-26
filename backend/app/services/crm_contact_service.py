@@ -119,3 +119,66 @@ async def contacts_for(db: AsyncSession, object_type: str, object_id: UUID) -> l
         CRMContactAssociation.object_type == object_type, CRMContactAssociation.object_id == object_id)
         .order_by(CRMContact.full_name))).all()
     return [(c, label) for c, label in rows]
+
+
+# ── M47.S01.T010 smart properties ────────────────────────────────────────────
+# Rule-filled contact properties computed from activity; recomputed by recompute_smart_properties (daily ledger hook).
+#   last_order_date   newest sales-order date of the customers the contact is associated with
+#   preferred_channel most used of CALL / EMAIL / WHATSAPP / MEETING / VISIT among completed activities on the
+#                     contact's CRM records (ties: the most recent one wins)
+#   last_objection    text after "#objection" in the newest activity note/description on those records
+SMART_KEYS = ("last_order_date", "preferred_channel", "last_objection")
+CHANNEL_TYPES = ("CALL", "EMAIL", "WHATSAPP", "MEETING", "VISIT")
+
+
+async def smart_values(db: AsyncSession, contact_id: UUID) -> dict[str, Optional[str]]:
+    import re
+    from app.models.crm import CRMActivity, CRMActivityResult
+    from app.models.sales import SalesOrder
+    links = (await db.execute(select(CRMContactAssociation.object_type, CRMContactAssociation.object_id).where(
+        CRMContactAssociation.contact_id == contact_id))).all()
+    customers = [i for t, i in links if t == "customer"]
+    records = [i for t, i in links if t == "crm_record"]
+    last_order = (await db.execute(select(func.max(SalesOrder.order_date)).where(SalesOrder.customer_id.in_(customers)))).scalar() \
+        if customers else None
+    channel = objection = None
+    if records:
+        acts = list((await db.execute(select(CRMActivity).where(CRMActivity.crm_record_id.in_(records))
+                                      .order_by(CRMActivity.created_at.desc()).limit(500))).scalars())
+        counts: dict[str, int] = {}
+        for a in acts:
+            t = getattr(a.activity_type, "value", a.activity_type)
+            if t in CHANNEL_TYPES and a.result_status == CRMActivityResult.COMPLETED:
+                counts[t] = counts.get(t, 0) + 1
+        if counts:
+            best = max(counts.values())
+            channel = next(getattr(a.activity_type, "value", a.activity_type) for a in acts
+                           if counts.get(getattr(a.activity_type, "value", a.activity_type)) == best)
+        for a in acts:                       # newest first
+            m = re.search(r"#objection\b[:\s]*(.+)", f"{a.notes or ''}\n{a.description or ''}", re.I)
+            if m:
+                objection = m.group(1).strip().splitlines()[0][:300] or None
+                break
+    return {"last_order_date": last_order.isoformat() if last_order else None, "preferred_channel": channel,
+            "last_objection": objection}
+
+
+async def recompute_smart_properties(db: AsyncSession, contact_ids: Optional[list[UUID]] = None) -> int:
+    """Recompute smart properties (all contacts, or the given ones). Does not commit. Returns changed values."""
+    from sqlalchemy.dialects.postgresql import insert
+    from app.models.m47_platform import CRMContactProperty
+    ids = contact_ids if contact_ids is not None else list((await db.execute(select(CRMContact.id))).scalars())
+    changed = 0
+    for cid in ids:
+        new = await smart_values(db, cid)
+        old = {p.key: p.value for p in (await db.execute(select(CRMContactProperty).where(
+            CRMContactProperty.contact_id == cid, CRMContactProperty.key.in_(SMART_KEYS)))).scalars()}
+        for k, v in new.items():
+            if old.get(k) == v and (k in old or v is None):
+                continue
+            await db.execute(insert(CRMContactProperty).values(contact_id=cid, key=k, value=v, source="SMART",
+                                                               updated_at=datetime.now(timezone.utc))
+                             .on_conflict_do_update(index_elements=["contact_id", "key"],
+                                                    set_={"value": v, "source": "SMART", "updated_at": datetime.now(timezone.utc)}))
+            changed += 1
+    return changed

@@ -271,3 +271,119 @@ async def handoff_summary(db: AsyncSession, ticket) -> str:
                      + (" — BREACHED" if sla.breached_first or sla.breached_resolution else ""))
     lines += [f"Recent: {c.body[:160]}" for c in reversed(last)]
     return "\n".join(lines)
+
+
+# ── M47.S01.T010 configurable ticket pipelines ───────────────────────────────
+# A pipeline has ordered stages; each stage maps to a TicketStatus (status-based screens, SLA ticks and reports keep
+# working) and may pause the SLA timers ("waiting on customer"). The default pipeline is created on first use; a ticket
+# without a stage row sits in the default pipeline at the first stage of its status.
+DEFAULT_STAGES = [("New", "OPEN", False), ("In progress", "IN_PROGRESS", False), ("Waiting on customer", "IN_PROGRESS", True),
+                  ("Escalated", "ESCALATED", False), ("Resolved", "RESOLVED", False), ("Closed", "CLOSED", False)]
+
+
+def _stage_specs(stages: list[dict]) -> list[tuple[str, str, bool]]:
+    from app.models.helpdesk import TicketStatus
+    if not 1 <= len(stages) <= 20:
+        raise ValueError("A pipeline needs 1–20 stages.")
+    out, names = [], set()
+    for s in stages:
+        name = str(s.get("name") or "").strip()[:100]
+        status = str(s.get("status") or "")
+        if not name or name.lower() in names:
+            raise ValueError("Stage names must be filled and different.")
+        if status not in TicketStatus.__members__:
+            raise ValueError(f"Stage {name}: status must be one of {', '.join(TicketStatus.__members__)}.")
+        names.add(name.lower())
+        out.append((name, status, bool(s.get("pauses_sla"))))
+    return out
+
+
+async def create_pipeline(db: AsyncSession, name: str, stages: list[dict], is_default: bool = False):
+    from app.models.helpdesk import HelpdeskPipeline, HelpdeskPipelineStage
+    specs = _stage_specs(stages)
+    p = HelpdeskPipeline(name=name.strip()[:100], is_default=is_default, created_at=_now())
+    p.stages = [HelpdeskPipelineStage(name=n, status=st, pauses_sla=ps, sort=i) for i, (n, st, ps) in enumerate(specs)]
+    db.add(p)
+    await db.flush()
+    return p
+
+
+async def default_pipeline(db: AsyncSession):
+    from sqlalchemy import text
+    from sqlalchemy.orm import selectinload
+    from app.models.helpdesk import HelpdeskPipeline
+    q = select(HelpdeskPipeline).options(selectinload(HelpdeskPipeline.stages)).where(HelpdeskPipeline.is_default.is_(True))
+    p = (await db.execute(q)).scalars().first()
+    if p is None:
+        await db.execute(text("SELECT pg_advisory_xact_lock(hashtext('helpdesk_default_pipeline'))"))
+        p = (await db.execute(q)).scalars().first()
+        if p is None:
+            await create_pipeline(db, "Support", [{"name": n, "status": s, "pauses_sla": ps} for n, s, ps in DEFAULT_STAGES], True)
+            p = (await db.execute(q.execution_options(populate_existing=True))).scalars().first()
+    return p
+
+
+async def ticket_stage(db: AsyncSession, ticket) -> tuple:
+    from app.models.helpdesk import HelpdeskPipelineStage, HelpdeskTicketStage
+    row = await db.get(HelpdeskTicketStage, ticket.id)
+    if row is not None:
+        return row.pipeline_id, await db.get(HelpdeskPipelineStage, row.stage_id)
+    p = await default_pipeline(db)
+    status = getattr(ticket.status, "value", ticket.status)
+    return p.id, next((s for s in p.stages if s.status == status), None)
+
+
+async def move_ticket(db: AsyncSession, ticket, stage_id) -> dict:
+    """Move to a stage (of any pipeline): sets the mapped status and its timestamps, pauses / resumes the SLA."""
+    from app.models.helpdesk import HelpdeskPipelineStage, HelpdeskTicketStage, TicketStatus
+    st = await db.get(HelpdeskPipelineStage, stage_id)
+    if st is None:
+        raise LookupError("Stage not found.")
+    await default_pipeline(db)
+    status = TicketStatus(st.status)
+    ticket.status = status
+    now = _now()
+    if status == TicketStatus.RESOLVED and ticket.resolved_at is None:
+        ticket.resolved_at = now
+    if status == TicketStatus.CLOSED and ticket.closed_at is None:
+        ticket.closed_at = now
+    if status in (TicketStatus.OPEN, TicketStatus.IN_PROGRESS, TicketStatus.ESCALATED):
+        ticket.resolved_at = ticket.closed_at = None
+    if await db.get(TicketSLA, ticket.id) is not None:
+        await (pause(db, ticket.id) if st.pauses_sla else resume(db, ticket.id))
+    row = await db.get(HelpdeskTicketStage, ticket.id)
+    if row is None:
+        db.add(HelpdeskTicketStage(ticket_id=ticket.id, pipeline_id=st.pipeline_id, stage_id=st.id, moved_at=now))
+    else:
+        row.pipeline_id, row.stage_id, row.moved_at = st.pipeline_id, st.id, now
+    await db.flush()
+    return {"ticket_id": str(ticket.id), "pipeline_id": str(st.pipeline_id), "stage_id": str(st.id), "stage": st.name,
+            "status": status.value, "sla_paused": st.pauses_sla}
+
+
+async def board(db: AsyncSession, pipeline_id) -> dict:
+    from sqlalchemy.orm import selectinload
+    from app.models.helpdesk import HelpdeskPipeline, HelpdeskTicket, HelpdeskTicketStage
+    p = (await db.execute(select(HelpdeskPipeline).options(selectinload(HelpdeskPipeline.stages))
+                          .where(HelpdeskPipeline.id == pipeline_id))).scalars().first()
+    if p is None:
+        raise LookupError("Pipeline not found.")
+    cols = {s.id: [] for s in p.stages}
+    rows = (await db.execute(select(HelpdeskTicket, HelpdeskTicketStage.stage_id).join(
+        HelpdeskTicketStage, HelpdeskTicketStage.ticket_id == HelpdeskTicket.id).where(
+        HelpdeskTicketStage.pipeline_id == p.id).order_by(HelpdeskTicket.created_at.desc()).limit(500))).all()
+    tickets = [(t, sid) for t, sid in rows]
+    if p.is_default:                                 # tickets never moved sit at the first stage of their status
+        first = {}
+        for s in p.stages:
+            first.setdefault(s.status, s.id)
+        loose = (await db.execute(select(HelpdeskTicket).where(~select(HelpdeskTicketStage.ticket_id).where(
+            HelpdeskTicketStage.ticket_id == HelpdeskTicket.id).exists()).order_by(HelpdeskTicket.created_at.desc()).limit(500))).scalars()
+        tickets += [(t, first.get(getattr(t.status, "value", t.status))) for t in loose]
+    for t, sid in tickets:
+        if sid in cols:
+            cols[sid].append({"id": str(t.id), "ticket_no": t.ticket_no, "priority": getattr(t.priority, "value", t.priority),
+                              "status": getattr(t.status, "value", t.status)})
+    return {"id": str(p.id), "name": p.name, "is_default": p.is_default,
+            "stages": [{"id": str(s.id), "name": s.name, "status": s.status, "pauses_sla": s.pauses_sla, "tickets": cols[s.id]}
+                       for s in p.stages]}

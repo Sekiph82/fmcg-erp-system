@@ -17,9 +17,10 @@ Routes:
 """
 from __future__ import annotations
 
+import re
 import uuid
-from datetime import datetime, timezone
-from typing import Any, List, Optional, Tuple
+from datetime import datetime, timedelta, timezone
+from typing import Any, List, Literal, Optional, Tuple
 
 import httpx
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
@@ -30,9 +31,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.deps import get_current_user, get_db
 from app.models.user import User
 from app.models.whatsapp import (
-    WhatsAppConfig, WhatsAppMessage, WhatsAppTemplate,
+    WhatsAppConfig, WhatsAppConsent, WhatsAppMessage, WhatsAppTemplate,
     WAMessageDirection, WAMessageType, WAMessageStatus,
 )
+from pydantic import BaseModel, Field
 from app.schemas.whatsapp import (
     WAConfigCreate, WAConfigRead, WAConfigUpdate,
     WASendText, WASendTemplate,
@@ -106,6 +108,127 @@ async def _meta_send_template(
 router = APIRouter()
 
 
+# ── Opt-in / opt-out ──────────────────────────────────────────────────────────
+# Exact keywords (case-insensitive) that opt a phone out; the value is the language of the one-time acknowledgement.
+STOP_WORDS = {"STOP": "en", "UNSUBSCRIBE": "en", "ACHA": "sw", "DUR": "tr"}
+START_WORDS = {"START", "ANZA", "BAŞLA", "BASLA"}
+STOP_ACK = {
+    "en": "You will no longer receive WhatsApp messages from us. Reply START to opt back in.",
+    "sw": "Hutapokea tena ujumbe wa WhatsApp kutoka kwetu. Jibu ANZA ukitaka kupokea tena.",
+    "tr": "Artık bizden WhatsApp mesajı almayacaksınız. Tekrar almak için BAŞLA yazın.",
+}
+SERVICE_WINDOW = timedelta(hours=24)   # Meta: replies are allowed for 24 h after the customer's last message
+
+
+def norm_phone(phone: str) -> str:
+    digits = re.sub(r"\D", "", phone or "")
+    return f"+{digits}" if digits else ""
+
+
+async def _consent(db: AsyncSession, phone: str) -> Optional[WhatsAppConsent]:
+    return (await db.execute(select(WhatsAppConsent).where(WhatsAppConsent.phone == norm_phone(phone)))).scalar_one_or_none()
+
+
+async def _set_consent(db: AsyncSession, phone: str, status: str, source: str,
+                       text: Optional[str] = None, user_id: Optional[uuid.UUID] = None) -> Optional[str]:
+    """Record the latest consent event for a phone; returns the previous status (None if new). Caller commits."""
+    from sqlalchemy.dialects.postgresql import insert
+    p, now = norm_phone(phone), datetime.now(timezone.utc)
+    inserted = (await db.execute(insert(WhatsAppConsent).values(
+        id=uuid.uuid4(), phone=p, status=status, source=source[:100], consent_text=text, recorded_by_id=user_id, updated_at=now,
+    ).on_conflict_do_nothing(index_elements=["phone"]))).rowcount == 1
+    if inserted:
+        return None
+    row = (await db.execute(select(WhatsAppConsent).where(WhatsAppConsent.phone == p).with_for_update())).scalar_one()
+    prev = row.status
+    row.status, row.source, row.updated_at, row.recorded_by_id = status, source[:100], now, user_id
+    if text:
+        row.consent_text = text
+    await db.flush()
+    return prev
+
+
+async def send_blocked_reason(db: AsyncSession, phone: str) -> Optional[str]:
+    """None when an outbound message to this phone is allowed: not opted out, and either opted in or inside the
+    24-hour window after the customer's own last message."""
+    p = norm_phone(phone)
+    if not p:
+        return "the phone number is empty"
+    c = await _consent(db, p)
+    if c is not None and c.status == "OPTED_OUT":
+        return f"{p} has opted out of WhatsApp messages"
+    if c is not None and c.status == "OPTED_IN":
+        return None
+    recent = (await db.execute(select(WhatsAppMessage.id).where(
+        WhatsAppMessage.phone == p, WhatsAppMessage.direction == WAMessageDirection.INBOUND,
+        WhatsAppMessage.created_at >= datetime.now(timezone.utc) - SERVICE_WINDOW).limit(1))).first()
+    return None if recent else f"no WhatsApp opt-in is recorded for {p}"
+
+
+async def _require_may_send(db: AsyncSession, phone: str) -> None:
+    reason = await send_blocked_reason(db, phone)
+    if reason:
+        raise HTTPException(422, f"Not sent: {reason}.")
+
+
+async def _handle_keywords(db: AsyncSession, config: WhatsAppConfig, phone: str, body: Optional[str]) -> None:
+    """STOP / UNSUBSCRIBE / ACHA / DUR opt the phone out and are acknowledged once; START / ANZA / BAŞLA opt back in."""
+    word = (body or "").strip().upper()
+    if word in STOP_WORDS:
+        if await _set_consent(db, phone, "OPTED_OUT", f"inbound:{word}") != "OPTED_OUT":
+            await _deliver_ack(db, config, norm_phone(phone), STOP_ACK[STOP_WORDS[word]])
+    elif word in START_WORDS:
+        await _set_consent(db, phone, "OPTED_IN", f"inbound:{word}", text=body)
+
+
+async def _deliver_ack(db: AsyncSession, config: WhatsAppConfig, phone: str, text: str) -> None:
+    if config.is_demo_mode:
+        external_id, error_msg, status = f"demo_{uuid.uuid4().hex[:12]}", None, WAMessageStatus.DELIVERED
+    elif config.api_token and config.business_phone_id:
+        external_id, error_msg = await _meta_send_text(config.business_phone_id, config.api_token, phone, text)
+        status = WAMessageStatus.SENT if external_id else WAMessageStatus.FAILED
+    else:
+        external_id, error_msg, status = None, "Live mode requires api_token and business_phone_id", WAMessageStatus.FAILED
+    db.add(WhatsAppMessage(config_id=config.id, direction=WAMessageDirection.OUTBOUND, message_type=WAMessageType.TEXT,
+                           status=status, phone=phone, body=text, external_msg_id=external_id, error_message=error_msg,
+                           linked_module="whatsapp_consent"))
+
+
+class WAConsentIn(BaseModel):
+    phone: str = Field(..., min_length=5, max_length=20)
+    status: Literal["OPTED_IN", "OPTED_OUT"]
+    proof: Optional[str] = Field(None, max_length=2000)   # how/when the customer agreed (required for OPTED_IN)
+
+
+@router.get("/consents/{phone}")
+async def get_consent(phone: str, db: AsyncSession = Depends(get_db), _: User = Depends(get_current_user)):
+    c = await _consent(db, phone)
+    return {"phone": norm_phone(phone), "status": c.status if c else "NONE", "source": c.source if c else None,
+            "updated_at": c.updated_at.isoformat() if c else None, "blocked_reason": await send_blocked_reason(db, phone)}
+
+
+@router.post("/consents")
+async def record_consent(body: WAConsentIn, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Staff record a customer's opt-in (with proof) or opt-out. A customer's STOP is never overridden by staff."""
+    from app.models.audit_log import AuditLog
+    p = norm_phone(body.phone)
+    if len(p) < 8:
+        raise HTTPException(422, "Enter the phone in international format, e.g. +254712345678.")
+    if body.status == "OPTED_IN":
+        if not (body.proof or "").strip():
+            raise HTTPException(422, "Describe how the customer agreed to WhatsApp messages (proof).")
+        c = await _consent(db, p)
+        if c is not None and c.status == "OPTED_OUT":
+            raise HTTPException(409, f"{p} opted out; only the customer can opt back in (by replying START).")
+    await _set_consent(db, p, body.status, f"manual:{current_user.username}", text=(body.proof or "").strip() or None,
+                       user_id=current_user.id)
+    db.add(AuditLog(actor_id=current_user.id, actor_email=getattr(current_user, "email", None),
+                    actor_name=getattr(current_user, "full_name", None), event_type="WHATSAPP_CONSENT_RECORDED",
+                    module="whatsapp", target_type="whatsapp_consent", target_id=p, details={"status": body.status}))
+    await db.commit()
+    return {"phone": p, "status": body.status}
+
+
 # ── Config ────────────────────────────────────────────────────────────────────
 
 @router.get("/configs", response_model=List[WAConfigRead])
@@ -165,6 +288,7 @@ async def send_text(
     current_user: User = Depends(get_current_user),
 ):
     config = await _get_config_or_404(db, body.config_id)
+    await _require_may_send(db, body.phone)
 
     if config.is_demo_mode:
         status = WAMessageStatus.DELIVERED
@@ -209,6 +333,7 @@ async def send_template(
     current_user: User = Depends(get_current_user),
 ):
     config = await _get_config_or_404(db, body.config_id)
+    await _require_may_send(db, body.phone)
 
     # Resolve template for body rendering and language
     tmpl_q = await db.execute(
@@ -326,6 +451,7 @@ async def receive_webhook(request: Request, db: AsyncSession = Depends(get_db)):
                     external_msg_id=wa_msg.get("id"),
                 )
                 db.add(msg)
+                await _handle_keywords(db, config, f"+{phone}", body)
 
             # Process status updates
             for status_update in value.get("statuses", []):
@@ -398,6 +524,7 @@ async def simulate_inbound(
         linked_object_ref=body.linked_object_ref,
     )
     db.add(msg)
+    await _handle_keywords(db, config, body.phone, body.body)
     await db.commit()
     await db.refresh(msg)
     return WAMessageRead.model_validate(msg)

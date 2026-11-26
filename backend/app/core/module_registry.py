@@ -554,6 +554,13 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="cms", route_prefix="/cms", import_path="app.api.v1.endpoints.cms", tags=('content',)),
     EndpointRouteDefinition(key="cms_public", route_prefix="/public/cms", import_path="app.api.v1.endpoints.cms_public", tags=('content',)),
     EndpointRouteDefinition(key="content_studio", route_prefix="/content-studio", import_path="app.api.v1.endpoints.content_studio", tags=('content',)),
+    EndpointRouteDefinition(key="cms_poster_public", route_prefix="/public/cms", import_path="app.api.v1.endpoints.cms_poster_public", tags=('content',)),
+    EndpointRouteDefinition(key="crm_workflow_hooks_public", route_prefix="/public/crm-workflow-hooks", import_path="app.api.v1.endpoints.crm_workflow_hooks_public", tags=('crm',)),
+    EndpointRouteDefinition(key="sales_depth", route_prefix="/sales-depth", import_path="app.api.v1.endpoints.sales_depth", tags=('sales',)),
+    EndpointRouteDefinition(key="sales_depth_public", route_prefix="/public/video", import_path="app.api.v1.endpoints.sales_depth_public", tags=('sales',)),
+    EndpointRouteDefinition(key="platform_depth", route_prefix="/platform-depth", import_path="app.api.v1.endpoints.platform_depth", tags=('crm',)),
+    EndpointRouteDefinition(key="platform_depth_public", route_prefix="/public/slack", import_path="app.api.v1.endpoints.platform_depth_public", tags=('crm',)),
+    EndpointRouteDefinition(key="report_datasets", route_prefix="/report-datasets", import_path="app.api.v1.endpoints.report_datasets", tags=('reports',)),
     EndpointRouteDefinition(key="config_bundles", route_prefix="/config-bundles", import_path="app.api.v1.endpoints.config_bundles", tags=('admin',)),
     EndpointRouteDefinition(key="warehouse_exports", route_prefix="/warehouse-exports", import_path="app.api.v1.endpoints.warehouse_exports", tags=('reports',)),
     EndpointRouteDefinition(key="service_desk", route_prefix="/service-desk", import_path="app.api.v1.endpoints.service_desk", tags=('helpdesk',)),
@@ -711,6 +718,14 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/public/cms/media/{media_id}/captions/{locale}", "GET"),
     ("/public/cms/media/{media_id}/view", "POST"),
     ("/public/cms/podcast/{show}.xml", "GET"),
+    ("/public/cms/media/{media_id}/poster", "GET"),      # M47 poster frame: same access as the media
+    ("/public/crm-workflow-hooks/{workflow_id}", "POST"),  # M47 bearer token (SHA-256 digest), rate-limited, event-id replay safe
+    ("/public/video/{token}", "GET"),                    # M47 1-to-1 video message: token digest, expiry, revocation
+    ("/public/video/{token}/view", "POST"),
+    ("/public/video/{token}/file", "GET"),
+    ("/public/lead-forms/{slug}/known", "POST"),          # M47 form shortening: field NAMES only, per-IP limited
+    ("/public/slack/interactions", "POST"),               # M47 Slack-signed (v0 HMAC, 5 min); 503 NOT_CONFIGURED without a secret
+    ("/public/web/tags", "GET"),                         # M47 event tag rules (selectors + event names only)
     ("/public/unsubscribe", "GET"),                      # HMAC-signed token from CRM e-mails
     ("/public/unsubscribe", "POST"),
     ("/public/calendar/{token}.ics", "GET"),             # personal revocable calendar feed token (M36.S01.T005)

@@ -12,7 +12,10 @@ interface Graph { nodes: WNode[]; edges: Edge[] }
 interface Version { id: string; version_no: number; status: string; graph: Graph; published_at: string | null }
 interface Run { id: string; crm_record_id: string; status: string; log: { at?: string; node?: string; note: string }[] }
 const STARTER: Graph = { nodes: [{ id: "start", type: "trigger", config: { event: "created" } }, { id: "done", type: "end" }], edges: [{ from: "start", to: "done" }] };
-const EVENTS = ["created", "stage_changed", "won", "lost", "status_changed"];
+const EVENTS = ["created", "stage_changed", "won", "lost", "status_changed", "scheduled", "inbound_webhook", "web_event"];
+const DATE_PROPS = ["expected_close_date", "next_action_date", "qualified_date", "converted_date"];
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+interface Hook { path: string; token_hint: string; rotated_at: string; last_used_at: string | null }
 const FIELDS = ["temperature", "record_type", "source_type", "to_stage_code", "industry_segment", "expected_revenue", "assigned_rep_id"];
 const ACTIONS = ["create_task", "notify", "set_field", "assign_owner", "enroll_in_sequence"];
 // fixed colours (not theme classes) so the cards stay readable in light and dark mode
@@ -23,7 +26,14 @@ const newId = (t: string) => `${t}-${Math.random().toString(36).slice(2, 6)}`;
 
 function summary(n: WNode): string {
   const c = n.config ?? {};
-  if (n.type === "trigger") return `When a CRM record is ${String(c.event ?? "").replace("_", " ")}`;
+  if (n.type === "trigger") {
+    const s = (c.schedule ?? {}) as Record<string, unknown>;
+    if (c.event === "scheduled") return s.kind === "relative" ? `${Math.abs(Number(s.offset_days ?? 0))} day(s) ${Number(s.offset_days ?? 0) < 0 ? "before" : "after"} ${String(s.property ?? "")} at ${s.time ?? ""}`
+      : `Every ${s.kind === "weekly" ? DAYS[Number(s.weekday ?? 0)] : "day"} at ${s.time ?? ""}`;
+    if (c.event === "inbound_webhook") return "When another system calls the webhook";
+    if (c.event === "web_event") return `When an identified visitor sends ${String(c.name ?? "?")}`;
+    return `When a CRM record is ${String(c.event ?? "").replace("_", " ")}`;
+  }
   if (n.type === "condition") return `If ${c.field ?? "?"} ${c.operator ?? "eq"} ${c.value ?? ""}`;
   if (n.type === "delay") return `Wait ${c.days ?? 0} day(s)`;
   if (n.type === "approval") return `Approval: ${c.title ?? ""}`;
@@ -42,13 +52,18 @@ export default function WorkflowDesigner() {
   const [sim, setSim] = useState<{ record: string; approvals: "yes" | "no"; steps: { node: string; note: string }[] | null }>({ record: "", approvals: "yes", steps: null });
   const [name, setName] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [hook, setHook] = useState<Hook | null>(null);
+  const [newToken, setNewToken] = useState<string | null>(null);
+  const [eventNames, setEventNames] = useState<string[]>([]);
   const say = (ok: boolean, text: string) => setMsg({ ok, text });
 
   const loadList = useCallback(() => apiClient.get("/api/v1/crm-workflows").then((r) => setList(r.data)).catch((e) => say(false, err(e))), []);
   const loadWf = useCallback((id: string) => apiClient.get(`/api/v1/crm-workflows/${id}`).then((r) => {
-    setVersions(r.data.versions); setRuns(r.data.runs); if (r.data.versions[0]) setG(r.data.versions[0].graph);
+    setVersions(r.data.versions); setRuns(r.data.runs); setHook(r.data.webhook ?? null); if (r.data.versions[0]) setG(r.data.versions[0].graph);
   }), []);
   useEffect(() => { loadList(); }, [loadList]);
+  useEffect(() => { apiClient.get("/api/v1/web-analytics/event-definitions").then((r) => setEventNames(r.data.filter((d: { active: boolean }) => d.active).map((d: { name: string }) => d.name))).catch(() => setEventNames([])); }, []);
+  useEffect(() => { setNewToken(null); }, [wid]);
   useEffect(() => { if (wid) loadWf(wid); }, [wid, loadWf]);
   useEffect(() => { const t = setTimeout(() => apiClient.post("/api/v1/crm-workflows/validate", { graph: g }).then((r) => setProblems(r.data.problems)).catch(() => undefined), 300); return () => clearTimeout(t); }, [g]);
 
@@ -132,7 +147,27 @@ export default function WorkflowDesigner() {
         <div className="space-y-3">
           <div className="bg-white border rounded-xl p-3 space-y-2 text-sm">
             <p className="font-medium">{node ? `Step: ${node.type}` : "Select a step to edit it"}</p>
-            {node?.type === "trigger" && <select aria-label="Trigger event" value={String(cfg.event ?? "")} onChange={(e) => update({ config: { event: e.target.value } })} className="w-full border rounded px-2 py-1.5">{EVENTS.map((x) => <option key={x}>{x}</option>)}</select>}
+            {node?.type === "trigger" && <select aria-label="Trigger event" value={String(cfg.event ?? "")} onChange={(e) => update({ config: { event: e.target.value, schedule: e.target.value === "scheduled" ? { kind: "daily", time: "08:00" } : undefined, name: undefined } })} className="w-full border rounded px-2 py-1.5">{EVENTS.map((x) => <option key={x}>{x}</option>)}</select>}
+            {node?.type === "trigger" && cfg.event === "scheduled" && (() => {
+              const sc = (cfg.schedule ?? {}) as Record<string, unknown>;
+              const m = sc.match as Record<string, unknown> | undefined;
+              const setS = (p: Record<string, unknown>) => update({ config: { schedule: { ...sc, ...p } } });
+              return (<div className="space-y-1.5">
+                <select aria-label="Schedule kind" value={String(sc.kind ?? "daily")} onChange={(e) => setS({ kind: e.target.value, ...(e.target.value === "weekly" ? { weekday: 0 } : {}), ...(e.target.value === "relative" ? { property: "expected_close_date", offset_days: -7 } : {}) })} className="w-full border rounded px-2 py-1.5">
+                  <option value="daily">every day</option><option value="weekly">every week</option><option value="relative">relative to a date on the record</option></select>
+                {sc.kind === "weekly" && <select aria-label="Weekday" value={Number(sc.weekday ?? 0)} onChange={(e) => setS({ weekday: Number(e.target.value) })} className="w-full border rounded px-2 py-1.5">{DAYS.map((d, i) => <option key={d} value={i}>{d}</option>)}</select>}
+                {sc.kind === "relative" && (<>
+                  <select aria-label="Date property" value={String(sc.property ?? "")} onChange={(e) => setS({ property: e.target.value })} className="w-full border rounded px-2 py-1.5">{DATE_PROPS.map((d) => <option key={d}>{d}</option>)}</select>
+                  <label className="block text-xs">Days (negative = before the date)<input aria-label="Offset days" type="number" min={-365} max={365} value={Number(sc.offset_days ?? 0)} onChange={(e) => setS({ offset_days: Number(e.target.value) })} className="w-full border rounded px-2 py-1.5" /></label></>)}
+                <label className="block text-xs">Time ({String(sc.tz ?? "Africa/Nairobi")})<input aria-label="Schedule time" type="time" value={String(sc.time ?? "08:00")} onChange={(e) => setS({ time: e.target.value })} className="w-full border rounded px-2 py-1.5" /></label>
+                <p className="text-[11px] text-gray-500">Open records only; each record runs once per occurrence. Optional filter:</p>
+                <select aria-label="Schedule filter field" value={String(m?.field ?? "")} onChange={(e) => setS({ match: e.target.value ? { field: e.target.value, operator: "eq", value: "" } : undefined })} className="w-full border rounded px-2 py-1.5"><option value="">all open records</option>{FIELDS.map((x) => <option key={x}>{x}</option>)}</select>
+                {m && <input aria-label="Schedule filter value" placeholder="equals" value={String(m.value ?? "")} onChange={(e) => setS({ match: { ...m, value: e.target.value } })} className="w-full border rounded px-2 py-1.5" />}
+              </div>);
+            })()}
+            {node?.type === "trigger" && cfg.event === "web_event" && <select aria-label="Web event" value={String(cfg.name ?? "")} onChange={(e) => update({ config: { name: e.target.value } })} className="w-full border rounded px-2 py-1.5">
+              <option value="">Choose a defined event</option>{eventNames.map((x) => <option key={x}>{x}</option>)}</select>}
+            {node?.type === "trigger" && cfg.event === "web_event" && eventNames.length === 0 && <p className="text-[11px] text-gray-500">Define events under Web analytics first.</p>}
             {node?.type === "condition" && (<>
               <select aria-label="Condition field" value={String(cfg.field ?? "")} onChange={(e) => update({ config: { field: e.target.value } })} className="w-full border rounded px-2 py-1.5">{FIELDS.map((x) => <option key={x}>{x}</option>)}</select>
               <select aria-label="Operator" value={String(cfg.operator ?? "eq")} onChange={(e) => update({ config: { operator: e.target.value } })} className="w-full border rounded px-2 py-1.5"><option value="eq">equals</option><option value="in">is one of (comma list)</option><option value="gte">at least</option></select>
@@ -177,6 +212,17 @@ export default function WorkflowDesigner() {
                   className="rounded border px-2 py-0.5">{v.status === "ARCHIVED" ? "Roll back to this" : "Publish"}</button>}
               </li>))}</ul>
           </div>
+
+          {trigger?.config?.event === "inbound_webhook" && <div className="bg-white border rounded-xl p-3 space-y-2 text-xs">
+            <p className="font-medium text-sm">Inbound webhook</p>
+            <p className="text-gray-500">POST JSON with event_id and record_id or email, header Authorization: Bearer token. The same event id enrols once. Approvers only; the live version must use this trigger.</p>
+            {hook ? <p>Path <code className="break-all">{hook.path}</code> · token ending {hook.token_hint} · {hook.last_used_at ? `last used ${new Date(hook.last_used_at).toLocaleString()}` : "not used yet"}</p> : <p className="text-gray-500">No token yet.</p>}
+            {newToken && <p role="status" className="rounded bg-amber-50 p-2 text-amber-900">Copy this token now; it is not shown again: <code className="break-all select-all">{newToken}</code></p>}
+            <div className="flex gap-2">
+              <button onClick={async () => { try { const r = await apiClient.post(`/api/v1/crm-workflows/${wid}/webhook-token`); setNewToken(r.data.token); loadWf(wid); } catch (e) { say(false, err(e)); } }} className="rounded border px-2 py-1">{hook ? "Rotate token" : "Create token"}</button>
+              {hook && <button onClick={async () => { try { await apiClient.delete(`/api/v1/crm-workflows/${wid}/webhook-token`); setNewToken(null); loadWf(wid); } catch (e) { say(false, err(e)); } }} className="rounded border px-2 py-1 text-red-700">Revoke</button>}
+            </div>
+          </div>}
 
           {runs.length > 0 && <div className="bg-white border rounded-xl p-3 space-y-2 text-xs">
             <p className="font-medium text-sm">Recent runs</p>

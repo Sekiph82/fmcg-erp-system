@@ -122,7 +122,47 @@ async def export(aid: uuid.UUID, db: AsyncSession = Depends(get_db), current_use
 
 
 @router.post("/{aid}/upload/{provider}")
-async def upload(aid: uuid.UUID, provider: str, current_user=Depends(get_current_user)):
+async def upload(aid: uuid.UUID, provider: str, current_user=Depends(get_current_user), db: AsyncSession = Depends(get_db)):
+    """M47.S01.T010 Meta Custom Audience / Google Customer Match upload of the consented members, SHA-256 hashed.
+    Without a connected ad account (or with export switched off) the answer is NOT_CONFIGURED; nothing is sent.
+    (Parameter order kept as before: aid, provider, current_user.)"""
+    from app.services import ads_adapters as ads
+    from app.services import pat_service as pats
     _w(current_user)
-    raise HTTPException(503, f"No {provider[:30]} ads connection is configured. Customer-list upload needs an activated "
-                             "ad account (deferred to activation, M47).")
+    if provider not in ("meta", "google"):
+        raise HTTPException(422, "Provider must be meta or google.")
+    if not settings.AUDIENCE_EXPORT_ENABLED:
+        return {"status": "NOT_CONFIGURED", "message": "Audience sharing is switched off (AUDIENCE_EXPORT_ENABLED)."}
+    a = await _get(db, aid)
+    try:
+        out = await ads.upload_audience(db, a, provider, current_user)
+    except ads.AdsError as e:
+        if e.kind == "NOT_CONFIGURED":
+            await db.rollback()
+            return {"status": "NOT_CONFIGURED", "message": str(e)}
+        await db.commit()                     # keep the FAILED upload row
+        raise HTTPException(502 if e.kind == "PROVIDER" else 409, str(e)) from None
+    pats.audit(db, current_user, "AUDIENCE_UPLOADED", "mkt_audience", str(a.id), {"provider": provider, "sent": out["sent"]})
+    await db.commit()
+    return out
+
+
+@router.post("/conversion-uploads/{provider}")
+async def upload_conversions(provider: str, days: int = 7, db: AsyncSession = Depends(get_db),
+                             current_user=Depends(get_current_user)):
+    """M47.S01.T010 Meta CAPI / Google offline conversions from won deals and paid invoices of the last `days`
+    (consented e-mails only, hashed). Each source is uploaded once per provider."""
+    from datetime import datetime, timedelta, timezone
+    from app.services import ads_adapters as ads
+    _w(current_user)
+    if not settings.AUDIENCE_EXPORT_ENABLED:
+        return {"status": "NOT_CONFIGURED", "message": "Audience sharing is switched off (AUDIENCE_EXPORT_ENABLED)."}
+    try:
+        out = await ads.upload_conversions(db, provider, datetime.now(timezone.utc) - timedelta(days=max(1, min(days, 90))))
+    except ads.AdsError as e:
+        await db.rollback()
+        if e.kind == "NOT_CONFIGURED":
+            return {"status": "NOT_CONFIGURED", "message": str(e)}
+        raise HTTPException(422, str(e)) from None
+    await db.commit()
+    return out

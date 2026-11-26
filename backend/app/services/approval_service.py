@@ -140,11 +140,27 @@ async def submit_for_approval(
     return request
 
 
+def check_decider(request: "ApprovalRequest", user) -> None:
+    """M47.S01.T003: only a holder of the current step's role (or a superuser) may decide, and never the requester.
+    Callers that act for a user pass it; internal system callers (already checked, e.g. Slack) may omit it."""
+    if user is None:
+        return
+    step = next((s for s in request.steps if s.level == request.current_level and s.status == ApprovalStatus.PENDING), None)
+    roles = {str(r.name).lower() for r in (getattr(user, "roles", None) or []) if getattr(r, "is_active", True)}
+    if step is None:
+        raise HTTPException(422, "No pending step found at current level")
+    if not (getattr(user, "is_superuser", False) or str(step.required_role or "").lower() in roles):
+        raise HTTPException(403, f"This step needs the {step.required_role} role.")
+    if request.requested_by_id and request.requested_by_id == getattr(user, "id", None):
+        raise HTTPException(403, "Someone other than the requester must decide.")
+
+
 async def approve_request(
     db: AsyncSession,
     request_id: uuid.UUID,
     approver_id: uuid.UUID,
     notes: Optional[str] = None,
+    user=None,
 ) -> ApprovalRequest:
     """Approve the current pending step. Advances to next level or marks fully approved."""
     request = await db.get(ApprovalRequest, request_id, options=[selectinload(ApprovalRequest.steps)])
@@ -152,6 +168,7 @@ async def approve_request(
         raise HTTPException(404, "Approval request not found")
     if request.status != ApprovalStatus.PENDING:
         raise HTTPException(422, f"Request is {request.status.value}, cannot approve")
+    check_decider(request, user)
 
     current_step = next(
         (s for s in request.steps if s.level == request.current_level and s.status == ApprovalStatus.PENDING),
@@ -200,6 +217,7 @@ async def reject_request(
     request_id: uuid.UUID,
     rejector_id: uuid.UUID,
     reason: str,
+    user=None,
 ) -> ApprovalRequest:
     """Reject the request at the current level. Terminates the chain."""
     request = await db.get(ApprovalRequest, request_id, options=[selectinload(ApprovalRequest.steps)])
@@ -207,6 +225,7 @@ async def reject_request(
         raise HTTPException(404, "Approval request not found")
     if request.status != ApprovalStatus.PENDING:
         raise HTTPException(422, f"Request is {request.status.value}, cannot reject")
+    check_decider(request, user)
 
     current_step = next(
         (s for s in request.steps if s.level == request.current_level and s.status == ApprovalStatus.PENDING),

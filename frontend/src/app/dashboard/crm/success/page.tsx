@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 
-type Health = { score: number | null; label: string; components: Record<string, number | null>; missing: string[]; trend: { day: string; score: number | null }[] };
+type Health = { score: number | null; label: string; components: Record<string, number | null>; missing: string[]; trend: { day: string; score: number | null }[];
+  usage?: { note: string; logins_30d?: number; logins_90d?: number; catalog_views_30d?: number; catalog_views_90d?: number; self_service_orders_30d?: number; self_service_orders_90d?: number } };
 type Churn = { probability: number | null; method: string; reason?: string; confidence?: string; factors?: { feature: string; effect: string; weight: number }[] };
 type Row = { id: string; name: string; owner_user_id: string | null; health: Health; churn: Churn };
 type Alert = { id: string; kind: string; customer: string; customer_id: string; score: number; reasons: string[]; created_at: string };
@@ -63,6 +64,8 @@ export default function CustomerSuccessPage() {
         <div className="flex justify-between"><h3 className="font-semibold">{open.row.name}</h3><button aria-label="Close" onClick={() => setOpen(null)}>×</button></div>
         <div className="grid sm:grid-cols-3 gap-2 text-xs">{Object.entries(open.row.health.components).map(([k, v]) =>
           <div key={k} className="border rounded p-2"><div className="text-gray-500">{k}</div><div className={color(v)}>{v ?? "no data"}</div></div>)}</div>
+        {open.row.health.usage && <p className="text-xs">Product usage: {open.row.health.usage.logins_90d === undefined ? <span className="text-gray-500">{open.row.health.usage.note}</span> :
+          `${open.row.health.usage.logins_30d} / ${open.row.health.usage.logins_90d} sign-ins, ${open.row.health.usage.catalog_views_30d} / ${open.row.health.usage.catalog_views_90d} catalogue views, ${open.row.health.usage.self_service_orders_30d} / ${open.row.health.usage.self_service_orders_90d} self-service orders (30 / 90 days)`}</p>}
         {open.row.health.trend.length > 0 && <p className="text-xs">Trend: {open.row.health.trend.map((t) => `${t.day.slice(5)} ${t.score ?? "—"}`).join(" → ")}</p>}
         <h4 className="font-semibold text-xs">Buying intent: {open.intent.score} {open.intent.hot ? "(hot)" : ""} <span className="text-gray-500">threshold {open.intent.threshold}; external intent feed {open.intent.external_feed.toLowerCase().replace("_", " ")}</span></h4>
         <ul className="text-xs max-h-48 overflow-auto">{open.intent.explanation.length === 0 ? <li className="text-gray-500">No first-party signals in the window.</li> :

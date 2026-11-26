@@ -221,6 +221,74 @@ async def decide(did: uuid.UUID, b: DecideIn, db: AsyncSession = Depends(get_db)
     return _draft_out(d)
 
 
+class RemixIn(BaseModel):
+    channels: list[str] = Field(min_length=1, max_length=6)
+
+
+@router.post("/drafts/{did}/remix", status_code=201)
+async def remix(did: uuid.UUID, b: RemixIn, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    """One draft per channel from this draft (repurpose path: budget gate, brand review; each needs its own approval)."""
+    _need(user, EDIT)
+    src = await _draft(db, did)
+    try:
+        out = await cs.remix(db, await db.get(CsBrandProfile, src.profile_id), src, b.channels, user)
+    except cs.StudioError as e:
+        raise HTTPException(422, str(e))
+    await db.flush()
+    cms.audit(db, user, "studio.draft.remixed", "cs_draft", src.id, {"drafts": [str(d.id) for d in out], "engines": [d.engine for d in out]})
+    await db.commit()
+    for d in out:
+        await db.refresh(d)
+    return [_draft_out(d) for d in out]
+
+
+@router.get("/images/status")
+async def image_status():
+    from app.services import image_gen_adapter as ig
+    return ig.status()
+
+
+class ImageIn(BaseModel):
+    prompt: str = Field(min_length=10, max_length=1000)
+    title: str = Field(min_length=1, max_length=200)
+
+
+@router.post("/images", status_code=201)
+async def generate_image(b: ImageIn, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
+    """AI image → DRAFT MARKETING_CREATIVE document in the asset library. It is not usable in e-mail, social or the
+    website until approved (and scanned clean) in the DAM. 409 NOT_CONFIGURED without an image provider."""
+    import io
+
+    from fastapi import UploadFile
+    from starlette.datastructures import Headers
+
+    from app.models.documents import Document, DocumentCategory, DocumentStatus
+    from app.services import image_gen_adapter as ig
+    from app.services.document_storage_service import get_document_storage, scan_document
+    _need(user, EDIT)
+    gen = ig.get_generator()
+    if gen is None:
+        raise HTTPException(409, ig.status())
+    try:
+        png = await gen.generate(b.prompt)
+    except Exception as e:                 # provider failure is reported, never replaced by a stock image
+        raise HTTPException(502, f"The image provider failed: {type(e).__name__}")
+    storage = get_document_storage()      # same validation as a manual upload: PNG magic bytes, size limit
+    stored = await storage.store_upload(UploadFile(io.BytesIO(png), filename="generated.png", headers=Headers({"content-type": "image/png"})))
+    scan = await scan_document(storage.path_for(stored.storage_key))
+    doc = Document(title=b.title.strip(), category=DocumentCategory.MARKETING_CREATIVE, status=DocumentStatus.DRAFT,
+                   description=f"AI generated ({getattr(gen, 'name', 'provider')}). Prompt: {b.prompt.strip()}",
+                   document_type="AI_IMAGE", file_name=stored.file_name, file_size_bytes=stored.file_size_bytes, mime_type=stored.mime_type,
+                   storage_provider="local", storage_key=stored.storage_key, file_checksum_sha256=stored.sha256,
+                   file_scan_status=scan.status, file_scan_result=scan.result, owner_user_id=user.id, created_by_id=user.id, updated_by_id=user.id)
+    db.add(doc)
+    await db.flush()
+    cms.audit(db, user, "studio.image.generated", "document", doc.id, {"engine": getattr(gen, "name", "provider"), "scan": scan.status})
+    await db.commit()
+    return {"document_id": str(doc.id), "status": doc.status.value, "scan": scan.status, "engine": getattr(gen, "name", "provider"),
+            "detail": "Draft creative: approve it in the asset library before use."}
+
+
 class UseIn(BaseModel):
     page_id: uuid.UUID
 

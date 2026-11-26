@@ -41,14 +41,18 @@ export default function BlockEditor({ blocks, onChange }: { blocks: Block[]; onC
   const [add, setAdd] = useState("text");
   const [open, setOpen] = useState<number | null>(null);
   const set = (i: number, b: Block) => onChange(blocks.map((x, j) => (j === i ? b : x)));
+  const [dragFrom, setDragFrom] = useState<number | null>(null);   // M47.S01.T011 drag-and-drop; the arrows stay for keyboard users
+  const moveTo = (from: number, to: number) => { if (from === to) return; const n = [...blocks]; const [x] = n.splice(from, 1); n.splice(to, 0, x); onChange(n); };
   const move = (i: number, d: number) => { const n = [...blocks]; const [x] = n.splice(i, 1); n.splice(i + d, 0, x); onChange(n); };
   return (
     <div className="space-y-2">
       {blocks.length === 0 && <p className="text-xs text-gray-500">No blocks yet. Add a hero, text or FAQ below.</p>}
       {blocks.map((b, i) => (
-        <div key={b.id ?? i} className="border rounded p-2 bg-white">
+        <div key={b.id ?? i} className={`border rounded p-2 bg-white ${dragFrom === i ? "opacity-50" : ""}`} draggable
+          onDragStart={() => setDragFrom(i)} onDragOver={(e) => e.preventDefault()} onDragEnd={() => setDragFrom(null)}
+          onDrop={(e) => { e.preventDefault(); if (dragFrom !== null) moveTo(dragFrom, i); setDragFrom(null); }}>
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <b className="uppercase">{b.type}</b>
+            <b className="uppercase cursor-move" title="Drag to reorder">⠿ {b.type}</b>
             <span className="text-gray-500 truncate max-w-[50%]">{String(b.text ?? b.title ?? b.label ?? b.cta_key ?? b.table_key ?? "")}</span>
             {b.audience && <span className="bg-amber-100 rounded px-1">audience</span>}
             {b.experiment && <span className="bg-sky-100 rounded px-1">test {b.experiment.key}:{b.experiment.variant}</span>}

@@ -49,6 +49,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       DOCUMENT_STORAGE_PROVIDER: ${DOCUMENT_STORAGE_PROVIDER:-local}
       DOCUMENT_STORAGE_PATH: /var/lib/fmcg-erp/documents
+      MEDIA_STORAGE_PATH: /var/lib/fmcg-erp/media   # M47: CMS video/audio survive redeploys
     ports:
       - "8000:8000"
     depends_on:
@@ -65,6 +66,7 @@ services:
     volumes:
       - ./backend:/app
       - documents_data:/var/lib/fmcg-erp/documents
+      - media_data:/var/lib/fmcg-erp/media
       - ./docs:/docs:ro
       - ./frontend:/frontend:ro
     deploy:
@@ -105,3 +107,4 @@ services:
 volumes:
   postgres_data:
   documents_data:
+  media_data:

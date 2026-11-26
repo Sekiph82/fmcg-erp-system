@@ -8,6 +8,7 @@ Environment-specific or personal columns (users, territories, companies, routing
 customer, contact or transaction table is ever part of a bundle.
 Import: diff → create / update / unchanged / skip, dry run writes nothing; apply runs in one transaction; workflows
 arrive as a new DRAFT version that must be published again. A bundle from another schema revision is refused.
+Optional CMS part (M47.S01.T007, items["cms"]): see cms_bundle_service — pages arrive as drafts, never published.
 """
 from __future__ import annotations
 
@@ -98,7 +99,7 @@ async def _key_of(db: AsyncSession, table: str, pk_value, key: list[str], pk: st
     return vals[0] if len(vals) == 1 else vals
 
 
-async def export(db: AsyncSession) -> dict:
+async def export(db: AsyncSession, include_cms: bool = False) -> dict:
     tables = _tables()
     out: dict[str, list] = {}
     for spec in SPEC:
@@ -118,6 +119,9 @@ async def export(db: AsyncSession) -> dict:
                 item["graph"] = strip_people(pub if pub is not None else latest)
             rows.append(item)
         out[spec["table"]] = sorted(rows, key=lambda x: json.dumps([x.get(k) for k in spec["key"]], default=str))
+    if include_cms:
+        from app.services import cms_bundle_service
+        out["cms"] = await cms_bundle_service.export(db)
     body = {"format": FORMAT, "format_version": FORMAT_VERSION, "schema_revision": await _revision(db),
             "exported_at": datetime.now(timezone.utc).isoformat(), "items": out}
     body["sha256"] = hashlib.sha256(json.dumps(out, sort_keys=True, default=str).encode()).hexdigest()
@@ -141,7 +145,7 @@ async def _resolve_fk(db: AsyncSession, ref_table: str, ref_key: list[str], valu
     return (await db.execute(select(t.c[ref_spec.get("pk", "id")]).where(cond).limit(1))).scalar()
 
 
-async def plan(db: AsyncSession, bundle: dict, mode: str = "overwrite") -> list[dict]:
+async def plan(db: AsyncSession, bundle: dict, mode: str = "overwrite", site_keys: Optional[dict] = None) -> list[dict]:
     """Per row: create | update (with changed fields) | unchanged | skip | error. Writes nothing."""
     if bundle.get("format") != FORMAT or bundle.get("format_version") != FORMAT_VERSION:
         raise BundleError(422, "This is not a configuration bundle of a supported version.")
@@ -187,6 +191,9 @@ async def plan(db: AsyncSession, bundle: dict, mode: str = "overwrite") -> list[
                 else:
                     steps.append({"table": spec["table"], "key": label, "action": "update", "changed": changed, "row": row,
                                   "id": existing[pk], "graph": graph})
+    if isinstance(bundle["items"].get("cms"), dict):
+        from app.services import cms_bundle_service
+        steps += await cms_bundle_service.plan(db, bundle["items"]["cms"], mode, site_keys)
     return steps
 
 
@@ -195,14 +202,14 @@ def _same(x: dict, value, key: list[str]) -> bool:
     return [x.get(k) for k in key] == vals
 
 
-async def apply(db: AsyncSession, bundle: dict, user: str, mode: str = "overwrite") -> dict:
-    steps = await plan(db, bundle, mode)
+async def apply(db: AsyncSession, bundle: dict, user: str, mode: str = "overwrite", site_keys: Optional[dict] = None) -> dict:
+    steps = await plan(db, bundle, mode, site_keys)
     if any(s["action"] == "error" for s in steps):
         raise BundleError(422, "The bundle has unresolved references; see the dry run.")
     tables = _tables()
     done = {"create": 0, "update": 0}
     for s in steps:
-        if s["action"] not in ("create", "update"):
+        if s["action"] not in ("create", "update") or s["table"].startswith("cms_"):
             continue
         spec = next(x for x in SPEC if x["table"] == s["table"])
         t, pk = tables[s["table"]], spec.get("pk", "id")
@@ -226,5 +233,14 @@ async def apply(db: AsyncSession, bundle: dict, user: str, mode: str = "overwrit
             await db.execute(insert(v).values(id=uuid.uuid4(), workflow_id=rid, version_no=n + 1, graph=s["graph"], status="DRAFT",
                                               created_by=f"bundle:{user}"[:100], created_at=datetime.now(timezone.utc)))
         done[s["action"]] += 1
+    cms_steps = [s for s in steps if s["table"].startswith("cms_")]
+    if cms_steps:
+        from app.services import cms_bundle_service
+        from app.services.cms_service import CmsError
+        try:
+            for k, n in (await cms_bundle_service.apply(db, cms_steps, user)).items():
+                done[k] += n
+        except CmsError as e:
+            raise BundleError(422, f"Content import refused: {e}")
     return {"created": done["create"], "updated": done["update"],
             "unchanged": sum(1 for s in steps if s["action"] == "unchanged"), "skipped": sum(1 for s in steps if s["action"] == "skip")}

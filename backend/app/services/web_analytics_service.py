@@ -26,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.models.crm import WebConsent, WebEvent, WebIdentity
+from app.models.m47_automation import WebEventDefinition, WebEventProperty
 
 KINDS = ("PAGE", "FORM", "CTA", "CUSTOM")
 BOT_RE = re.compile(r"bot|crawl|spider|slurp|headless|preview|lighthouse|pingdom|monitor|curl|wget|python-requests", re.I)
@@ -69,7 +70,8 @@ async def collect(db: AsyncSession, visitor: str, session: str, events: list[dic
     now = datetime.now(timezone.utc)
     recent = (await db.execute(select(func.count()).select_from(WebEvent).where(
         WebEvent.visitor_hash == vh, WebEvent.occurred_at > now - timedelta(hours=1)))).scalar_one()
-    stored = 0
+    stored, dropped_props = 0, 0
+    defs = await definitions(db) if any(e.get("kind") == "CUSTOM" for e in events) else {}
     for e in events[: max(0, MAX_EVENTS_PER_HOUR - recent)]:
         if e.get("kind") not in KINDS:
             continue
@@ -79,9 +81,18 @@ async def collect(db: AsyncSession, visitor: str, session: str, events: list[dic
             referrer_host=referrer_host(e.get("referrer")),
             utm_source=(e.get("utm_source") or None), utm_medium=(e.get("utm_medium") or None),
             utm_campaign=(e.get("utm_campaign") or None), occurred_at=now,
-        ).on_conflict_do_nothing(constraint="uq_web_event_visitor_event"))
-        stored += res.rowcount or 0
-    return {"stored": stored, "dropped": len(events) - stored}
+        ).on_conflict_do_nothing(constraint="uq_web_event_visitor_event").returning(WebEvent.id))
+        new_id = res.scalar_one_or_none()
+        stored += 1 if new_id else 0
+        raw = e.get("properties") or {}
+        if new_id and e["kind"] == "CUSTOM" and e.get("name") in defs:   # M47.S01.T008 defined events keep valid props
+            props = clean_properties(defs[e["name"]], raw)
+            dropped_props += len(raw) - len(props)
+            if props:
+                await db.execute(insert(WebEventProperty).values(event_id=new_id, properties=props))
+        elif new_id:
+            dropped_props += len(raw)                                     # undefined event: properties never stored
+    return {"stored": stored, "dropped": len(events) - stored, "dropped_properties": dropped_props}
 
 
 async def identify(db: AsyncSession, visitor: str, email: str) -> bool:
@@ -188,3 +199,79 @@ async def deal_journey(db: AsyncSession, record_id: uuid.UUID) -> dict:
     firsts = [j["first_touch"] for j in per if j["first_touch"]]
     return {"record_id": str(record_id), "contacts": len(emails), "linked": sum(1 for j in per if j["linked"]),
             "first_touch": min(firsts, key=lambda f: f["at"]) if firsts else None, "events": events[:500]}
+
+
+# ── M47.S01.T008 custom web-event definitions ───────────────────────────────────
+
+PROP_TYPES = ("string", "number", "boolean")
+NAME_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,100}$")
+PROP_RE = re.compile(r"^[a-z][a-z0-9_]{0,39}$")
+
+
+def validate_definition(name: str, properties) -> tuple[str, dict]:
+    name = (name or "").strip()
+    if not NAME_RE.fullmatch(name):
+        raise ValueError("Event name: 1-100 letters, digits, _ . : - (no spaces).")
+    if not isinstance(properties, dict) or len(properties) > 20:
+        raise ValueError("Properties must be an object of at most 20 entries.")
+    for k, t in properties.items():
+        if not PROP_RE.fullmatch(str(k)) or t not in PROP_TYPES:
+            raise ValueError(f"Property {k!r}: lowercase name (a-z, 0-9, _) and type string, number or boolean.")
+    return name, dict(properties)
+
+
+async def definitions(db: AsyncSession) -> dict[str, dict]:
+    """Active definitions: name -> {property: type}."""
+    return {d.name: d.properties or {} for d in (await db.execute(
+        select(WebEventDefinition).where(WebEventDefinition.active.is_(True)))).scalars()}
+
+
+def clean_properties(allowed: dict, raw) -> dict:
+    """Keep only defined properties whose value has the defined type (unknown or mistyped ones are dropped)."""
+    out = {}
+    for k, v in (raw.items() if isinstance(raw, dict) else []):
+        t = allowed.get(k)
+        if t == "boolean" and isinstance(v, bool):
+            out[k] = v
+        elif t == "number" and isinstance(v, (int, float)) and not isinstance(v, bool) and abs(v) < 1e15:
+            out[k] = v
+        elif t == "string" and isinstance(v, str):
+            out[k] = v[:200]
+    return out
+
+
+# ── M47.S01.T011 event tags (point-and-click tagging) ───────────────────────────────────────────────────────────
+TAG_SELECTOR_BAD = re.compile(r"[<{};@]|url\(|expression\(", re.I)   # ">" is the child combinator; "\" comes from CSS.escape
+
+
+async def event_tags(db: AsyncSession, active_only: bool = False) -> list[dict]:
+    from app.models.customer_intel import CISetting
+    from app.models.m47_automation import WebEventDefinition
+    row = await db.get(CISetting, "web_tags")
+    rules = list((row.value or {}).get("rules", [])) if row else []
+    if active_only:
+        active = set((await db.execute(select(WebEventDefinition.name).where(WebEventDefinition.active.is_(True)))).scalars())
+        rules = [r for r in rules if r.get("event") in active]
+    return [{"selector": r["selector"], "event": r["event"]} for r in rules]
+
+
+async def save_event_tags(db: AsyncSession, rules: list[dict], by: str) -> list[dict]:
+    """Each tag maps a CSS selector to an ACTIVE event definition; selectors are plain CSS (no markup or at-rules)."""
+    from app.models.customer_intel import CISetting
+    from app.models.m47_automation import WebEventDefinition
+    defined = set((await db.execute(select(WebEventDefinition.name).where(WebEventDefinition.active.is_(True)))).scalars())
+    clean = []
+    for r in rules:
+        sel, ev = str(r.get("selector") or "").strip(), str(r.get("event") or "").strip()
+        if not sel or len(sel) > 200 or TAG_SELECTOR_BAD.search(sel):
+            raise ValueError(f"Not a plain CSS selector: {sel[:60]!r}")
+        if ev not in defined:
+            raise ValueError(f"Define the event {ev!r} first (Web analytics → Event definitions)")
+        clean.append({"selector": sel, "event": ev})
+    row = await db.get(CISetting, "web_tags")
+    if row is None:
+        db.add(CISetting(key="web_tags", value={"rules": clean}, updated_by=by))
+    else:
+        row.value = {"rules": clean}
+        row.updated_by = by
+    return clean

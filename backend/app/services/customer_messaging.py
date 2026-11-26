@@ -59,6 +59,20 @@ async def notify_customer(phone: Optional[str], body: str) -> str:
     if via is None:
         log.info("customer notice not sent (no WhatsApp/SMS provider set up): %s", body[:80])
         return "not-configured"
+    if via == "whatsapp":   # M47.S01.T003: a customer who replied STOP gets no WhatsApp notice (SMS if configured)
+        try:
+            from app.api.v1.endpoints.whatsapp import send_blocked_reason
+            from app.db.session import AsyncSessionLocal
+            async with AsyncSessionLocal() as db:
+                blocked = await send_blocked_reason(db, phone.strip())
+        except Exception:
+            blocked = "consent check unavailable"
+        if blocked:
+            sms_ok = settings.SMS_PROVIDER in ("africastalking", "twilio") and settings.SMS_ACCOUNT_SID and settings.SMS_AUTH_TOKEN
+            if not sms_ok:
+                log.info("customer notice not sent by WhatsApp: %s", blocked)
+                return "opted-out"
+            via = "sms"
     try:
         await (send_whatsapp if via == "whatsapp" else send_sms)(phone.strip(), body)
         return via

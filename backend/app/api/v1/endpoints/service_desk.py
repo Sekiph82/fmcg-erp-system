@@ -11,6 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.access_control import has_any_permission
+from app.core.route_guard import MODULE_GUARDS
 from app.core.deps import get_current_user, get_db
 from app.models.helpdesk import HelpdeskTicket
 from app.models.service_desk import AgentProfile, Macro, QAReview, SLAPolicy, Survey, TicketSLA, TicketView
@@ -25,6 +26,28 @@ def _admin(u):
         raise HTTPException(403, "Only service administrators change this.")
 
 
+# M47.S01.T010 (T003 audit): the same rights as the /helpdesk module guard. Reads need <module>.view, writes need
+# <module>.edit or a service-agent profile; superusers pass.
+_MODS = MODULE_GUARDS["/helpdesk"]
+
+
+def _can_view(u) -> bool:
+    return u.is_superuser or has_any_permission(u, tuple(f"{m}.{a}" for m in _MODS for a in ("view", "view_all", "edit", "edit_all")))
+
+
+def _view(u) -> None:
+    if not _can_view(u):
+        raise HTTPException(403, "Helpdesk view rights are needed.")
+
+
+async def _edit(db, u) -> None:
+    if u.is_superuser or has_any_permission(u, tuple(f"{m}.{a}" for m in _MODS for a in ("edit", "edit_all"))):
+        return
+    if _can_view(u) and await db.get(AgentProfile, u.id) is not None:
+        return
+    raise HTTPException(403, "Helpdesk edit rights or a service-agent profile are needed.")
+
+
 async def _ticket(db, tid) -> HelpdeskTicket:
     t = await db.get(HelpdeskTicket, tid)
     if t is None:
@@ -34,6 +57,7 @@ async def _ticket(db, tid) -> HelpdeskTicket:
 
 @router.get("/overview")
 async def overview(days: int = 30, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    _view(current_user)
     agents = (await db.execute(select(AgentProfile))).scalars().all()
     pols = (await db.execute(select(SLAPolicy).order_by(SLAPolicy.sort))).scalars().all()
     return {"report": await sd.report(db, days), "settings": await sd.settings_get(db),
@@ -113,6 +137,7 @@ async def add_policy(body: PolicyIn, db: AsyncSession = Depends(get_db), current
 async def ticket_panel(tid: uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     """SLA timers, hand-off summary, reply recommendations from approved articles, QA reviews."""
     from app.services import kb_retrieval
+    _view(current_user)
     t = await _ticket(db, tid)
     s = await db.get(TicketSLA, tid)
     recs = await kb_retrieval.search(db, f"{t.subject} {t.description or ''}", limit=3, min_score=1.0)
@@ -128,6 +153,7 @@ async def ticket_panel(tid: uuid.UUID, db: AsyncSession = Depends(get_db), curre
 @router.post("/tickets/{tid}/{action}")
 async def sla_action(tid: uuid.UUID, action: Literal["pause", "resume", "route"], db: AsyncSession = Depends(get_db),
                      current_user=Depends(get_current_user)):
+    await _edit(db, current_user)
     t = await _ticket(db, tid)
     try:
         if action == "pause":
@@ -161,6 +187,7 @@ async def add_macro(body: MacroIn, db: AsyncSession = Depends(get_db), current_u
 async def apply_macro(tid: uuid.UUID, mid: uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     from datetime import datetime, timezone
     from app.models.helpdesk import TicketComment, TicketStatus
+    await _edit(db, current_user)
     t, m = await _ticket(db, tid), await db.get(Macro, mid)
     if m is None:
         raise HTTPException(404, "Macro not found")
@@ -201,6 +228,7 @@ class ViewIn(BaseModel):
 
 @router.post("/views", status_code=201)
 async def add_view(body: ViewIn, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    _view(current_user)
     if body.shared:
         _admin(current_user)
     v = TicketView(**body.model_dump(), owner_id=current_user.id)

@@ -239,7 +239,10 @@ async def add_process_time_header(request: Request, call_next):
     elapsed_ms = int((time.monotonic() - t0) * 1000)
     response.headers[PROCESS_TIME_HEADER] = str(elapsed_ms)
     response.headers[REQUEST_ID_HEADER] = request_id
-    record_request(request.method, request.url.path, response.status_code, elapsed_ms)
+    # M47.S01.T003: label by the route TEMPLATE, never the raw path (customer link tokens must not reach /metrics)
+    route = request.scope.get("route")
+    record_request(request.method, getattr(route, "path_format", None) or getattr(route, "path", None) or "<unmatched>",
+                   response.status_code, elapsed_ms)
     if elapsed_ms > 500:
         logger.warning(
             "Slow request",
@@ -301,7 +304,15 @@ async def health():
 
 
 @app.get("/metrics")
-async def metrics():
+async def metrics(request: Request):
+    """Process metrics: needs `Authorization: Bearer <METRICS_TOKEN>` when that is set, otherwise loopback callers only
+    (M47.S01.T003: it was public)."""
+    import hmac
+    token = settings.METRICS_TOKEN
+    given = request.headers.get("authorization", "").removeprefix("Bearer ").strip()
+    local = (request.client.host if request.client else "") in ("127.0.0.1", "::1", "localhost")
+    if (token and not hmac.compare_digest(given, token)) or (not token and not local):
+        return JSONResponse(status_code=404, content={"error": "not_found", "detail": "Not Found"})
     return metrics_snapshot()
 
 

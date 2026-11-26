@@ -252,6 +252,9 @@ async def catalog(search: Optional[str] = Query(None, max_length=100), page: int
         items.append({"product_id": str(p.id), "sku": p.sku, "name": p.name, "uom": p.uom.value,
                       "units_per_carton": p.units_per_carton,
                       "unit_price": float(price) if user.account.can_view_prices else None})
+    if page == 1 and not search:   # M47.S01.T008: a catalogue visit is a product-usage signal for customer health
+        await svc._log_activity(db, str(user.id), str(user.portal_account_id), PortalActivityType.OTHER, "catalog_view")
+        await db.commit()
     return {"currency": customer.currency, "page": page, "items": items, "has_more": len(rows) == 50}
 
 

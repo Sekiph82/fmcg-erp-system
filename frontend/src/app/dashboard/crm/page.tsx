@@ -175,6 +175,7 @@ const DuplicatesPage     = dynamic(() => import("@/app/dashboard/crm/duplicates/
 const ObjectsPage        = dynamic(() => import("@/app/dashboard/crm/objects/page"), { ssr: false });
 const SensitivePage      = dynamic(() => import("@/app/dashboard/crm/sensitive/page"), { ssr: false });
 const SalesDocsPage      = dynamic(() => import("@/app/dashboard/crm/sales-docs/page"), { ssr: false });
+const PlatformDepthPage  = dynamic(() => import("@/app/dashboard/crm/platform-depth/page"), { ssr: false });   // M47
 const DataSyncPage       = dynamic(() => import("@/app/dashboard/crm/data-sync/page"), { ssr: false });
 const SocialPage         = dynamic(() => import("@/app/dashboard/crm/social/page"), { ssr: false });
 const AdsPage            = dynamic(() => import("@/app/dashboard/crm/ads/page"), { ssr: false });
@@ -238,6 +239,7 @@ export default function CRMPage() {
     { key: "sales-docs", label: "Sales documents", permission: "crm.view", content: <SalesDocsPage /> },
     { key: "sensitive", label: "Sensitive data", permission: "roles.manage", content: <SensitivePage /> },
     { key: "ai-access", label: "Add-ins & AI access", permission: "crm.view", content: <AIAccessPage /> },
+    { key: "platform-depth", label: "Platform settings", permission: "crm.edit_all", content: <PlatformDepthPage /> },
     { key: "loyalty",     label: "Loyalty",     permission: "crm.view", content: <LoyaltyPage /> },
     { key: "nps",         label: "NPS",         permission: "crm.view", content: <NPSPage /> },
     { key: "surveys",     label: "Surveys",     permission: "crm.view", content: <SurveysPage /> },

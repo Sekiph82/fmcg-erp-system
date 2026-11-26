@@ -33,9 +33,19 @@ def _type_out(t: CustomObjectType) -> dict:
             "display_field": t.display_field, "view_roles": t.view_roles, "edit_roles": t.edit_roles}
 
 
-def _rec_out(r: CustomObjectRecord) -> dict:
-    return {"id": str(r.id), "display": r.display, "data": r.data, "company_id": str(r.company_id) if r.company_id else None,
+def _rec_out(r: CustomObjectRecord, rules: Optional[dict] = None) -> dict:
+    out = {"id": str(r.id), "display": r.display, "data": r.data, "company_id": str(r.company_id) if r.company_id else None,
             "created_by": r.created_by, "created_at": r.created_at.isoformat(), "updated_at": r.updated_at.isoformat()}
+    if rules:                                  # M47.S01.T010 hidden fields leave the response
+        from app.services import sensitive_service as sens
+        out["data"] = dict(out["data"])
+        sens.strip_hidden(out, rules)
+    return out
+
+
+async def _rules(db, t: CustomObjectType, u) -> dict:
+    from app.services import sensitive_service as sens
+    return await sens.field_rules(db, f"co:{t.key}", u)
 
 
 @router.get("/types")
@@ -109,7 +119,8 @@ async def records(key: str, q: Optional[str] = Query(None, max_length=100), limi
     if q:
         stmt = stmt.where(CustomObjectRecord.display.ilike(f"%{q}%"))
     rows = (await db.execute(cos.visible(stmt, current_user).order_by(CustomObjectRecord.display).limit(limit))).scalars()
-    return {"type": _type_out(t), "records": [_rec_out(r) for r in rows]}
+    rules = await _rules(db, t, current_user)
+    return {"type": _type_out(t), "records": [_rec_out(r, rules) for r in rows]}
 
 
 class RecordIn(BaseModel):
@@ -126,7 +137,7 @@ async def create_record(key: str, body: RecordIn, db: AsyncSession = Depends(get
         await db.rollback()
         _fail(e)
     await db.commit()
-    return _rec_out(r)
+    return _rec_out(r, await _rules(db, t, current_user))
 
 
 @router.get("/{key}/records/{rid}")
@@ -137,7 +148,7 @@ async def get_record(key: str, rid: uuid.UUID, db: AsyncSession = Depends(get_db
     except cos.COError as e:
         _fail(e)
     assoc = (await db.execute(select(CustomObjectAssociation).where(CustomObjectAssociation.record_id == r.id))).scalars()
-    return {**_rec_out(r), "associations": [{"id": str(a.id), "target_type": a.target_type, "target_id": str(a.target_id),
+    return {**_rec_out(r, await _rules(db, t, current_user)), "associations": [{"id": str(a.id), "target_type": a.target_type, "target_id": str(a.target_id),
                                              "label": a.label} for a in assoc]}
 
 
@@ -151,7 +162,8 @@ async def update_record(key: str, rid: uuid.UUID, body: RecordIn, db: AsyncSessi
         await db.rollback()
         _fail(e)
     await db.commit()
-    return _rec_out(r)
+    await db.refresh(r)
+    return _rec_out(r, await _rules(db, t, current_user))
 
 
 @router.delete("/{key}/records/{rid}")
@@ -208,6 +220,11 @@ async def export(key: str, db: AsyncSession = Depends(get_db), current_user=Depe
         _fail(e)
     rows = list((await db.execute(cos.visible(select(CustomObjectRecord).where(CustomObjectRecord.type_id == t.id), current_user)
                                   .order_by(CustomObjectRecord.display))).scalars())
+    hidden = {k for k, a in (await _rules(db, t, current_user)).items() if a == "HIDDEN"}
+    if hidden:                                 # M47.S01.T010: hidden columns are not exported
+        from types import SimpleNamespace
+        t = SimpleNamespace(fields=[f for f in t.fields if f["key"] not in hidden])
+        rows = [SimpleNamespace(id=r.id, data={k: v for k, v in r.data.items() if k not in hidden}) for r in rows]
     return PlainTextResponse(cos.export_csv(t, rows), media_type="text/csv",
                              headers={"Content-Disposition": f'attachment; filename="{key}.csv"'})
 
@@ -232,6 +249,8 @@ async def report(key: str, group_by: str, metric: Optional[str] = None, db: Asyn
                  current_user=Depends(get_current_user)):
     try:
         t = await cos.get_type(db, key, current_user)
+        if (await _rules(db, t, current_user)).get(group_by) == "HIDDEN" or (metric and (await _rules(db, t, current_user)).get(metric) == "HIDDEN"):
+            raise HTTPException(403, "This field is hidden for your role.")
         return await cos.report(db, t, current_user, group_by, metric)
     except cos.COError as e:
         _fail(e)

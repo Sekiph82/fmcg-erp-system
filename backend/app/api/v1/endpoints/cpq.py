@@ -202,3 +202,46 @@ async def credit_check(rid: uuid.UUID, db: AsyncSession = Depends(get_db)):
         return await cpq.verify_credit_note(db, rid)
     except cpq.CPQError as e:
         _fail(e)
+
+
+# ── M47.S01.T009 quote draft from a deal ─────────────────────────────────────
+
+@router.post("/deals/{record_id}/quote-draft")
+async def quote_draft(record_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    """Proposed lines (re-order of the last order, optional AI within budget); nothing is saved."""
+    from app.api.v1.endpoints.crm_pipeline import _scoped_record
+    _edit(current_user)
+    rec = await _scoped_record(db, record_id, current_user, "view")
+    try:
+        out = await cpq.propose_quote(db, rec)
+    except cpq.CPQError as e:
+        _fail(e)
+    await db.commit()                     # keeps an AI budget reservation, if one was made
+    return out
+
+
+class DraftLineIn(BaseModel):
+    product_id: uuid.UUID
+    qty: float = Field(gt=0, le=1_000_000)
+    unit: str = Field("PCS", max_length=20)
+    tax_rate: float = Field(0, ge=0, le=1)
+
+
+class DraftSaveIn(BaseModel):
+    lines: list[DraftLineIn] = Field(min_length=1, max_length=100)
+
+
+@router.post("/deals/{record_id}/quote-draft/save", status_code=201)
+async def save_quote_draft(record_id: uuid.UUID, body: DraftSaveIn, db: AsyncSession = Depends(get_db),
+                           current_user=Depends(get_current_user)):
+    """The rep saves the (edited) proposal: a DRAFT quotation priced from the price book; approvals apply, nothing is sent."""
+    from app.api.v1.endpoints.crm_pipeline import _scoped_record
+    _edit(current_user)
+    rec = await _scoped_record(db, record_id, current_user, "edit")
+    try:
+        q = await cpq.save_proposed_quote(db, rec, [l.model_dump() for l in body.lines], current_user)
+    except cpq.CPQError as e:
+        _fail(e)
+    pats.audit(db, current_user, "QUOTE_DRAFT_FROM_DEAL", "quotation", str(q.id), {"deal": str(rec.id), "lines": len(body.lines)})
+    await db.commit()
+    return {"id": str(q.id), "quote_no": q.quote_no, "status": "DRAFT", "grand_total": str(q.grand_total)}

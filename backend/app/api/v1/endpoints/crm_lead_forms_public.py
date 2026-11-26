@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,4 +42,37 @@ async def submit_public_form(slug: str, body: capture.LeadSubmission, request: R
         raise HTTPException(429, "Too many submissions; please try again later.")
     except capture.ConsentRequired:
         raise HTTPException(422, "Please accept the consent statement to send the form.")
+    except capture.MissingField as e:
+        raise HTTPException(422, str(e))
     return {"status": "received", "message": form.success_message or "Thank you — we will be in touch."}
+
+
+class KnownIn(BaseModel):
+    visitor: str = Field(min_length=16, max_length=64, pattern=r"^[A-Za-z0-9-]+$")
+
+
+KNOWN_LIMIT = (30, 600.0)            # lookups per client address per 10 minutes
+_known_hits: dict[str, list[float]] = {}
+
+
+def _known_limit(request: Request) -> None:
+    """ponytail: per-process memory window (like cms_public._limit); with several workers each keeps its own window."""
+    import time
+    key = capture.ip_hash(request.client.host if request.client else "unknown") or "unknown"
+    now = time.monotonic()
+    recent = [t for t in _known_hits.get(key, []) if t > now - KNOWN_LIMIT[1]]
+    if len(recent) >= KNOWN_LIMIT[0]:
+        raise HTTPException(429, "Too many requests; please try again later.")
+    recent.append(now)
+    _known_hits[key] = recent
+    if len(_known_hits) > 50_000:            # keep memory bounded
+        _known_hits.clear()
+
+
+@router.post("/{slug}/known")
+async def known_fields(slug: str, body: KnownIn, request: Request, db: AsyncSession = Depends(get_db)):
+    """M47.S01.T010 form shortening: the names of the fields this form may leave out for this visitor (only names,
+    never the stored values). The visitor id travels in the body, not the URL. Rate-limited per client address."""
+    _known_limit(request)
+    form = await _active_form(db, slug)
+    return {"omit": await capture.omitted(db, form, body.visitor)}

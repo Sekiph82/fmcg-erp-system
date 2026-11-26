@@ -17,7 +17,7 @@ COPY . .
 
 # Run as an unprivileged user; the document volume inherits this ownership on first mount.
 RUN useradd --create-home --uid 10001 erp \
-    && mkdir -p /var/lib/fmcg-erp/documents \
+    && mkdir -p /var/lib/fmcg-erp/documents /var/lib/fmcg-erp/media\
     && chown -R erp:erp /var/lib/fmcg-erp /app
 USER erp
 

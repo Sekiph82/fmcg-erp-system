@@ -5,6 +5,7 @@ import { BookingPagesPanel } from "@/components/BookingPagesPanel";
 import { EntityPicker } from "@/components/EntityPicker";
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
+import { MeetingRecap } from "@/components/sales/MeetingRecap";
 
 interface Meeting {
   id: string;
@@ -104,6 +105,7 @@ export default function MeetingsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
+  const [recapId, setRecapId] = useState<string | null>(null);
   const [editNotes, setEditNotes] = useState("");
   const [editOutcome, setEditOutcome] = useState("");
   const [info, setInfo] = useState("");
@@ -307,6 +309,10 @@ export default function MeetingsPage() {
                       </button>
                     </>
                   )}
+                  <button onClick={() => setRecapId(recapId === m.id ? null : m.id)}
+                    className="rounded border px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50">
+                    Brief &amp; recap
+                  </button>
                   {m.recording_url && (
                     <a href={m.recording_url} target="_blank" rel="noreferrer"
                       className="rounded border px-3 py-1.5 text-xs text-purple-600 hover:bg-purple-50 border-purple-200">
@@ -315,6 +321,8 @@ export default function MeetingsPage() {
                   )}
                 </div>
               </div>
+
+              {recapId === m.id && <MeetingRecap meetingId={m.id} canChange={!!m.can_change} />}
 
               {editId === m.id && (
                 <div className="mt-3 border-t pt-3 space-y-2">

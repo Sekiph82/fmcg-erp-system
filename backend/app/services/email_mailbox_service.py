@@ -467,6 +467,16 @@ async def send(db: AsyncSession, acc: EmailAccount, *, to: list[str], cc: list[s
     """Deliver through the mailbox's SMTP server, then store the message. Nothing is stored when delivery fails."""
     if not is_connected(acc):
         raise MailboxError("Connect this mailbox (Google, Microsoft or IMAP/SMTP) before sending; nothing was sent.")
+    # same suppression as the CRM outbox: unsubscribed / bounced / complained addresses get no mail of any kind
+    from app.models.crm import CRMContactConsent
+    from app.services.crm_outbound_service import SUPPRESSING, norm
+    addrs = {norm(a) for a in [*to, *cc] if a}
+    if addrs:
+        hit = (await db.execute(select(CRMContactConsent.email, CRMContactConsent.status).where(
+            CRMContactConsent.email.in_(addrs), CRMContactConsent.status.in_(SUPPRESSING))
+            .order_by(CRMContactConsent.email).limit(1))).first()
+        if hit:
+            raise MailboxInputError(f"Not sent: {hit[0]} is {hit[1].lower()} and receives no e-mail from us.")
     mime = MimeMessage()
     try:  # the e-mail policy refuses CR/LF in headers (no header injection); report it as bad input
         mime["From"] = f"{acc.display_name} <{acc.email_address}>" if acc.display_name else acc.email_address

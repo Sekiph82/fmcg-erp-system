@@ -234,6 +234,44 @@ cat backup.sql | docker exec -i <db_container> psql -U $POSTGRES_USER $POSTGRES_
 docker compose -f docker-compose.prod.yml start backend
 ```
 
+### What a complete backup contains (M47.S01.T003)
+
+A database dump alone is not a full backup.
+
+**What to back up, all from the same moment:**
+- The PostgreSQL dump.
+- The `documents_data` volume (`/var/lib/fmcg-erp/documents`): uploaded documents, PoD photos, contract PDFs.
+- The `media_data` volume (`/var/lib/fmcg-erp/media`): CMS video/audio, narration, posters, video messages.
+- The secrets, kept separately and offline:
+  - `SECRET_KEY` and `WEBHOOK_SECRET_ENCRYPTION_KEY`. Without them, encrypted columns (webhook secrets, provider tokens) cannot be decrypted after a restore. Signed links and sessions also become invalid.
+  - The `.env` used by the deployment.
+
+**Volume snapshot:**
+
+```bash
+docker run --rm -v fmcg-erp-system_documents_data:/d -v fmcg-erp-system_media_data:/m -v "$PWD":/out alpine \
+  tar czf /out/files_$(date +%Y%m%d).tgz -C / d m
+```
+
+**Restore safely:** stop on the first error, and restore into an empty database:
+
+```bash
+docker exec -i <db_container> psql -v ON_ERROR_STOP=1 -U $POSTGRES_USER $POSTGRES_DB < backup.sql
+```
+
+Use `pg_dump --clean --if-exists` when the dump is meant to replace an existing database.
+
+**Schedule:** run a nightly dump plus a files snapshot, keep 7 daily and 4 weekly copies off the host, and do a restore rehearsal every quarter.
+- The rehearsal script from M01 is the tested procedure.
+- Record each rehearsal under M47.S02.T009.
+
+### Production hardening notes
+
+- **`/metrics`:** answers only loopback callers unless `METRICS_TOKEN` is set; then it needs `Authorization: Bearer <token>`. Request labels are route templates, so link tokens never appear there.
+- **JSON request bodies:** capped at 12 MB.
+- **`/docs`, `/redoc`, `/openapi.json`:** still served in production. Block them at the reverse proxy if the API should not be self-describing to the internet.
+- **`FORWARDED_ALLOW_IPS`:** set it to the reverse proxy address. Otherwise every visitor shares one IP and the per-IP limits apply to everyone together. Several of these limits are per-worker memory windows, so with N workers the effective limit is N times higher.
+
 ---
 
 ## Health Endpoints

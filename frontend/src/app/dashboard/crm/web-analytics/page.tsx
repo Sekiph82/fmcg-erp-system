@@ -1,7 +1,8 @@
 "use client";
 // M44.S01.T009 first-party website analytics: consented visitors only, bots dropped, no IP or raw ids stored.
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
+import EventTags from "@/components/EventTags";
 
 interface Summary { visitors: number; sessions: number; page_views: number; identified_visitors: number; note: string;
   top_pages: [string, number][]; sources: [string, number][]; events: [string, number][] }
@@ -9,6 +10,8 @@ interface Step { step: string; visitors: number; of_previous: number | null }
 interface Journey { linked: boolean; first_touch: { source: string; medium: string | null; campaign: string | null; at: string } | null;
   events: { at: string; kind: string; name: string | null; path: string }[] }
 
+interface EventDef { id: string; name: string; description: string | null; properties: Record<string, string>; active: boolean }
+const parseProps = (t: string) => Object.fromEntries(t.split(",").map((x) => x.trim()).filter(Boolean).map((x) => { const [k, v] = x.split(":").map((y) => y.trim()); return [k, v || "string"]; }));
 const err = (e: unknown) => ((e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail as string) || "Request failed.";
 
 function List({ title, rows }: { title: string; rows: [string, number][] }) {
@@ -29,6 +32,16 @@ export default function WebAnalyticsPage() {
   const [email, setEmail] = useState("");
   const [journey, setJourney] = useState<Journey | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [defs, setDefs] = useState<EventDef[]>([]);
+  const [edit, setEdit] = useState<{ id?: string; name: string; description: string; props: string; active: boolean }>({ name: "", description: "", props: "", active: true });
+  const loadDefs = useCallback(() => apiClient.get("/api/v1/web-analytics/event-definitions").then((r) => setDefs(r.data)).catch(() => setDefs([])), []);
+  useEffect(() => { loadDefs(); }, [loadDefs]);
+  const saveDef = async () => {
+    setMsg(null);
+    const body = { name: edit.name, description: edit.description || null, properties: parseProps(edit.props), active: edit.active };
+    try { await (edit.id ? apiClient.put(`/api/v1/web-analytics/event-definitions/${edit.id}`, body) : apiClient.post("/api/v1/web-analytics/event-definitions", body));
+      setEdit({ name: "", description: "", props: "", active: true }); loadDefs(); } catch (x) { setMsg(err(x)); }
+  };
   useEffect(() => { setSum(null); apiClient.get(`/api/v1/web-analytics/summary?days=${days}`).then((r) => setSum(r.data)).catch((e) => setMsg(err(e))); }, [days]);
   const api = typeof window !== "undefined" ? (process.env.NEXT_PUBLIC_API_URL || window.location.origin) : "";
   return (
@@ -64,10 +77,27 @@ export default function WebAnalyticsPage() {
           {journey.first_touch && <p className="text-xs">First touch: <b>{journey.first_touch.source}</b>{journey.first_touch.campaign ? ` / ${journey.first_touch.campaign}` : ""} on {new Date(journey.first_touch.at).toLocaleString()}</p>}
           <ul className="text-xs max-h-60 overflow-auto">{journey.events.map((ev, i) => <li key={i}>{new Date(ev.at).toLocaleString()} · {ev.kind}{ev.name ? `:${ev.name}` : ""} · {ev.path}</li>)}</ul></>)}
       </form>
+      <section className="border rounded p-3 bg-white space-y-2">
+        <h3 className="font-semibold">Custom event definitions</h3>
+        <p className="text-xs text-gray-500">Custom events sent by the site keep only the properties defined here (wrong type or unknown: dropped). Defined events can start CRM workflows (identified visitors) and be used in audiences. Consent rules are unchanged.</p>
+        <ul className="text-xs divide-y">{defs.map((d) => <li key={d.id} className="py-1 flex flex-wrap justify-between gap-2">
+          <span><b>{d.name}</b>{d.active ? "" : " (inactive)"} · {Object.entries(d.properties).map(([k, t]) => `${k}: ${t}`).join(", ") || "no properties"}{d.description ? ` · ${d.description}` : ""}</span>
+          <button className="underline" onClick={() => setEdit({ id: d.id, name: d.name, description: d.description ?? "", props: Object.entries(d.properties).map(([k, t]) => `${k}:${t}`).join(", "), active: d.active })}>Edit</button></li>)}
+          {defs.length === 0 && <li className="py-1 text-gray-500">No events defined yet.</li>}</ul>
+        <form className="grid gap-2 sm:grid-cols-2" onSubmit={(e) => { e.preventDefault(); saveDef(); }}>
+          <input aria-label="Event name" required placeholder="event name, e.g. demo_requested" className="border rounded px-2 py-1" value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} />
+          <input aria-label="Event description" placeholder="description" className="border rounded px-2 py-1" value={edit.description} onChange={(e) => setEdit({ ...edit, description: e.target.value })} />
+          <input aria-label="Event properties" placeholder="product:string, cartons:number, trial:boolean" className="border rounded px-2 py-1 sm:col-span-2" value={edit.props} onChange={(e) => setEdit({ ...edit, props: e.target.value })} />
+          <label className="text-xs flex items-center gap-2"><input type="checkbox" checked={edit.active} onChange={(e) => setEdit({ ...edit, active: e.target.checked })} /> Active</label>
+          <div className="flex gap-2 justify-end"><button className="border rounded px-3 py-1">{edit.id ? "Save changes" : "Add event"}</button>
+            {edit.id && <button type="button" className="text-xs underline" onClick={() => setEdit({ name: "", description: "", props: "", active: true })}>Cancel</button>}</div>
+        </form>
+      </section>
       <details className="border rounded p-3 bg-white"><summary className="font-semibold cursor-pointer">Install on the website</summary>
         <pre className="text-xs overflow-x-auto mt-2">{`<script src="${typeof window !== "undefined" ? window.location.origin : ""}/povu-analytics.js" data-api="${api}" defer></script>`}</pre>
         <p className="text-xs text-gray-500">Shows a cookie banner (necessary / analytics / marketing). Nothing is sent before the visitor chooses. Mark buttons with data-povu-cta=&quot;name&quot; and forms with data-povu-form=&quot;name&quot;.</p>
       </details>
+      <EventTags events={defs.filter((d) => d.active).map((d) => d.name)} />
     </div>
   );
 }

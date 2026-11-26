@@ -16,6 +16,8 @@ import {
   isItemActive,
 } from "./nav-config";
 import { NotificationBell } from "./NotificationBell";
+import LanguageSwitcher from "./LanguageSwitcher";
+import { MESSAGES, useI18n } from "@/lib/i18n";
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
 
@@ -29,6 +31,14 @@ function testIdPart(value: string) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
+
+// M47.S01.T011: nav labels translate by a stable key (entry id; href slug for child items).
+// An entry without a catalog key keeps its English label, so new nav entries never break.
+function navLabel(t: (key: string) => string, key: string, fallback: string) {
+  const k = `staff.nav.${key}`;
+  return k in MESSAGES.en ? t(k) : fallback;
+}
+const childKey = (href: string) => testIdPart(href.replace(/^\/dashboard/, "")) || "dashboard";
 
 // ── Pre-process NAV_CONFIG into grouped structure (runs once at module level) ─
 
@@ -125,10 +135,11 @@ function Avatar({ name }: { name: string }) {
 // ── Collapse toggle ───────────────────────────────────────────────────────────
 
 function CollapseToggle({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
+  const { t } = useI18n();
   return (
     <button
       onClick={onToggle}
-      title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      title={collapsed ? t("staff.shell.expandSidebar") : t("staff.shell.collapseSidebar")}
       className="flex h-7 w-7 items-center justify-center rounded-md text-slate-600 hover:bg-white/[0.07] hover:text-slate-300 transition-colors"
     >
       <svg className="h-[15px] w-[15px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,12 +164,14 @@ function StandaloneLink({
   hasPermission: (code: string) => boolean;
   onNavigate: () => void;
 }) {
+  const { t } = useI18n();
   if (entry.permission && !hasPermission(entry.permission)) return null;
   const active = isItemActive(entry.href, pathname);
+  const label = navLabel(t, entry.id, entry.label);
 
   if (collapsed) {
     return (
-      <Tooltip label={entry.label}>
+      <Tooltip label={label}>
         <Link
           href={entry.href}
           onClick={onNavigate}
@@ -193,8 +206,8 @@ function StandaloneLink({
         textShadow: "0 0 8px rgba(0,200,255,0.35)",
       } : undefined}
     >
-      <span className={active ? "text-cyan-300" : "text-slate-500"}>{entry.icon}</span>
-      {entry.label}
+      <span className={active ? "text-cyan-300 shrink-0" : "text-slate-500 shrink-0"}>{entry.icon}</span>
+      <span className="truncate" title={label}>{label}</span>
     </Link>
   );
 }
@@ -211,7 +224,9 @@ function SectionAccordion({
   hasPermission: (code: string) => boolean;
   onNavigate: () => void;
 }) {
+  const { t } = useI18n();
   if (section.permission && !hasPermission(section.permission)) return null;
+  const sectionLabel = navLabel(t, section.id, section.label);
   const visibleItems = section.items.filter(
     (item) => item.permission
       ? hasPermission(item.permission)
@@ -245,8 +260,8 @@ function SectionAccordion({
         >
           {section.icon}
         </span>
-        <span className="flex-1 text-[12px] font-medium leading-none truncate">
-          {section.label}
+        <span className="flex-1 text-[12px] font-medium leading-none truncate" title={sectionLabel}>
+          {sectionLabel}
         </span>
         {hasActiveChild && !isExpanded && (
           <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
@@ -273,6 +288,7 @@ function SectionAccordion({
           <div className="pb-0.5 pt-0.5">
             {visibleItems.map((item) => {
               const active = isItemActive(item.href, pathname);
+              const itemLabel = navLabel(t, childKey(item.href), item.label);
               return (
                 <Link
                   key={item.href}
@@ -291,7 +307,7 @@ function SectionAccordion({
                     textShadow: "0 0 8px rgba(0,200,255,0.35)",
                   } : undefined}
                 >
-                  {item.label}
+                  <span className="truncate" title={itemLabel}>{itemLabel}</span>
                 </Link>
               );
             })}
@@ -321,6 +337,8 @@ function ClusterAccordion({
   data, isExpanded, expandedSection, onToggleCluster, onToggleSection,
   collapsed, pathname, hasPermission, onExpandSidebar, onNavigate,
 }: ClusterAccordionProps) {
+  const { t } = useI18n();
+  const clusterLabel = navLabel(t, data.clusterId, data.label);
   const visibleSections = data.sections.filter((sec) =>
     (!sec.permission || hasPermission(sec.permission)) &&
     sec.items.some((item) =>
@@ -355,7 +373,7 @@ function ClusterAccordion({
   // ── Collapsed icon rail (sidebar fully collapsed) ─────────────────────────
   if (collapsed) {
     return (
-      <Tooltip label={data.label}>
+      <Tooltip label={clusterLabel}>
         <button
           onClick={() => {
             onExpandSidebar();
@@ -402,8 +420,8 @@ function ClusterAccordion({
         </span>
 
         {/* Cluster label */}
-        <span className="flex-1 text-[12.5px] font-semibold leading-none truncate">
-          {data.label}
+        <span className="flex-1 text-[12.5px] font-semibold leading-none truncate" title={clusterLabel}>
+          {clusterLabel}
         </span>
 
         {/* Active indicator dot — shows when cluster is closed but has active child */}
@@ -434,6 +452,7 @@ function ClusterAccordion({
           <div className="pb-1 pt-0.5 ml-[3px] border-l border-white/[0.06]">
             {visibleWorkspaces.map((ws) => {
               const active = isItemActive(ws.href, pathname);
+              const wsLabel = navLabel(t, ws.id, ws.label);
               return (
                 <Link
                   key={ws.id}
@@ -453,7 +472,7 @@ function ClusterAccordion({
                   } : undefined}
                 >
                   <span className={active ? "text-cyan-300 shrink-0" : "text-slate-500 shrink-0"}>{ws.icon}</span>
-                  {ws.label}
+                  <span className="truncate" title={wsLabel}>{wsLabel}</span>
                 </Link>
               );
             })}
@@ -485,6 +504,7 @@ interface SidebarProps {
 
 export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProps) {
   const pathname = usePathname();
+  const { t } = useI18n();
   const { user, logout, hasPermission } = useAuth();
   const { data: moduleManifest } = useQuery({
     queryKey: ["module-manifest"],
@@ -608,7 +628,7 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
         ].join(" ")}
       >
         {collapsed ? (
-          <button onClick={expandSidebar} title="Expand sidebar" className="group flex items-center justify-center">
+          <button onClick={expandSidebar} title={t("staff.shell.expandSidebar")} className="group flex items-center justify-center">
             {/* POVU logo icon — circular crop in collapsed mode */}
             <div className="relative h-8 w-8 rounded-lg overflow-hidden shadow-lg group-hover:opacity-90 transition-opacity">
               <Image
@@ -635,7 +655,7 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
               </div>
               <div className="min-w-0 leading-none">
                 <p className="text-[13px] font-semibold text-white tracking-tight truncate">POVU ERP</p>
-                <p className="text-[10px] text-slate-500 tracking-wide mt-[3px] truncate">Enterprise Suite</p>
+                <p className="text-[10px] text-slate-500 tracking-wide mt-[3px] truncate">{t("staff.shell.tagline")}</p>
               </div>
             </div>
             <CollapseToggle collapsed={collapsed} onToggle={toggleCollapsed} />
@@ -653,14 +673,14 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
             <svg className="h-3.5 w-3.5 shrink-0 text-slate-600 group-hover:text-slate-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
-            <span className="flex-1 text-left truncate">Search…</span>
+            <span className="flex-1 text-left truncate">{t("staff.shell.search")}</span>
             <kbd className="text-[9px] font-mono bg-white/[0.04] border border-white/[0.07] rounded px-1 py-0.5 text-slate-600 shrink-0">⌘K</kbd>
           </button>
         </div>
       )}
       {onOpenSearch && collapsed && (
         <div className="px-[7px] pt-1.5 pb-0.5 shrink-0 flex justify-center">
-          <Tooltip label="Search (Ctrl+K)">
+          <Tooltip label={t("staff.shell.searchShortcut")}>
             <button
               onClick={onOpenSearch}
               className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-white/[0.06] hover:text-slate-300 border border-transparent transition-all"
@@ -730,15 +750,16 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
       >
         {collapsed ? (
           <>
-            <Tooltip label={user?.full_name ?? "User"}>
+            <Tooltip label={user?.full_name ?? t("staff.shell.user")}>
               <div className="cursor-default"><Avatar name={user?.full_name ?? "?"} /></div>
             </Tooltip>
-            <Tooltip label="Notifications">
+            <Tooltip label={t("staff.shell.notifications")}>
               <NotificationBell compact />
             </Tooltip>
-            <Tooltip label="Sign out">
+            <Tooltip label={t("common.signOut")}>
               <button
                 onClick={logout}
+                aria-label={t("common.signOut")}
                 className="flex h-7 w-7 items-center justify-center rounded-md text-slate-600 hover:bg-white/[0.06] hover:text-red-400 transition-colors"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -747,8 +768,12 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
                 </svg>
               </button>
             </Tooltip>
+            <Tooltip label={t("common.language")}>
+              <LanguageSwitcher className="w-full [&_select]:w-[38px] [&_select]:text-[10px]" />
+            </Tooltip>
           </>
         ) : (
+          <>
           <div className="flex items-center gap-2.5">
             <Avatar name={user?.full_name ?? "?"} />
             <div className="min-w-0 flex-1 leading-none">
@@ -758,7 +783,8 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
             <NotificationBell compact />
             <button
               onClick={logout}
-              title="Sign out"
+              title={t("common.signOut")}
+              aria-label={t("common.signOut")}
               className="shrink-0 rounded-md p-[5px] text-slate-600 hover:bg-white/[0.07] hover:text-red-400 transition-colors"
             >
               <svg className="h-[14px] w-[14px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -767,6 +793,8 @@ export function Sidebar({ mobileOpen, onMobileClose, onOpenSearch }: SidebarProp
               </svg>
             </button>
           </div>
+          <LanguageSwitcher className="mt-2 w-full [&_select]:w-full [&_select]:min-w-0" />
+          </>
         )}
       </div>
     </aside>

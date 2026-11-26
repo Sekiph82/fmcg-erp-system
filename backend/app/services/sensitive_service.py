@@ -107,3 +107,74 @@ async def apply_retention(db: AsyncSession, now: Optional[datetime] = None) -> i
                                .values({sf.field: None}))
         n += res.rowcount or 0
     return n
+
+
+# ── M47.S01.T010 field-level permissions ─────────────────────────────────────
+# Rules: role name → field key → HIDDEN (removed from reads, writes refused) or READ_ONLY (shown, writes refused), for
+# CRM contacts ("contact": standard fields and contact properties) and custom objects ("co:<type key>"). A user with
+# several roles gets the strictest rule of any of them. Superusers and data administrators (roles.manage) are exempt.
+ACCESS = ("HIDDEN", "READ_ONLY")
+CONTACT_FIELDS = ("full_name", "email", "phone", "job_title", "lifecycle_stage", "language", "owner_user_id",
+                  "company_id", "source", "notes")
+_KEY_RE = r"^[a-z][a-z0-9_]{0,59}$"
+
+
+def fp_exempt(user) -> bool:
+    from app.core.access_control import has_any_permission
+    return bool(getattr(user, "is_superuser", False) or has_any_permission(user, ("roles.manage",)))
+
+
+def _role_names(user) -> set[str]:
+    return {r.name for r in getattr(user, "roles", []) or [] if getattr(r, "is_active", True)}
+
+
+async def field_rules(db: AsyncSession, entity: str, user) -> dict[str, str]:
+    """{field_key: HIDDEN | READ_ONLY} that apply to this user (empty when exempt)."""
+    from app.models.m47_platform import FieldPermissionRule
+    roles = _role_names(user)
+    if fp_exempt(user) or not roles:
+        return {}
+    out: dict[str, str] = {}
+    for r in (await db.execute(select(FieldPermissionRule).where(FieldPermissionRule.entity == entity,
+                                                                 FieldPermissionRule.role_name.in_(roles)))).scalars():
+        if out.get(r.field_key) != "HIDDEN":
+            out[r.field_key] = r.access
+    return out
+
+
+def strip_hidden(data: dict, rules: dict[str, str]) -> dict:
+    """Remove hidden keys (in place) from a response dict and from its nested "properties" / "data" dicts."""
+    hidden = [k for k, a in rules.items() if a == "HIDDEN"]
+    for d in (data, data.get("properties"), data.get("data")):
+        if isinstance(d, dict):
+            for k in hidden:
+                d.pop(k, None)
+    if hidden:
+        data["hidden_fields"] = sorted(hidden)
+    return data
+
+
+def check_write(rules: dict[str, str], new: dict, old: dict) -> None:
+    """Refuse a change to a restricted field (sending the unchanged value back is fine)."""
+    bad = sorted(k for k in rules if k in new and new[k] != old.get(k))
+    if bad:
+        raise PermissionError(f"You may not change: {', '.join(bad)}.")
+
+
+async def validate_rule(db: AsyncSession, entity: str, field_key: str, access: str) -> None:
+    import re
+    if access not in ACCESS:
+        raise ValueError("access must be HIDDEN or READ_ONLY.")
+    if not re.fullmatch(_KEY_RE, field_key or ""):
+        raise ValueError("Invalid field key.")
+    if entity == "contact":
+        return                                   # standard fields or contact properties (any well-formed key)
+    if entity.startswith("co:"):
+        from app.models.custom_objects import CustomObjectType
+        t = (await db.execute(select(CustomObjectType).where(CustomObjectType.key == entity[3:]))).scalar_one_or_none()
+        if t is None:
+            raise ValueError("Unknown custom object type.")
+        if field_key not in {f["key"] for f in t.fields}:
+            raise ValueError("This object type has no such field.")
+        return
+    raise ValueError("entity must be 'contact' or 'co:<object key>'.")

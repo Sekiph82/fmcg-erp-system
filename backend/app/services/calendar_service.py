@@ -2,7 +2,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Optional, List, Tuple
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func, or_
 from sqlalchemy.orm import selectinload
 from app.models.calendar import (
     CalendarResource, CalendarEvent, EventParticipant,
@@ -183,12 +183,20 @@ async def list_events(
     end: Optional[datetime] = None,
     event_type: Optional[str] = None,
     status: Optional[str] = None,
+    viewer=None,
 ) -> list:
+    """viewer=None: internal caller, every event in full. With a viewer: only events they organise or attend, unless
+    they are a calendar admin, who also sees the others' events with private fields removed."""
     q = select(CalendarEvent).options(
         selectinload(CalendarEvent.participants),
         selectinload(CalendarEvent.bookings),
         selectinload(CalendarEvent.recurrence),
     )
+    if viewer is not None and not sees_all(viewer):
+        uid, email = str(viewer.id), (getattr(viewer, "email", None) or "").strip().lower()
+        who = [EventParticipant.user_id == uid] + ([func.lower(EventParticipant.participant_email) == email] if email else [])
+        attends = select(EventParticipant.event_id).where(or_(*who))
+        q = q.where(or_(CalendarEvent.created_by.in_((viewer.username, uid)), CalendarEvent.event_id.in_(attends)))
     if start:
         q = q.where(CalendarEvent.end_datetime >= start)
     if end:
@@ -200,16 +208,39 @@ async def list_events(
     result = await db.execute(q.order_by(CalendarEvent.start_datetime))
     events = result.scalars().all()
 
-    if start and end:
-        direct = [e for e in events if not e.recurrence_id]
-        recurring = [e for e in events if e.recurrence_id]
-        virtual = []
-        for ev in recurring:
-            if ev.recurrence:
-                virtual.extend(_generate_occurrences(ev, ev.recurrence, start, end))
-        return [_event_to_dict(e) for e in direct] + virtual
+    def rows(es):
+        if not (start and end):
+            out = [_event_to_dict(e) for e in es]
+        else:
+            out = [_event_to_dict(e) for e in es if not e.recurrence_id]
+            for ev in es:
+                if ev.recurrence_id and ev.recurrence:
+                    out.extend(_generate_occurrences(ev, ev.recurrence, start, end))
+        return out
 
-    return [_event_to_dict(e) for e in events]
+    if viewer is None:
+        return rows(events)
+    return rows([e for e in events if is_mine(e, viewer)]) + [redact(r) for r in rows([e for e in events if not is_mine(e, viewer)])]
+
+
+CAL_ADMIN_PERMS = ("company.edit", "company.manage", "users.edit")   # same rights as the endpoint's CAL_ADMIN
+PRIVATE_FIELDS = ("description", "location", "source_module", "source_ref_id")
+
+
+def sees_all(user) -> bool:
+    from app.core.access_control import has_any_permission
+    return bool(getattr(user, "is_superuser", False)) or has_any_permission(user, CAL_ADMIN_PERMS)
+
+
+def is_mine(e: CalendarEvent, user) -> bool:
+    uid, email = str(user.id), (getattr(user, "email", None) or "").strip().lower()
+    return e.created_by in (user.username, uid) or any(
+        p.user_id == uid or (email and (p.participant_email or "").strip().lower() == email) for p in (e.participants or []))
+
+
+def redact(row: dict) -> dict:
+    """Someone else's event seen by a calendar admin: time, title, type, status and organiser only."""
+    return {**row, **{k: None for k in PRIVATE_FIELDS}, "participants": [], "bookings": [], "redacted": True}
 
 
 def _event_to_dict(e: CalendarEvent) -> dict:

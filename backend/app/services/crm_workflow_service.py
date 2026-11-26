@@ -8,13 +8,28 @@ walks the graph against a real record without changing anything.
 
 Runs start from new CRM events (stage history after the version was published), advance node by node, wait on
 delays (resume time) and approvals, and record every step in the run log.
+
+M47.S01.T008 adds three trigger kinds besides CRM events:
+- "scheduled": daily / weekly at a local time, or relative to a date property of the record (N days before/after,
+  e.g. expected close date). Each tick enrols the open records matching the optional filter once per occurrence:
+  the run's event key names the occurrence and the record, and (version, event key) is unique (the idempotent ledger).
+  Only the latest occurrence is considered (a server down for several days does not replay every missed one).
+- "inbound_webhook": a random token (shown once, stored as SHA-256) lets a system POST {event_id, record_id|email};
+  the event id is the event key, so a replayed call enrols once.
+- "web_event": a defined custom website event of an identified visitor (marketing consent) enrols the CRM record
+  whose contact e-mail is the visitor's.
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
+import re
+import secrets
 import uuid
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from typing import Optional
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
@@ -27,6 +42,14 @@ NODE_TYPES = ("trigger", "condition", "delay", "approval", "action", "end")
 MAX_NODES = 60
 MAX_STEPS_PER_TICK = 25
 MAX_RUNS_PER_RECORD_HOUR = 10   # runaway protection: a record flipping stages does not fire endlessly
+EXTRA_TRIGGERS = ("scheduled", "inbound_webhook", "web_event")   # M47.S01.T008 (designer only, not the rule store)
+WORKFLOW_TRIGGERS = (*auto.TRIGGERS, *EXTRA_TRIGGERS)
+SCHEDULE_KINDS = ("daily", "weekly", "relative")
+DATE_PROPERTIES = ("expected_close_date", "next_action_date", "qualified_date", "converted_date")
+DEFAULT_TZ = "Africa/Nairobi"
+MAX_SCHEDULED_PER_OCCURRENCE = 500
+TIME_RE = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+EVENT_NAME_RE = re.compile(r"^[A-Za-z0-9_.:-]{1,100}$")
 
 
 class WorkflowError(Exception):
@@ -58,8 +81,13 @@ def validate(graph: dict) -> list[str]:
         if t not in NODE_TYPES:
             errs.append(f"{n.get('id')}: unknown step type {t}.")
             continue
-        if t == "trigger" and cfg.get("event") not in auto.TRIGGERS:
-            errs.append(f"{n['id']}: trigger event must be one of {', '.join(auto.TRIGGERS)}.")
+        if t == "trigger":
+            if cfg.get("event") not in WORKFLOW_TRIGGERS:
+                errs.append(f"{n['id']}: trigger event must be one of {', '.join(WORKFLOW_TRIGGERS)}.")
+            elif cfg["event"] == "scheduled":
+                errs += [f"{n['id']}: {p}" for p in schedule_problems(cfg.get("schedule"))]
+            elif cfg["event"] == "web_event" and not EVENT_NAME_RE.fullmatch(str(cfg.get("name") or "")):
+                errs.append(f"{n['id']}: a web event trigger needs the name of a defined event.")
         if t == "condition":
             if cfg.get("field") not in auto.CONDITION_FIELDS or cfg.get("operator") not in ("eq", "in", "gte"):
                 errs.append(f"{n['id']}: condition needs a field ({', '.join(auto.CONDITION_FIELDS)}) and operator eq/in/gte.")
@@ -111,6 +139,44 @@ def validate(graph: dict) -> list[str]:
     return errs
 
 
+def schedule_problems(sch) -> list[str]:
+    if not isinstance(sch, dict) or sch.get("kind") not in SCHEDULE_KINDS:
+        return [f"schedule kind must be one of {', '.join(SCHEDULE_KINDS)}."]
+    errs = []
+    if not TIME_RE.fullmatch(str(sch.get("time") or "")):
+        errs.append("schedule time must be HH:MM (24 h).")
+    try:
+        ZoneInfo(str(sch.get("tz") or DEFAULT_TZ))
+    except (ZoneInfoNotFoundError, ValueError):
+        errs.append("unknown time zone.")
+    if sch["kind"] == "weekly" and not (isinstance(sch.get("weekday"), int) and 0 <= sch["weekday"] <= 6):
+        errs.append("weekly schedule needs weekday 0 (Monday) .. 6 (Sunday).")
+    if sch["kind"] == "relative":
+        if sch.get("property") not in DATE_PROPERTIES:
+            errs.append(f"relative schedule needs a date property: {', '.join(DATE_PROPERTIES)}.")
+        if not (isinstance(sch.get("offset_days"), int) and -365 <= sch["offset_days"] <= 365):
+            errs.append("offset_days must be -365..365 (negative = before the date).")
+    m = sch.get("match")
+    if m and (not isinstance(m, dict) or m.get("field") not in auto.CONDITION_FIELDS or m.get("operator") not in ("eq", "in", "gte")):
+        errs.append(f"schedule filter needs a field ({', '.join(auto.CONDITION_FIELDS)}) and operator eq/in/gte.")
+    return errs
+
+
+def occurrence(sch: dict, now: datetime) -> datetime:
+    """The latest scheduled instant at or before `now` (UTC)."""
+    tz = ZoneInfo(str(sch.get("tz") or DEFAULT_TZ))
+    local = now.astimezone(tz)
+    hh, mm = (int(x) for x in sch["time"].split(":"))
+    at = local.replace(hour=hh, minute=mm, second=0, microsecond=0)
+    if sch["kind"] == "weekly":
+        at -= timedelta(days=(at.weekday() - sch["weekday"]) % 7)
+        if at > local:
+            at -= timedelta(days=7)
+    elif at > local:
+        at -= timedelta(days=1)
+    return at.astimezone(timezone.utc)
+
+
 def _next(graph: dict, node_id: str, branch: Optional[str] = None) -> Optional[str]:
     for e in graph["edges"]:
         if e["from"] == node_id and (branch is None or e.get("branch") == branch):
@@ -145,7 +211,7 @@ async def simulate(db: AsyncSession, graph: dict, record: CRMRecord, approvals: 
     while node:
         t, cfg = node["type"], node.get("config") or {}
         if t == "trigger":
-            steps.append({"node": node["id"], "type": t, "note": f"on {cfg['event']}"})
+            steps.append({"node": node["id"], "type": t, "note": f"on {cfg['event']}" + (f" {cfg['name']}" if cfg.get("name") else "")})
             nid = _next(graph, node["id"])
         elif t == "condition":
             ok = _condition(cfg, record, stage)
@@ -180,8 +246,19 @@ async def recipient_problems(db: AsyncSession, graph: dict) -> list[str]:
     return out
 
 
+async def trigger_problems(db: AsyncSession, graph: dict) -> list[str]:
+    """A web-event trigger must name an active event definition."""
+    trig = next((n for n in graph.get("nodes", []) if isinstance(n, dict) and n.get("type") == "trigger"), None)
+    cfg = (trig or {}).get("config") or {}
+    if cfg.get("event") == "web_event":
+        from app.services.web_analytics_service import definitions
+        if cfg.get("name") not in await definitions(db):
+            return [f"{trig['id']}: '{cfg.get('name')}' is not an active web event definition."]
+    return []
+
+
 async def publish(db: AsyncSession, version: CRMWorkflowVersion, user) -> None:
-    problems = validate(version.graph) or await recipient_problems(db, version.graph)
+    problems = validate(version.graph) or await recipient_problems(db, version.graph) or await trigger_problems(db, version.graph)
     if problems:
         raise WorkflowError(422, problems)
     wf = await db.get(CRMWorkflow, version.workflow_id)
@@ -215,27 +292,156 @@ async def enqueue(db: AsyncSession, now: Optional[datetime] = None) -> int:
     return created
 
 
+async def start_run(db: AsyncSession, ver: CRMWorkflowVersion, record_id: uuid.UUID, event_key: str,
+                    now: datetime) -> Optional[uuid.UUID]:
+    """Insert a run unless this (version, event key) already ran or the record hit the hourly cap. Returns the new id."""
+    recent = (await db.execute(select(func.count()).select_from(CRMWorkflowRun).where(
+        CRMWorkflowRun.version_id == ver.id, CRMWorkflowRun.crm_record_id == record_id,
+        CRMWorkflowRun.created_at >= now - timedelta(hours=1)))).scalar_one()
+    if recent >= MAX_RUNS_PER_RECORD_HOUR:
+        return None
+    trig = next(n for n in ver.graph["nodes"] if n["type"] == "trigger")
+    res = await db.execute(insert(CRMWorkflowRun).values(
+        id=uuid.uuid4(), version_id=ver.id, crm_record_id=record_id, event_key=event_key[:120],
+        current_node=_next(ver.graph, trig["id"]), status="RUNNING", resume_at=now, log=[], created_at=now
+    ).on_conflict_do_nothing(constraint="uq_crm_workflow_run_event").returning(CRMWorkflowRun.id))
+    return res.scalar_one_or_none()
+
+
 async def _enqueue_one(db: AsyncSession, wf, ver, now: datetime) -> int:
     made = 0
     since = max(auto._aware(ver.published_at), auto._aware(wf.enqueued_until) - auto.WATERMARK_OVERLAP) if wf.enqueued_until else auto._aware(ver.published_at)
     since = max(since, auto._aware(ver.published_at))
-    hist = (await db.execute(select(CRMStageHistory).where(CRMStageHistory.changed_at >= since))).scalars().all()
-    trig = next(n for n in ver.graph["nodes"] if n["type"] == "trigger")
-    for h in hist:
-        if wf.trigger_event not in auto._events(h):
-            continue
-        recent = (await db.execute(select(func.count()).select_from(CRMWorkflowRun).where(
-            CRMWorkflowRun.version_id == ver.id, CRMWorkflowRun.crm_record_id == h.crm_record_id,
-            CRMWorkflowRun.created_at >= now - timedelta(hours=1)))).scalar_one()
-        if recent >= MAX_RUNS_PER_RECORD_HOUR:
-            continue
-        res = await db.execute(insert(CRMWorkflowRun).values(
-            id=uuid.uuid4(), version_id=ver.id, crm_record_id=h.crm_record_id, event_key=f"{wf.trigger_event}:{h.id}",
-            current_node=_next(ver.graph, trig["id"]), status="RUNNING", resume_at=now, log=[], created_at=now
-        ).on_conflict_do_nothing(constraint="uq_crm_workflow_run_event"))
-        made += res.rowcount or 0
+    cfg = next(n for n in ver.graph["nodes"] if n["type"] == "trigger").get("config") or {}
+    if wf.trigger_event == "scheduled":
+        made = await _enqueue_scheduled(db, ver, cfg["schedule"], now)
+    elif wf.trigger_event == "web_event":
+        made = await _enqueue_web(db, ver, cfg["name"], since, now)
+    elif wf.trigger_event in auto.TRIGGERS:   # inbound_webhook runs start from the public endpoint instead
+        hist = (await db.execute(select(CRMStageHistory).where(CRMStageHistory.changed_at >= since))).scalars().all()
+        for h in hist:
+            if wf.trigger_event in auto._events(h):
+                made += 1 if await start_run(db, ver, h.crm_record_id, f"{wf.trigger_event}:{h.id}", now) else 0
     wf.enqueued_until = now
     return made
+
+
+async def _enqueue_scheduled(db: AsyncSession, ver, sch: dict, now: datetime) -> int:
+    from app.models.crm import CRMStatus
+    occ = occurrence(sch, now)
+    if occ < auto._aware(ver.published_at):          # never fire an occurrence from before the version went live
+        return 0
+    q = select(CRMRecord).where(CRMRecord.status == CRMStatus.OPEN)
+    if sch["kind"] == "relative":
+        target = occ.astimezone(ZoneInfo(str(sch.get("tz") or DEFAULT_TZ))).date() - timedelta(days=sch["offset_days"])
+        q = q.where(getattr(CRMRecord, sch["property"]) == target)
+    made, m = 0, sch.get("match")
+    # ponytail: at most 500 records per occurrence; page through the rest if schedules must reach bigger pipelines
+    for record in (await db.execute(q.order_by(CRMRecord.id).limit(MAX_SCHEDULED_PER_OCCURRENCE))).scalars():
+        if m and not _condition(m, record, await _stage_code(db, record)):
+            continue
+        if sch["kind"] == "relative":
+            key = f"rel:{sch['property']}:{getattr(record, sch['property']).isoformat()}:{record.id}"
+        else:
+            key = f"sched:{occ:%Y%m%dT%H%M}:{record.id}"
+        made += 1 if await start_run(db, ver, record.id, key, now) else 0
+    return made
+
+
+async def record_for_email(db: AsyncSession, email: str) -> Optional[uuid.UUID]:
+    """The CRM record whose contact e-mail this is (open records first, then the most recently updated)."""
+    from app.models.crm import CRMStatus
+    if not email or not email.strip():
+        return None
+    return (await db.execute(select(CRMRecord.id).where(func.lower(CRMRecord.contact_email) == email.strip().lower())
+                             .order_by((CRMRecord.status == CRMStatus.OPEN).desc(), CRMRecord.updated_at.desc().nulls_last())
+                             .limit(1))).scalar_one_or_none()
+
+
+async def _enqueue_web(db: AsyncSession, ver, name: str, since: datetime, now: datetime) -> int:
+    """Defined custom events of identified visitors (an identity exists only with marketing consent)."""
+    from app.models.crm import WebEvent, WebIdentity
+    from app.services.web_analytics_service import definitions
+    if name not in await definitions(db):            # definition deactivated: the trigger pauses
+        return 0
+    rows = (await db.execute(select(WebEvent.id, WebIdentity.email).join(
+        WebIdentity, WebIdentity.visitor_hash == WebEvent.visitor_hash).where(
+        WebEvent.kind == "CUSTOM", WebEvent.name == name, WebEvent.occurred_at >= since).limit(2000))).all()
+    made = 0
+    for eid, email in rows:
+        rid = await record_for_email(db, email)
+        if rid:
+            made += 1 if await start_run(db, ver, rid, f"web:{eid}", now) else 0
+    return made
+
+
+# ── inbound webhook (M47.S01.T008) ──────────────────────────────────────────────
+
+def _digest(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def _audit(db: AsyncSession, user, event: str, workflow_id, details: dict) -> None:
+    from app.models.audit_log import AuditLog
+    db.add(AuditLog(actor_id=getattr(user, "id", None), actor_email=getattr(user, "email", None),
+                    actor_name=getattr(user, "full_name", None), event_type=event, module="crm",
+                    target_type="crm_workflow", target_id=str(workflow_id), details=details))
+
+
+async def issue_hook_token(db: AsyncSession, wf: CRMWorkflow, user) -> str:
+    """Create or rotate the workflow's inbound token. The plain token is returned once and never stored."""
+    from app.models.m47_automation import CRMWorkflowHook
+    token = "wfh_" + secrets.token_urlsafe(32)
+    hook = await db.get(CRMWorkflowHook, wf.id)
+    rotated = hook is not None
+    if hook is None:
+        hook = CRMWorkflowHook(workflow_id=wf.id)
+        db.add(hook)
+    hook.token_digest, hook.token_hint, hook.created_by = _digest(token), token[-4:], user.username
+    hook.rotated_at = datetime.now(timezone.utc)
+    _audit(db, user, "crm_workflow.hook_rotated" if rotated else "crm_workflow.hook_created", wf.id, {"hint": token[-4:]})
+    await db.flush()
+    return token
+
+
+async def revoke_hook(db: AsyncSession, wf: CRMWorkflow, user) -> bool:
+    from app.models.m47_automation import CRMWorkflowHook
+    hook = await db.get(CRMWorkflowHook, wf.id)
+    if hook is None:
+        return False
+    await db.delete(hook)
+    _audit(db, user, "crm_workflow.hook_revoked", wf.id, {})
+    await db.flush()
+    return True
+
+
+async def hook_enrol(db: AsyncSession, workflow_id: uuid.UUID, token: str, event_id: str,
+                     record_id: Optional[uuid.UUID], email: Optional[str], now: Optional[datetime] = None) -> dict:
+    from app.models.m47_automation import CRMWorkflowHook
+    now = now or datetime.now(timezone.utc)
+    hook = await db.get(CRMWorkflowHook, workflow_id)
+    if hook is None or not token or not hmac.compare_digest(_digest(token), hook.token_digest):
+        raise WorkflowError(401, "Invalid workflow or token.")
+    wf = await db.get(CRMWorkflow, workflow_id)
+    ver = await db.get(CRMWorkflowVersion, wf.published_version_id) if wf and wf.published_version_id else None
+    if ver is None or ver.status != "PUBLISHED" or wf.trigger_event != "inbound_webhook":
+        raise WorkflowError(409, "This workflow has no published version with an inbound webhook trigger.")
+    if record_id is not None:
+        rid = record_id if await db.get(CRMRecord, record_id) else None
+    else:
+        rid = await record_for_email(db, email or "")
+    if rid is None:
+        raise WorkflowError(404, "No CRM record matches this id or e-mail.")
+    hook.last_used_at = now
+    key = f"hook:{event_id}"
+    run_id = await start_run(db, ver, rid, key, now)
+    if run_id is None:
+        existing = (await db.execute(select(CRMWorkflowRun.id).where(CRMWorkflowRun.version_id == ver.id,
+                                                                    CRMWorkflowRun.event_key == key))).scalar_one_or_none()
+        if existing is None:
+            raise WorkflowError(429, "This record was enrolled too often in the last hour.")
+        return {"enrolled": False, "duplicate": True, "run_id": str(existing)}
+    return {"enrolled": True, "duplicate": False, "run_id": str(run_id)}
 
 
 async def advance(db: AsyncSession, run: CRMWorkflowRun, now: datetime, approval: Optional[str] = None) -> None:

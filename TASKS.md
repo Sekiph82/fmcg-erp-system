@@ -2891,7 +2891,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Media writes run off the event loop. An oversized upload is refused from Content-Length before the body is read.
   - Tests: tests/test_m47_s01_t006_carryovers.py.
 
-- [ ] M47.S01.T007 — Content Hub depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
+- [v] M47.S01.T007 — Content Hub depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
   - **Scope:**
     - AI-drafted page translation, within the content-studio budget, always NEEDS_REVIEW, falling back to a copy.
     - Post narration through a TTS adapter (local engine if present, otherwise NOT_AVAILABLE) into cms_media audio linked to the post.
@@ -2901,7 +2901,15 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - Video poster frame and trim through ffmpeg when present.
   - **Acceptance at milestone gate:** tests per item; no unapproved publish; NOT_AVAILABLE states honest.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
-- [ ] M47.S01.T008 — Automation and data depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate; pre-gate check 8/8 on the disposable DB):
+  - AI-drafted translation inside the brand budget, with a fallback to a copy. It is always a NEEDS_REVIEW draft; the engine and cost are audited.
+  - Post narration via a TTS adapter: a local espeak engine, otherwise 409 NOT_AVAILABLE. The audio is staff-only until an approver publishes it.
+  - AI image adapter: NOT_CONFIGURED; a test mock produces a DRAFT creative that the DAM refuses until it is approved.
+  - One-to-many remix with the budget gate.
+  - CMS content in config bundles (cms_bundle_service): live public pages arrive as drafts; tables are never auto-published; media goes by reference.
+  - Video poster and trim through ffmpeg (409 when it is absent). Trim makes a new staff-only copy.
+  - Tests: tests/test_m47_s01_t007_content_hub_depth.py.
+- [v] M47.S01.T008 — Automation and data depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
   - **Scope:**
     - CRM workflows get a scheduled trigger and an inbound webhook trigger (bearer token).
     - Custom web-event definitions, usable as a workflow trigger and an audience condition.
@@ -2909,7 +2917,17 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - Portal and shop usage as a customer-health signal.
   - **Acceptance at milestone gate:** tests per item.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
-- [ ] M47.S01.T009 — Sales depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate; pre-gate check 9/9):
+  - CRM workflow triggers:
+    - scheduled: daily, weekly, or relative to a date property; an idempotent ledger; earlier occurrences are never replayed;
+    - inbound webhook: bearer token shown once and stored as a digest; rotate/revoke need the approver; rate-limited; replay-safe.
+  - Custom web-event definitions:
+    - typed properties; undefined properties are dropped; consent is unchanged;
+    - usable as a workflow trigger (identified visitors only) and as audience conditions.
+  - Audience fields: visited_path, web_event and intent_score.
+  - Product usage (portal logins, catalogue views, self-service reorders) is a health component and a churn feature. Catalogue views are now logged by the portal catalogue.
+  - Tests: tests/test_m47_s01_t008_automation_data.py.
+- [v] M47.S01.T009 — Sales depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
   - **Scope:**
     - CRM tasks pushed to linked calendars.
     - 1-to-1 video messages: recorded or uploaded video, a tracked expiring link, views on the timeline.
@@ -2919,7 +2937,17 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - A deal-win model trained on closed deals, shown beside the rule score with metrics and a cold-start fallback.
   - **Acceptance at milestone gate:** tests per item.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
-- [ ] M47.S01.T010 — Platform and service depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate; pre-gate check 8/8; regressions 11/11):
+  - CRM tasks pushed to linked Google/Microsoft calendars as free events, removed on completion; NOT_CONFIGURED without a calendar link.
+  - 1-to-1 video messages:
+    - upload or browser recording; expiring tracked link stored as a digest;
+    - public /v/<token>; views (30-min de-dupe) on the customer timeline.
+  - Meeting recap (verbatim-quoted decisions and actions; optional AI within budget, else rules), follow-up tasks on approval, and a pre-meeting brief from stored facts.
+  - AI quote draft: reorder rules plus optional AI; price-book prices; saved only as a DRAFT under normal approvals.
+  - Contract bulk import (CSV plus matched PDFs, dry run) feeding renewals.
+  - Deal-win logistic model on closed deals (≥10 per class, holdout AUC/accuracy stored) beside the rule score; cold start shows "Not enough data".
+  - Tests: tests/test_m47_s01_t009_sales_depth.py.
+- [v] M47.S01.T010 — Platform and service depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
   - **Scope:**
     - Field-level permissions (hidden or read-only per role on CRM and custom properties, enforced in the APIs).
     - Form shortening for recognised consented visitors, plus rule-based smart properties.
@@ -2929,7 +2957,19 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - Ad audience and conversion upload adapters tested against the simulator (NOT_CONFIGURED live).
   - **Acceptance at milestone gate:** tests per item.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
-- [ ] M47.S01.T011 — Usability depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate; pre-gate check 11/11):
+  - Field-level permissions (HIDDEN/READ_ONLY per role) on CRM contacts and custom objects, enforced in read, write, import and export.
+  - Lead-form "skip if known" for recognised consented visitors (names only), plus rule-filled smart properties on the daily ledger.
+  - Configurable ticket pipelines and stages mapped to statuses, with SLA pause and a board.
+  - Slack: per-event routes; interactive approvals verified by signing secret, role check and second-person rule.
+  - Campaign and nurture agent templates (drafts in the campaign approval queue).
+  - Meta/Google audience and conversion uploads: hashed identifiers only, consent always required, tested against a simulator; NOT_CONFIGURED live.
+  - Audit fixes in these files:
+    - /service-desk guarded by helpdesk rights;
+    - ad uploads never include unconsented people;
+    - /known listed and rate-limited.
+  - Tests: tests/test_m47_s01_t010_platform_depth.py.
+- [v] M47.S01.T011 — Usability depth (gap from the v3 re-audit, coordination/milestones/M47/HUBSPOT_PARITY_MATRIX_v3_2026-11-26.md)
   - **Scope:**
     - Drag-and-drop block ordering in the site and e-mail editors.
     - A point-and-click web event tagger.
@@ -2937,6 +2977,21 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - Staff shell i18n (navigation, login, dashboard home) using the M46 framework.
   - **Acceptance at milestone gate:** tests and browser check.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+  Implemented 2026-11-26 [v] (tests NOT RUN as gate; pre-gate check 5/5):
+  - Drag-and-drop block ordering in the website editor and the e-mail designer; the arrow buttons stay for keyboard users.
+  - Point-and-click event tagger:
+    - ?povu_tagger=1 on any page shows the CSS selector of a clicked element and sends nothing;
+    - tags map selectors to ACTIVE event definitions (Web analytics → Event tags);
+    - the website script sends those events with analytics consent only.
+  - Report-builder datasets:
+    - upload a CSV (typed, ≤20 000 rows), left-join it with a catalog source, use it as source "ds:<key>";
+    - page /dashboard/report-builder/datasets.
+  - Fix found while doing this: 8 of 14 catalog sources (sales orders, customers, products, stock, invoices, purchase orders, expenses, CRM records) named columns that do not exist, so every run failed. They are now mapped to the real columns and derived totals. A test runs every source.
+  - Staff shell i18n EN/SW/TR (sidebar navigation, shell, login, dashboard home): 119 keys, missing-key report ok.
+  - Bounded delta:
+    - Inner text of shared dashboard widgets and the command palette is still English.
+    - Server-sent texts are shown as sent.
+  - Tests: tests/test_m47_s01_t011_datasets.py and tests/test_m47_s01_t011_event_tags.py.
 
 ## M47.S02 — Future activation register (NOT_DUE [D], not outstanding software defects)
 These rows describe commissioning only; they must never stop accountless coding, testing, software milestone DONE or autonomous task selection. Claude must refine from source/evidence during M43.S00.T005. Do not change to [!] merely because the factory does not exist. Reopen activation when owner confirms actual prerequisites exist. Each row requires a setup checklist, minimal scoped real smoke test, rollback/disable, audit and exact live evidence; no credentials in Git.

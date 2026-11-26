@@ -3,6 +3,8 @@
 // snippets, signatures and rep productivity.
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
+import { ContractImport, QuoteDraftFromDeal } from "@/components/sales/CPQPanel";
+import { DealWin, TaskCalendarSync, VideoMessages } from "@/components/sales/SalesDepth";
 
 interface Task { id: string; record_id: string; subject: string; queue: string | null; type: string; due: string | null; overdue: boolean; repeats: string | null }
 interface Today { queues: string[]; tasks: Task[]; deals_without_next_step: { id: string; company_name: string }[] }
@@ -15,6 +17,7 @@ export default function CRMWorkspacePage() {
   const [queue, setQueue] = useState("");
   const [today, setToday] = useState<Today | null>(null);
   const [summary, setSummary] = useState<string | null>(null);
+  const [sel, setSel] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [hint, setHint] = useState<string | null>(null);
   const [snips, setSnips] = useState<{ id: string; name: string; body: string; shared: boolean }[]>([]);
@@ -30,7 +33,7 @@ export default function CRMWorkspacePage() {
     apiClient.get("/api/v1/crm-workspace/productivity", { params: { since: iso(since), until: iso(until) } }).then((r) => setProd(r.data)).catch(() => setProd([]));
   }, [queue]);
   useEffect(() => { load(); }, [load]);
-  const sum = async (id: string) => { try { setSummary((await apiClient.get(`/api/v1/crm-workspace/records/${id}/summary`)).data.summary); } catch { setSummary(null); } };
+  const sum = async (id: string) => { setSel(id); try { setSummary((await apiClient.get(`/api/v1/crm-workspace/records/${id}/summary`)).data.summary); } catch { setSummary(null); } };
 
   return (
     <div className="p-4 grid lg:grid-cols-3 gap-4 text-sm">
@@ -65,6 +68,11 @@ export default function CRMWorkspacePage() {
         </div>
       </section>
       <section className="space-y-3">
+        <TaskCalendarSync />
+        <DealWin recordId={sel} />
+        {sel && <QuoteDraftFromDeal recordId={sel} />}
+        <VideoMessages recordId={sel} />
+        <ContractImport />
         <div className="border rounded bg-white p-2 space-y-1">
           <div className="font-semibold text-xs">Best time to e-mail</div>
           <form className="flex gap-1" onSubmit={async (e) => { e.preventDefault(); try { setHint((await apiClient.get("/api/v1/crm-workspace/send-time", { params: { email } })).data.reason); } catch { setHint(null); } }}>

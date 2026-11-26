@@ -10,7 +10,18 @@ type Profile = { id: string; name: string; voice: string; banned_terms: string[]
 type Finding = { level: string; code: string; message: string };
 type Draft = { id: string; profile_id: string; channel: string; template: string; brief: string; body: string; engine: string; cost: number; findings: Finding[];
   history: { at: string; by: string; action: string; note?: string }[]; status: string; created_by: string; approved_by: string | null; source_id: string | null };
-const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : "Something went wrong."; };
+const err = (e: unknown) => { const d = (e as { response?: { data?: { detail?: unknown } } }).response?.data?.detail; return typeof d === "string" ? d : typeof (d as { detail?: unknown })?.detail === "string" ? (d as { detail: string }).detail : "Something went wrong."; };
+
+function ImageForm({ say }: { say: (m: string) => void }) {
+  const [f, setF] = useState({ title: "", prompt: "" });
+  return <section className="border rounded p-3 bg-white space-y-2 text-xs">
+    <h3 className="font-semibold text-sm">AI image (draft creative)</h3>
+    <p className="text-gray-500">The image lands in the asset library as a draft; it cannot be used in e-mail, social or the website until approved there.</p>
+    <input aria-label="Image title" placeholder="Title, e.g. POVU Water counter visual" className="border rounded px-1 w-full" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />
+    <textarea aria-label="Image prompt" rows={2} placeholder="Describe the image" className="border rounded px-1 w-full" value={f.prompt} onChange={(e) => setF({ ...f, prompt: e.target.value })} />
+    <button className="border rounded px-3 py-1" onClick={() => apiClient.post("/api/v1/content-studio/images", f).then((r) => { say(`Draft creative created (document ${r.data.document_id}); approve it in the asset library.`); setF({ title: "", prompt: "" }); }).catch((e) => say(err(e)))}>Generate image</button>
+  </section>;
+}
 
 function ProfileForm({ p, onSaved, say }: { p: Profile | null; onSaved: () => void; say: (m: string) => void }) {
   const [f, setF] = useState({ name: p?.name ?? "", voice: p?.voice ?? "", banned: (p?.banned_terms ?? []).join(", "), claims: (p?.claim_terms ?? []).join(", "),
@@ -45,6 +56,7 @@ export default function ContentStudioPage() {
   const [cur, setCur] = useState<Draft | null>(null);
   const [edit, setEdit] = useState("");
   const [pageId, setPageId] = useState("");
+  const [remix, setRemix] = useState<string[]>([]);
   const [msg, setMsg] = useState<string | null>(null);
   const say = useCallback((m: string) => setMsg(m), []);
   const load = useCallback(() => {
@@ -63,6 +75,7 @@ export default function ContentStudioPage() {
       <div className="flex gap-2 items-center text-xs"><select aria-label="Brand profile" className="border rounded" value={pid} onChange={(e) => setPid(e.target.value)}>
         <option value="">New profile…</option>{profiles.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></div>
       <ProfileForm key={pid || "new"} p={profile} onSaved={load} say={say} />
+      <ImageForm say={say} />
       {profile && <section className="border rounded p-3 bg-white space-y-2 text-xs">
         <h3 className="font-semibold text-sm">New draft</h3>
         <div className="flex flex-wrap gap-2">
@@ -89,6 +102,9 @@ export default function ContentStudioPage() {
               <button className="border rounded px-2 py-1" onClick={() => apiClient.post(`/api/v1/content-studio/drafts/${cur.id}/decide`, { ok: false, note: "Needs changes" }).then(after).catch((e) => say(err(e)))}>Reject</button></>}
             <select aria-label="Repurpose channel" className="border rounded" onChange={(e) => e.target.value && apiClient.post("/api/v1/content-studio/drafts", { profile_id: cur.profile_id, channel: e.target.value, template: cur.template, brief: "", source_id: cur.id }).then(after).catch((x) => say(err(x)))} value="">
               <option value="">Repurpose for…</option>{Object.keys(opts.channels).filter((c) => c !== cur.channel).map((c) => <option key={c}>{c}</option>)}</select>
+            <fieldset className="flex flex-wrap gap-1 items-center border rounded px-1"><legend>Remix to channels</legend>{Object.keys(opts.channels).filter((c) => c !== cur.channel).map((c) =>
+              <label key={c} className="flex gap-1"><input type="checkbox" checked={remix.includes(c)} onChange={(e) => setRemix(e.target.checked ? [...remix, c] : remix.filter((x) => x !== c))} />{c}</label>)}
+              <button className="border rounded px-2" disabled={remix.length === 0} onClick={() => apiClient.post(`/api/v1/content-studio/drafts/${cur.id}/remix`, { channels: remix }).then((r) => { say(`${r.data.length} drafts created (${r.data.map((d: Draft) => `${d.channel}: ${d.engine}`).join(", ")}); each needs its own approval.`); setRemix([]); load(); }).catch((e) => say(err(e)))}>Remix</button></fieldset>
             {cur.status === "APPROVED" && <><input aria-label="Website page id" placeholder="Website page id" className="border rounded px-1" value={pageId} onChange={(e) => setPageId(e.target.value)} />
               <button className="border rounded px-2 py-1" onClick={() => apiClient.post(`/api/v1/content-studio/drafts/${cur.id}/to-page`, { page_id: pageId }).then(() => say("Added to the page draft — it still needs review and publishing.")).catch((e) => say(err(e)))}>Add to page draft</button></>}
           </div>

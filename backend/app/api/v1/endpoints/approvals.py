@@ -150,7 +150,7 @@ async def approve(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    req = await svc.approve_request(db, request_id, current_user.id, notes=body.notes)
+    req = await svc.approve_request(db, request_id, current_user.id, notes=body.notes, user=current_user)
     await db.commit()
     result = await db.execute(
         select(ApprovalRequest)
@@ -168,7 +168,7 @@ async def reject(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    req = await svc.reject_request(db, request_id, current_user.id, reason=body.reason)
+    req = await svc.reject_request(db, request_id, current_user.id, reason=body.reason, user=current_user)
     await db.commit()
     result = await db.execute(
         select(ApprovalRequest)

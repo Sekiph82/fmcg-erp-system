@@ -143,6 +143,44 @@ async def generate(db: AsyncSession, profile: CsBrandProfile, channel: str, temp
     return d
 
 
+async def remix(db: AsyncSession, profile: CsBrandProfile, src: CsDraft, channels: list[str], user) -> list[CsDraft]:
+    """One-to-many: one new draft per channel through the same repurpose path (budget gate, brand review, approval)."""
+    chans = list(dict.fromkeys(channels))
+    if not chans or any(c not in CHANNELS for c in chans):
+        raise StudioError(f"Channels must be among {', '.join(CHANNELS)}")
+    if src.status == "REJECTED":
+        raise StudioError("A rejected draft cannot be remixed; edit it first")
+    evidence = list(dict.fromkeys(CITE.findall(src.body)))
+    return [await generate(db, profile, c, src.template, src.body, evidence, user, src) for c in chans]
+
+
+async def translate_texts(db: AsyncSession, profile: CsBrandProfile, texts: list[str], src: str, dst: str) -> tuple[Optional[list[str]], str, float]:
+    """Machine-translate strings with the brand's AI budget (atomic reservation). Returns (texts | None, engine, cost);
+    None means: no budget, mock provider, budget used up, provider failure or an unusable answer — the caller copies."""
+    budget = float(profile.monthly_budget or 0) if profile else 0.0
+    if budget <= 0 or not texts:
+        return None, "copy", 0.0
+    from app.services.ai_provider import get_ai_provider
+    provider = get_ai_provider()
+    name = type(provider).__name__.replace("Provider", "").lower()
+    est = PRICE_PER_1K * max(2.0, sum(len(t) for t in texts) / 1000)     # ≈ chars/4 tokens each way, rounded up
+    if name == "mock" or not await _reserve(db, profile, est, budget):
+        return None, "copy", 0.0
+    import json
+    system = (f"You translate website copy for {profile.name} from language '{src}' to '{dst}'. Keep **bold**, [label](url) markup, "
+              "URLs, product names and numbers unchanged. Answer with a JSON array of strings only: same order, same length.")
+    try:
+        r = await provider.generate_text(json.dumps(texts, ensure_ascii=False), system=system)
+        out = r.parse_json()
+    except Exception:                         # the reservation stays (the call may have been billed)
+        return None, "copy", est
+    cost = PRICE_PER_1K * ((getattr(r, "prompt_tokens", 0) or 0) + (getattr(r, "completion_tokens", 0) or 0)) / 1000
+    await _settle(db, profile, cost - est)
+    if not (isinstance(out, list) and len(out) == len(texts) and all(isinstance(x, str) for x in out)):
+        return None, "copy", cost
+    return out, getattr(r, "provider", name) or name, cost
+
+
 def edit(profile: CsBrandProfile, d: CsDraft, body: str, user) -> None:
     if d.status not in ("DRAFT", "REJECTED"):
         raise StudioError("Only drafts can be edited")

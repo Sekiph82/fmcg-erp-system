@@ -27,7 +27,8 @@ router = APIRouter()
 @router.get("/catalog", dependencies=[Depends(require_permission("reports", "view"))])
 async def get_catalog(db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     from app.services import custom_object_service as cos
-    sources = {**svc.DATA_SOURCES, **await cos.catalog(db, current_user)}   # M46.S01.T008 custom objects per user
+    from app.services import report_dataset_service as rds
+    sources = {**svc.DATA_SOURCES, **await cos.catalog(db, current_user), **await rds.catalog(db, current_user)}   # M46 custom objects, M47 datasets
     return {
         k: {
             "label": v["label"],
@@ -53,7 +54,9 @@ async def get_data_source(data_source: str):
              dependencies=[Depends(require_permission("reports", "create"))])
 async def create_report(data: ReportCreate, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     from app.services import custom_object_service as cos
-    if data.data_source not in svc.DATA_SOURCES and data.data_source not in await cos.catalog(db, current_user):
+    from app.services import report_dataset_service as rds
+    if (data.data_source not in svc.DATA_SOURCES and data.data_source not in await cos.catalog(db, current_user)
+            and data.data_source not in await rds.catalog(db, current_user)):
         raise HTTPException(400, f"Unknown data source: {data.data_source}")
     return await svc.create_report(db, data)
 

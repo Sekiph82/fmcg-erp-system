@@ -43,6 +43,11 @@ async def _step_billing(db) -> None:
     await cpq_service.billing_tick(db)
 
 
+async def _step_smart_properties(db) -> None:     # M47.S01.T010 rule-filled contact properties
+    from app.services import crm_contact_service
+    await crm_contact_service.recompute_smart_properties(db)
+
+
 async def _step_expire_payment_attempts(db) -> None:
     from app.services import payment_link_service
     await payment_link_service.expire_stale(db)
@@ -50,7 +55,7 @@ async def _step_expire_payment_attempts(db) -> None:
 
 DAILY = {"customer_intel": _step_customer_intel, "source_retention": _step_source_retention,
          "sensitive_retention": _step_sensitive_retention, "dq_snapshot": _step_dq_snapshot,
-         "renewals": _step_renewals, "billing": _step_billing}
+         "renewals": _step_renewals, "billing": _step_billing, "smart_properties": _step_smart_properties}
 
 
 async def run_daily_steps(db, today: date | None = None) -> dict:

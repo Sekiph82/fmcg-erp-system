@@ -27,6 +27,7 @@ class WAConfigRead(BaseModel):
     provider:             str
     is_active:            bool
     is_demo_mode:         bool
+    api_token_hint:       Optional[str] = None   # masked (last 4 chars); the token itself is never returned
     created_at:           datetime
 
 

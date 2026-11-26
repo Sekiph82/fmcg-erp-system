@@ -51,6 +51,8 @@ export default function EmailDesignerPage() {
   }, [doc, name, pre]);
   const frozen = cur ? cur.status !== "DRAFT" : false;
   const set = (i: number, k: string, v: unknown) => setDoc({ ...doc, blocks: doc.blocks.map((b, j) => (j === i ? { ...b, [k]: v } : b)) });
+  const [dragFrom, setDragFrom] = useState<number | null>(null);   // M47.S01.T011 drag-and-drop (buttons stay for keyboard users)
+  const moveTo = (from: number, to: number) => { if (from === to) return; const b = [...doc.blocks]; const [x] = b.splice(from, 1); b.splice(to, 0, x); setDoc({ ...doc, blocks: b }); };
   const move = (i: number, d: number) => { const b = [...doc.blocks]; const j = i + d; if (j < 0 || j >= b.length) return; [b[i], b[j]] = [b[j], b[i]]; setDoc({ ...doc, blocks: b }); };
   const open = (d: Design) => { setCur(d); setName(d.name); setPre(d.preheader ?? ""); setDoc(d.document); setWarn([]); };
   const save = async () => {
@@ -79,8 +81,10 @@ export default function EmailDesignerPage() {
             <label key={k} className="flex items-center gap-1">{k.replace("_", " ")}<input type="color" disabled={frozen} value={doc.theme[k]} onChange={(e) => setDoc({ ...doc, theme: { ...doc.theme, [k]: e.target.value.toUpperCase() } })} /></label>))}
         </div>
         {doc.blocks.map((b, i) => (
-          <div key={i} className="border rounded p-2 bg-white space-y-1">
-            <div className="flex justify-between text-xs"><b>{b.type}</b>
+          <div key={i} className={`border rounded p-2 bg-white space-y-1 ${dragFrom === i ? "opacity-50" : ""}`} draggable={!frozen}
+            onDragStart={() => setDragFrom(i)} onDragOver={(e) => e.preventDefault()} onDragEnd={() => setDragFrom(null)}
+            onDrop={(e) => { e.preventDefault(); if (dragFrom !== null) moveTo(dragFrom, i); setDragFrom(null); }}>
+            <div className="flex justify-between text-xs"><b className={frozen ? "" : "cursor-move"} title={frozen ? undefined : "Drag to reorder"}>⠿ {b.type}</b>
               {!frozen && <span className="flex gap-2"><button aria-label="Move up" onClick={() => move(i, -1)}>↑</button><button aria-label="Move down" onClick={() => move(i, 1)}>↓</button>
                 <button className="text-red-600" aria-label="Remove block" onClick={() => setDoc({ ...doc, blocks: doc.blocks.filter((_, j) => j !== i) })}>×</button></span>}
             </div>

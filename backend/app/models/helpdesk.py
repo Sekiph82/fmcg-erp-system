@@ -122,3 +122,42 @@ class TicketAttachment(Base):
     uploaded_by_id    = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     customer_visible  = Column(Boolean, nullable=False, default=False)
     created_at        = Column(DateTime(timezone=True), nullable=False)
+
+
+class HelpdeskPipeline(Base):
+    """M47.S01.T010 configurable ticket pipeline. One is the default (created lazily with one stage per status)."""
+    __tablename__ = "helpdesk_pipelines"
+
+    id         = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name       = Column(String(100), nullable=False, unique=True)
+    is_default = Column(Boolean, nullable=False, default=False)
+    created_at = Column(DateTime(timezone=True), nullable=False)
+
+    stages = relationship("HelpdeskPipelineStage", back_populates="pipeline", cascade="all, delete-orphan",
+                          order_by="HelpdeskPipelineStage.sort")
+
+
+class HelpdeskPipelineStage(Base):
+    """A stage maps to a TicketStatus (so status-based screens, SLA ticks and reports keep working)."""
+    __tablename__ = "helpdesk_pipeline_stages"
+    __table_args__ = (UniqueConstraint("pipeline_id", "name", name="uq_helpdesk_stage_name"),)
+
+    id          = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    pipeline_id = Column(UUID(as_uuid=True), ForeignKey("helpdesk_pipelines.id", ondelete="CASCADE"), nullable=False, index=True)
+    name        = Column(String(100), nullable=False)
+    sort        = Column(Integer, nullable=False, default=0)
+    status      = Column(String(20), nullable=False)          # a TicketStatus value
+    pauses_sla  = Column(Boolean, nullable=False, default=False)
+
+    pipeline = relationship("HelpdeskPipeline", back_populates="stages")
+
+
+class HelpdeskTicketStage(Base):
+    """Ticket → pipeline/stage (1:1 side table; a ticket without a row sits in the default pipeline at the stage of
+    its status)."""
+    __tablename__ = "helpdesk_ticket_stages"
+
+    ticket_id   = Column(UUID(as_uuid=True), ForeignKey("helpdesk_tickets.id", ondelete="CASCADE"), primary_key=True)
+    pipeline_id = Column(UUID(as_uuid=True), ForeignKey("helpdesk_pipelines.id", ondelete="CASCADE"), nullable=False, index=True)
+    stage_id    = Column(UUID(as_uuid=True), ForeignKey("helpdesk_pipeline_stages.id", ondelete="RESTRICT"), nullable=False, index=True)
+    moved_at    = Column(DateTime(timezone=True), nullable=False)

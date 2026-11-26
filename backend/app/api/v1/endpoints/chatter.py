@@ -13,6 +13,30 @@ from app.services import chatter_service
 
 router = APIRouter()
 
+# M47.S01.T003: chatter on a business record needs view rights on that record's module; authors come from the session.
+MODULE_OF = {
+    "sales_order": "sales", "invoice": "sales", "quotation": "sales", "quote": "sales", "customer": "sales", "shipment": "sales",
+    "discount_decision": "sales", "payment": "finance", "journal": "finance", "purchase_order": "procurement",
+    "supplier": "procurement", "rfq": "procurement", "production_order": "production", "batch": "production",
+    "qc_inspection": "quality", "ticket": "quality", "complaint": "quality", "recall": "quality", "crm_record": "crm",
+    "employee": "hr", "leave_request": "hr", "payroll": "payroll", "product": "products", "inventory": "inventory",
+}
+
+
+def _may(user, reference_type: Optional[str]) -> bool:
+    from app.core.access_control import has_any_permission
+    module = MODULE_OF.get((reference_type or "").lower())
+    return module is None or getattr(user, "is_superuser", False) or has_any_permission(user, (f"{module}.view",))
+
+
+def _need(user, reference_type: Optional[str]) -> None:
+    if not _may(user, reference_type):
+        raise HTTPException(403, "You do not have access to this record's activity.")
+
+
+def _visible(items, user):
+    return [a for a in items if _may(user, getattr(a, "reference_type", None) if not isinstance(a, dict) else a.get("reference_type"))]
+
 
 # ── Activities ────────────────────────────────────────────────────────────────
 
@@ -26,22 +50,30 @@ async def list_activities(
     page: int = Query(1, ge=1),
     per_page: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
+    current_user=Depends(get_current_user),
 ):
-    return await chatter_service.list_activities(
+    if reference_type:
+        _need(current_user, reference_type)
+    out = await chatter_service.list_activities(
         db, reference_type, reference_id, activity_type,
         created_by, search, page, per_page,
     )
+    if not reference_type and hasattr(out, "items"):
+        out.items = _visible(out.items, current_user)
+    return out
 
 
 @router.post("/activities", response_model=ActivityOut)
-async def create_activity(data: ActivityCreate, db: AsyncSession = Depends(get_db)):
+async def create_activity(data: ActivityCreate, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    _need(current_user, data.reference_type)
+    data = data.model_copy(update={"created_by": current_user.full_name or current_user.username})   # never from the body
     return await chatter_service.create_activity(db, data)
 
 
 @router.get("/activities/{activity_id}", response_model=ActivityOut)
-async def get_activity(activity_id: str, db: AsyncSession = Depends(get_db)):
+async def get_activity(activity_id: str, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     a = await chatter_service.get_activity(db, activity_id)
-    if not a:
+    if not a or not _may(current_user, getattr(a, "reference_type", None)):
         raise HTTPException(404, "Activity not found")
     return a
 
@@ -55,8 +87,8 @@ async def pin_activity(activity_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/feed", response_model=List[ActivityOut])
-async def get_feed(limit: int = Query(50, ge=1, le=200), db: AsyncSession = Depends(get_db)):
-    return await chatter_service.get_feed(db, limit)
+async def get_feed(limit: int = Query(50, ge=1, le=200), db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    return _visible(await chatter_service.get_feed(db, limit), current_user)
 
 
 @router.get("/stats")
@@ -79,8 +111,8 @@ async def get_timeline(
 
 
 @router.get("/sla/breached", response_model=List[ActivityOut])
-async def get_sla_breached(limit: int = Query(50, ge=1, le=200), db: AsyncSession = Depends(get_db)):
-    return await chatter_service.get_sla_breached(db, limit)
+async def get_sla_breached(limit: int = Query(50, ge=1, le=200), db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    return _visible(await chatter_service.get_sla_breached(db, limit), current_user)
 
 
 # ── Comments ──────────────────────────────────────────────────────────────────
@@ -91,6 +123,9 @@ async def post_comment(
 , current_user=Depends(get_current_user)
 ):
     data = data.model_copy(update={"user_id": str(current_user.id), "user_name": current_user.full_name or current_user.username})
+    a = await chatter_service.get_activity(db, activity_id)
+    if a is not None:
+        _need(current_user, getattr(a, "reference_type", None))
     try:
         return await chatter_service.post_comment(db, activity_id, data)
     except ValueError as e:
@@ -122,8 +157,12 @@ async def delete_comment(comment_id: str, db: AsyncSession = Depends(get_db), cu
 
 @router.post("/activities/{activity_id}/attach", response_model=ActivityOut)
 async def add_attachment(
-    activity_id: str, data: AttachmentCreate, db: AsyncSession = Depends(get_db)
+    activity_id: str, data: AttachmentCreate, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)
 ):
+    a = await chatter_service.get_activity(db, activity_id)
+    if a is not None:
+        _need(current_user, getattr(a, "reference_type", None))
+    data = data.model_copy(update={"uploaded_by": current_user.full_name or current_user.username})
     try:
         return await chatter_service.add_attachment(db, activity_id, data)
     except ValueError as e:

@@ -13,6 +13,11 @@ the data it was trained on (synthetic before go-live); they are not a claim abou
 Health (T006): configurable weighted average of components (ordering, overdue invoices, tickets, NPS, e-mail
 engagement, repeat purchase). A component without data is left out and named; if less than half the weight has data
 the score is "not enough data" instead of a number.
+
+Product usage (M47.S01.T008): portal/shop sign-ins, catalogue views (portal activity "catalog_view" and consented,
+identified website page views on catalogue paths) and self-service orders (portal orders and submitted portal
+reorder drafts) over 30/90 days. It is a health component only for customers with a portal/shop account; without one
+it is reported as missing, never as zero. Churn uses the 90-day count as a feature (older models keep their features).
 """
 from __future__ import annotations
 
@@ -36,11 +41,13 @@ DEFAULTS = {
                "weights": {"PAGE": 1, "PRICING_PAGE": 3, "FORM": 5, "CTA": 2, "EMAIL_CLICK": 3, "QUOTE_VIEW": 6, "ORDER": 8},
                "pricing_paths": ["/pricing", "/products", "/catalogue", "/order"]},
     "health": {"threshold": 50, "cooldown_days": 14,
-               "weights": {"ordering": 30, "overdue": 25, "tickets": 15, "nps": 10, "engagement": 10, "repeat": 10},
+               "weights": {"ordering": 30, "overdue": 25, "tickets": 15, "nps": 10, "engagement": 10, "repeat": 10,
+                           "usage": 10},
                "playbook": ["Call the customer within 2 working days", "Review overdue invoices with finance",
                             "Check open tickets and agree a fix date"]},
     "churn": {"horizon_days": 90, "min_orders": 3, "alert_probability": 0.6},
 }
+CATALOG_PATHS = ("/catalog", "/catalogue", "/products", "/shop")   # website paths counted as catalogue views
 LIVE_ORDERS = [s for s in SOStatus if s not in (SOStatus.DRAFT, SOStatus.CANCELLED)]
 
 
@@ -197,6 +204,8 @@ class Features:
     nps_last: Optional[int] = None
     emails_sent_90: int = 0
     emails_engaged_90: int = 0
+    has_portal: bool = False                        # M47.S01.T008 product usage (portal / shop)
+    usage: dict = field(default_factory=lambda: {k: 0 for k in USAGE_KEYS})
     extra: dict = field(default_factory=dict)
 
     def vector(self, as_of: date) -> list[float]:
@@ -204,11 +213,14 @@ class Features:
         gap = self.typical_gap or 30.0
         return [min(days, 365.0) / 30.0, min(days / gap, 12.0), float(self.orders_90), float(self.orders_prev_90),
                 math.log1p(self.revenue_90), math.log1p(self.revenue_prev_90),
-                float(self.orders_90 - self.orders_prev_90), math.log1p(self.overdue_amount), float(self.open_tickets)]
+                float(self.orders_90 - self.orders_prev_90), math.log1p(self.overdue_amount), float(self.open_tickets),
+                math.log1p(self.usage["logins_90d"] + self.usage["catalog_views_90d"] + self.usage["self_service_orders_90d"])]
 
 
+USAGE_KEYS = ("logins_30d", "logins_90d", "catalog_views_30d", "catalog_views_90d", "self_service_orders_30d",
+              "self_service_orders_90d")
 FEATURES = ["months_since_last_order", "gap_ratio", "orders_90d", "orders_prev_90d", "log_revenue_90d",
-            "log_revenue_prev_90d", "order_trend", "log_overdue", "open_tickets"]
+            "log_revenue_prev_90d", "order_trend", "log_overdue", "open_tickets", "log_usage_90d"]
 
 
 async def features(db: AsyncSession, customer_ids: list[uuid.UUID], as_of: date) -> dict[uuid.UUID, Features]:
@@ -265,7 +277,61 @@ async def features(db: AsyncSession, customer_ids: list[uuid.UUID], as_of: date)
             .group_by(CRMOutboundMessage.customer_id, CRMOutboundMessage.id))).all():
         out[cid].emails_sent_90 += 1
         out[cid].emails_engaged_90 += 1 if eng else 0
+    await _usage(db, out, as_of)
     return out
+
+
+async def _usage(db: AsyncSession, out: dict, as_of: date) -> None:
+    """Portal / shop usage in the 90 days before `as_of` (nothing on or after the cut-off: no leakage)."""
+    from app.models.crm import WebEvent, WebIdentity
+    from app.models.portal import PortalAccount, PortalActivityLog, PortalActivityType, PortalDraftOrder, PortalDraftOrderStatus
+    cut = datetime(as_of.year, as_of.month, as_of.day)                      # naive UTC, like the portal logs
+    d30, d90 = cut - timedelta(days=30), cut - timedelta(days=90)
+    by_str = {str(c): c for c in out}
+    accounts = {a: by_str[c] for a, c in (await db.execute(select(PortalAccount.id, PortalAccount.linked_customer_id).where(
+        PortalAccount.linked_customer_id.in_(list(by_str))))).all()}
+
+    def add(cid, kind: str, at: datetime) -> None:
+        at = at if at.tzinfo is None else at.astimezone(timezone.utc).replace(tzinfo=None)
+        if d90 <= at < cut:
+            out[cid].usage[f"{kind}_90d"] += 1
+            if at >= d30:
+                out[cid].usage[f"{kind}_30d"] += 1
+    for cid in set(accounts.values()):
+        out[cid].has_portal = True
+    if accounts:
+        for acc, kind, ref, at in (await db.execute(select(PortalActivityLog.portal_account_id, PortalActivityLog.activity_type,
+                                                           PortalActivityLog.reference_type, PortalActivityLog.activity_datetime)
+                                                    .where(PortalActivityLog.portal_account_id.in_(list(accounts)),
+                                                           PortalActivityLog.activity_datetime >= d90,
+                                                           PortalActivityLog.activity_datetime < cut))).all():
+            if kind == PortalActivityType.LOGIN:
+                add(accounts[acc], "logins", at)
+            elif ref == "catalog_view":
+                add(accounts[acc], "catalog_views", at)
+        for acc, at in (await db.execute(select(PortalDraftOrder.portal_account_id, PortalDraftOrder.created_at).where(
+                PortalDraftOrder.portal_account_id.in_(list(accounts)), PortalDraftOrder.source_order_id.is_not(None),
+                PortalDraftOrder.status != PortalDraftOrderStatus.DRAFT))).all():
+            add(accounts[acc], "self_service_orders", at)                   # submitted reorder drafts
+    for cid, at in (await db.execute(select(SalesOrder.customer_id, SalesOrder.created_at).where(
+            SalesOrder.customer_id.in_(list(out)), SalesOrder.offline_id.like("portal:%"),
+            SalesOrder.status != SOStatus.CANCELLED))).all():
+        out[cid].has_portal = True
+        add(cid, "self_service_orders", at)                                 # orders placed in the portal / shop
+    paths = CATALOG_PATHS
+    emails = await customer_emails(db, [c for c in out if out[c].has_portal])
+    vh_by_email: dict = {}
+    for vh, e in (await db.execute(select(WebIdentity.visitor_hash, WebIdentity.email).where(
+            WebIdentity.email.in_({e for es in emails.values() for e in es})))).all():
+        vh_by_email.setdefault(e, []).append(vh)
+    for cid, es in emails.items():
+        vhs = [v for e in es for v in vh_by_email.get(e, ())]
+        if vhs:   # website catalogue page views of the customer's identified (consented) visitors
+            for path, at in (await db.execute(select(WebEvent.path, WebEvent.occurred_at).where(
+                    WebEvent.visitor_hash.in_(vhs), WebEvent.kind == "PAGE",
+                    WebEvent.occurred_at >= d90.replace(tzinfo=timezone.utc)))).all():
+                if any(path.startswith(p) for p in paths):
+                    add(cid, "catalog_views", at)
 
 
 # ── T005 churn ───────────────────────────────────────────────────────────────
@@ -381,11 +447,13 @@ async def churn(db: AsyncSession, customer_ids: list[uuid.UUID], as_of: Optional
             out[cid] = {"probability": None, "method": "none",
                         "reason": f"Insufficient history ({f.orders_total} orders; {cfg['min_orders']} needed)."}
             continue
-        x = np.array([f.vector(as_of)])
-        if model:
+        if model:   # a model keeps the feature list it was trained with (models from before M47 have 9 features)
+            named = dict(zip(FEATURES, f.vector(as_of)))
+            used = model.params.get("features") or FEATURES[:9]
+            x = np.array([[named[k] for k in used]])
             p = float(predict(model.params, x)[0])
             z = (x[0] - np.array(model.params["mean"])) / np.array(model.params["std"])
-            contrib = sorted(zip(FEATURES, (z * np.array(model.params["coef"])).tolist()), key=lambda t: -abs(t[1]))[:3]
+            contrib = sorted(zip(used, (z * np.array(model.params["coef"])).tolist()), key=lambda t: -abs(t[1]))[:3]
             out[cid] = {"probability": round(p, 3), "method": "model", "model_id": str(model.id),
                         "factors": [{"feature": k, "effect": "raises risk" if v > 0 else "lowers risk", "weight": round(v, 2)}
                                     for k, v in contrib],
@@ -416,6 +484,11 @@ def health_components(f: Features, as_of: date) -> dict[str, Optional[float]]:
     c["tickets"] = round(max(0.0, 100.0 - 25.0 * f.open_tickets - 5.0 * f.tickets_90), 1)
     c["nps"] = float(f.nps_last * 10) if f.nps_last is not None else None
     c["engagement"] = round(100.0 * f.emails_engaged_90 / f.emails_sent_90, 1) if f.emails_sent_90 >= 3 else None
+    if f.has_portal:   # no portal/shop account: usage is unknown and named as missing by health(), never scored 0
+        u = f.usage
+        c["usage"] = (100.0 if u["self_service_orders_90d"] >= 2 else 80.0 if u["self_service_orders_90d"] == 1
+                      else 50.0 if u["logins_30d"] + u["catalog_views_30d"] else 25.0 if u["logins_90d"] + u["catalog_views_90d"]
+                      else 0.0)
     return c
 
 
@@ -443,11 +516,15 @@ async def health(db: AsyncSession, customer_ids: list[uuid.UUID], as_of: Optiona
     for cid, f in fs.items():
         comp = health_components(f, as_of)
         score, missing = combine(comp, cfg["weights"])
+        if not f.has_portal:
+            missing = [*missing, "usage"]
         out[cid] = {"score": score, "label": "not enough data" if score is None else
                     ("healthy" if score >= 70 else "watch" if score >= cfg["threshold"] else "at risk"),
                     "components": comp, "missing": missing, "trend": list(reversed(trend[cid])),
                     "signals": {"orders_90d": f.orders_90, "overdue_amount": round(f.overdue_amount, 2),
-                                "open_tickets": f.open_tickets, "nps_last": f.nps_last}}
+                                "open_tickets": f.open_tickets, "nps_last": f.nps_last},
+                    "usage": ({**f.usage, "note": "portal/shop sign-ins, catalogue views and self-service orders"}
+                              if f.has_portal else {"note": "no portal or shop account: usage unknown"})}
     return out
 
 
