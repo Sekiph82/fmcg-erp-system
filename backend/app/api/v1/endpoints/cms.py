@@ -57,7 +57,7 @@ def _site_out(s: CmsSite) -> dict:
 def _page_out(p: CmsPage, live: Optional[CmsPageVersion] = None) -> dict:
     return {"id": str(p.id), "site_id": str(p.site_id), "parent_id": str(p.parent_id) if p.parent_id else None, "kind": p.kind,
             "locale": p.locale, "translation_group": str(p.translation_group), "translation_state": p.translation_state,
-            "slug": p.slug, "path": p.path, "title": p.title, "status": p.status, "access": p.access,
+            "slug": p.slug, "path": p.path, "live_path": p.live_path, "title": p.title, "status": p.status, "access": p.access,
             "access_list_id": str(p.access_list_id) if p.access_list_id else None, "table_id": str(p.table_id) if p.table_id else None,
             "author": p.author, "category": p.category, "tags": p.tags or [], "submitted_by": p.submitted_by, "approved_by": p.approved_by,
             "updated_by": p.updated_by, "updated_at": p.updated_at.isoformat() if p.updated_at else None,
@@ -182,13 +182,14 @@ async def _repath(db: AsyncSession, p: CmsPage) -> None:
 
 async def _apply_page(db: AsyncSession, p: CmsPage, b: PageIn, user) -> list[str]:
     warnings: list[str] = []
+    content_fields = b.model_fields_set - {"access", "access_list_id"}
+    if content_fields and p.status in ("IN_REVIEW", "APPROVED"):      # anything reviewed changed: review again
+        p.status, p.approved_by = "DRAFT", None
     if b.title is not None:
         p.title = b.title.strip()[:200] or p.title
     if b.draft is not None:
         doc, warnings = cms.validate_doc(b.draft)
         p.draft = doc
-        if p.status in ("IN_REVIEW", "APPROVED"):          # an edit after review needs a fresh review
-            p.status, p.approved_by = "DRAFT", None
     for k in ("author", "category"):
         if getattr(b, k) is not None:
             setattr(p, k, getattr(b, k).strip() or None)
@@ -433,7 +434,7 @@ async def redirects(site_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 
 @router.post("/sites/{site_id}/redirects", status_code=201)
 async def add_redirect(site_id: uuid.UUID, b: RedirectIn, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
-    _need(user, EDIT)
+    _need(user, APPROVE)                  # changes what live URLs do
     await _get(db, CmsSite, site_id)
     try:
         r = await cms.upsert_redirect(db, site_id, b.from_path, b.to_path, b.code)
@@ -446,7 +447,7 @@ async def add_redirect(site_id: uuid.UUID, b: RedirectIn, db: AsyncSession = Dep
 
 @router.delete("/redirects/{rid}")
 async def delete_redirect(rid: uuid.UUID, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
-    _need(user, EDIT)
+    _need(user, APPROVE)
     r = await _get(db, CmsRedirect, rid)
     cms.audit(db, user, "cms.redirect.deleted", "cms_site", r.site_id, {"from": r.from_path})
     await db.delete(r)
@@ -470,7 +471,7 @@ async def ctas(site_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
 
 @router.post("/sites/{site_id}/ctas", status_code=201)
 async def save_cta(site_id: uuid.UUID, b: CtaIn, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
-    _need(user, EDIT)
+    _need(user, APPROVE)                  # CTAs are resolved on live pages at request time
     try:
         href = cms.href(b.href)
     except cms.CmsError as e:
@@ -507,7 +508,8 @@ def _columns(cols: list[dict]) -> list[dict]:
 @router.get("/sites/{site_id}/tables")
 async def tables(site_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     rows = (await db.execute(select(CmsTable).where(CmsTable.site_id == site_id).order_by(CmsTable.name))).scalars().all()
-    counts = dict((await db.execute(select(CmsTableRow.table_id, func.count()).group_by(CmsTableRow.table_id))).all())
+    counts = dict((await db.execute(select(CmsTableRow.table_id, func.count()).where(CmsTableRow.table_id.in_([t.id for t in rows] or [None]))
+                                    .group_by(CmsTableRow.table_id))).all())
     return [{"id": str(t.id), "key": t.key, "name": t.name, "columns": t.columns, "published": t.published, "rows": counts.get(t.id, 0)} for t in rows]
 
 
@@ -551,10 +553,10 @@ class RowsIn(BaseModel):
 @router.put("/tables/{table_id}/rows")
 async def put_rows(table_id: uuid.UUID, b: RowsIn, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
     """Upsert rows by slug; values are kept only for declared columns, URLs/images checked like page links."""
-    _need(user, EDIT)
     t = await _get(db, CmsTable, table_id)
+    _need(user, APPROVE if t.published else EDIT)       # rows of a published table are live
     cols = {c["key"]: c["type"] for c in t.columns}
-    n = 0
+    n, seen = 0, set()
     for i, r in enumerate(b.rows):
         vals = {}
         for k, typ in cols.items():
@@ -566,11 +568,18 @@ async def put_rows(table_id: uuid.UUID, b: RowsIn, db: AsyncSession = Depends(ge
             except (ValueError, cms.CmsError) as e:
                 raise HTTPException(422, f"Row {i + 1}, {k}: {e}")
         slug = cms.slugify(str(r.get("slug") or next(iter(vals.values()), "")))
+        if slug in seen:
+            raise HTTPException(422, f"Row {i + 1}: slug {slug} appears twice")
+        seen.add(slug)
+        try:
+            pos = int(r.get("position") or i)
+        except (TypeError, ValueError):
+            raise HTTPException(422, f"Row {i + 1}: position must be a number")
         row = (await db.execute(select(CmsTableRow).where(CmsTableRow.table_id == t.id, CmsTableRow.slug == slug))).scalar_one_or_none()
         if row is None:
-            db.add(CmsTableRow(table_id=t.id, slug=slug, values=vals, position=int(r.get("position") or i)))
+            db.add(CmsTableRow(table_id=t.id, slug=slug, values=vals, position=pos))
         else:
-            row.values, row.position = vals, int(r.get("position") or row.position)
+            row.values, row.position = vals, pos
         n += 1
     cms.audit(db, user, "cms.table.rows", "cms_table", t.id, {"rows": n})
     await db.commit()
@@ -579,8 +588,9 @@ async def put_rows(table_id: uuid.UUID, b: RowsIn, db: AsyncSession = Depends(ge
 
 @router.delete("/rows/{row_id}")
 async def delete_row(row_id: uuid.UUID, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
-    _need(user, EDIT)
-    await db.delete(await _get(db, CmsTableRow, row_id))
+    row = await _get(db, CmsTableRow, row_id)
+    _need(user, APPROVE if (await db.get(CmsTable, row.table_id)).published else EDIT)
+    await db.delete(row)
     await db.commit()
     return {"ok": True}
 
@@ -601,7 +611,7 @@ class KeywordImport(BaseModel):
 async def import_keywords(site_id: uuid.UUID, b: KeywordImport, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
     """CSV with keyword[,volume,difficulty,locale]. Volumes/difficulty are stored only as given — blank stays unknown."""
     _need(user, EDIT)
-    n = 0
+    n, seen = 0, set()
     for row in csv.reader(io.StringIO(b.csv)):
         if not row or not row[0].strip() or row[0].strip().lower() == "keyword":
             continue
@@ -613,6 +623,9 @@ async def import_keywords(site_id: uuid.UUID, b: KeywordImport, db: AsyncSession
             except ValueError:
                 return None
         loc = row[3].strip() if len(row) > 3 and row[3].strip() in cms.LOCALES else "en"
+        if (loc, kw) in seen:
+            continue
+        seen.add((loc, kw))
         k = (await db.execute(select(CmsKeyword).where(CmsKeyword.site_id == site_id, CmsKeyword.locale == loc, CmsKeyword.keyword == kw))).scalar_one_or_none()
         if k is None:
             k = CmsKeyword(site_id=site_id, locale=loc, keyword=kw)
@@ -747,7 +760,10 @@ async def upload_media(file: UploadFile = File(...), title: str = Form(..., max_
                        access_list_id: Optional[str] = Form(None), public: bool = Form(False),
                        db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
     _need(user, APPROVE if (public or access_list_id) else EDIT)    # making media public or gated is an approver decision
-    acl = uuid.UUID(access_list_id) if access_list_id else None
+    try:
+        acl = uuid.UUID(access_list_id) if access_list_id else None
+    except ValueError:
+        raise HTTPException(422, "Bad access list id")
     if acl:
         await _get(db, CmsAccessList, acl)
     key, mime, size, sha = await media.store(file)
@@ -797,10 +813,10 @@ class CaptionIn(BaseModel):
 
 @router.put("/media/{media_id}/captions/{locale}")
 async def put_captions(media_id: uuid.UUID, locale: str, b: CaptionIn, db: AsyncSession = Depends(get_db), user=Depends(get_current_user)):
-    _need(user, EDIT)
     if locale not in cms.LOCALES:
         raise HTTPException(422, f"Locale must be one of {cms.LOCALES}")
     m = await _get(db, CmsMedia, media_id)
+    _need(user, APPROVE if (m.public or m.access_list_id) else EDIT)   # captions of served media are live
     m.captions = {**(m.captions or {}), locale: media.clean_vtt(b.vtt)}
     cms.audit(db, user, "cms.media.captions", "cms_media", m.id, {"locale": locale})
     await db.commit()
@@ -810,7 +826,7 @@ async def put_captions(media_id: uuid.UUID, locale: str, b: CaptionIn, db: Async
 @router.get("/media/{media_id}/file")
 async def media_file(media_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     m = await _get(db, CmsMedia, media_id)
-    return FileResponse(media.file_path(m), media_type=m.mime)
+    return FileResponse(media.file_path(m), media_type=m.mime, headers={"X-Content-Type-Options": "nosniff"})
 
 
 @router.get("/media/{media_id}/views")

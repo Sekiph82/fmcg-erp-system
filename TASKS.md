@@ -8,11 +8,11 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 ## Project Status
 
-- Current Milestone: M45 — ACCEPTED 2026-11-26 (gate passed); next M46 — Content & Digital Experience Hub
-- Current Sprint: M45.S02 — gate passed, all M45 rows [x]; synchronization recorded in M45.S02.T002
-- Current Task: M46.S01 block (T001–T008)
-- Current Task Status: M45 accepted (coordination/milestones/M45/gate/GATE_REPORT.md). M46 not started.
-- Next Task/Action: M46 block (T001–T008) as one batch, then the M46 gate.
+- Current Milestone: M46 — ACCEPTED 2026-11-26 (gate passed); next M47 — Parity-plus final integrated acceptance
+- Current Sprint: M46.S02 — gate passed, all M46 rows [x]; synchronization recorded in M46.S02.T002
+- Current Task: M47.S01 block (T001–T006)
+- Current Task Status: M46 accepted (coordination/milestones/M46/gate/GATE_REPORT.md). M47 not started.
+- Next Task/Action: M47.S01 (T001–T004, T006) as one batch, then the final gate M47.S01.T005.
 - Required Actor: CLAUDE (sole active autonomous task runner and tracker writer; per coordination/CLAUDE_AUTONOMOUS_EXECUTION_POLICY.md; the 2026-11-25 owner rules below supersede older cadence/gate instructions)
 - Tracking Repository: Sekiph82/fmcg-erp-system
 - Tracking Branch: main
@@ -2685,7 +2685,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
 Dependency: previous major milestone gate and synchronization PASS. Reuse shared harness, native models and adapter registry.
 
 ## M46.S01 — Implementation tasks
-- [v] M46.S01.T001 — CMS and visual website builder (original recommendation 36/40)
+- [x] M46.S01.T001 — CMS and visual website builder (original recommendation 36/40)
   - **Scope:** Build reusable component/block editor, pages, navigation, theme tokens, media library, preview/version/publish/rollback, forms/landing reuse, custom-domain configuration with localhost fallback. Safe sanitization and no public deployment now. Extended by matrix v2: site tree, content staging, multisite, content embed, URL mappings, dynamic data tables (HubDB-like) and dynamic pages, CTAs, content approval workflow.
   - **Acceptance at milestone gate:** Real local preview/publish with synthetic site, phone/desktop, XSS, drafts not public, access and rollback.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
@@ -2705,7 +2705,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - public renderer (server-rendered metadata, React-escaped blocks).
   - Lead forms are reused through a form block (/forms/<slug>).
   - Tests: tests/test_m46_s01_content_hub.py.
-- [v] M46.S01.T002 — Blog and SEO suite (original recommendation 37/40)
+- [x] M46.S01.T002 — Blog and SEO suite (original recommendation 37/40)
   - **Scope:** Editorial workflows, categories/authors, slug/canonical/redirects, sitemap/robots, structured data, on-page SEO audit, internal links, metadata, keyword planning from local imports/provider interface; no invented ranking/search volumes. Extended by matrix v2: Google Search Console adapter (NOT_CONFIGURED until activation) and SEO analytics.
   - **Acceptance at milestone gate:** Local crawler/HTML tests and browser editorial flow, sitemap/redirect validation, audit findings and explicit no-data states.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
@@ -2718,7 +2718,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - On-page SEO audit: title and description length, single H1, thin content, target keyword, broken internal links, alt text.
   - Keyword plan from a local CSV import; volume and difficulty are only what the import says, otherwise "no data".
   - Google Search Console reports NOT_CONFIGURED until activation (M47).
-- [v] M46.S01.T003 — AI brand voice and content studio (original recommendation 38/40)
+- [x] M46.S01.T003 — AI brand voice and content studio (original recommendation 38/40)
   - **Scope:** Use approved POVU brand assets only; style/terminology rules, content templates, rewrite/repurpose across channels, citations/claims review, approval and AI cost limits; deterministic fallback and draft only.
   - **Acceptance at milestone gate:** Synthetic content corpus with fake model; brand constraints, no fabricated claims, no unauthorized publish, version/approval history.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
@@ -2734,7 +2734,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Repurpose to another channel.
   - An approved draft can only be added to a website page draft, which still needs its own review. Nothing is published here.
   - Tests: a fake model and the budget gate.
-- [v] M46.S01.T004 — CRM-driven personalization (original recommendation 39/40)
+- [x] M46.S01.T004 — CRM-driven personalization (original recommendation 39/40)
   - **Scope:** Consent-aware segments/rules for page blocks, locale, known visitor or anonymous fallback, experiment control, preview and audience privacy; integrate native CRM without leaking identity. Extended by matrix v2: adaptive (multi-armed bandit) testing alongside the existing A/B variants.
   - **Acceptance at milestone gate:** Local synthetic visitor sessions, consent withdrawal, cache isolation, segment tests and experiment attribution.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
@@ -2751,7 +2751,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - P(best) by Beta simulation, an "enough data" flag, stop-and-keep-leader.
   - Forgetting a visitor deletes their attribution.
   - The editor sets audiences, slots and experiments per block.
-- [v] M46.S01.T005 — Multilingual CMS and AEO (original recommendation 40/40)
+- [x] M46.S01.T005 — Multilingual CMS and AEO (original recommendation 40/40)
   - **Scope:** EN/SW/TR configurable locale content, translation workflow, hreflang and fallback, structured FAQ/schema, AEO readiness audit and configurable visibility/measurement adapters; synthetic local evaluation and import, no claims of external answer-engine rankings without data.
   - **Acceptance at milestone gate:** Local multi-locale site and accessibility/SEO/AEO audit; absent external measurements show NOT_AVAILABLE, not fake scores; external search/provider setup later.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable. Do not rebuild already working functionality; record evidence and bounded delta.
@@ -2766,7 +2766,7 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - AEO readiness audit from the content itself: FAQ schema, question headings, concise answers, author, language, translations, indexable.
   - Answer-engine visibility is NOT_AVAILABLE without a measurement provider; no score is shown.
 
-- [v] M46.S01.T006 — Memberships, gated content and video assets (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [x] M46.S01.T006 — Memberships, gated content and video assets (additional gap, Source: HubSpot parity matrix 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** Gated pages for portal-authenticated customers/distributors (registration via existing portal realm), access lists by segment, video asset hosting (local storage) with captions and view analytics feeding CRM timeline. Extended by matrix v2: member blog, podcasts/audio assets, KB access groups.
   - **Acceptance at milestone gate:** Anonymous visitor blocked, authorized portal user sees content, revoked access, video upload/caption/playback on phone and desktop, views on timeline.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
@@ -2784,13 +2784,24 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - KB access groups: kb_articles.access_list_id; members read them at /kb/members.
   - UI: Marketing → "Members & media"; video/audio blocks in pages.
 
-- [ ] M46.S01.T007 — User interface internationalization (EN/SW/TR) (additional gap, Source: HubSpot parity matrix v2 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
+- [x] M46.S01.T007 — User interface internationalization (EN/SW/TR) (additional gap, Source: HubSpot parity matrix v2 2026-11-25 (coordination/milestones/M43/HUBSPOT_PARITY_MATRIX_2026-11-25.md).)
   - **Scope:** An i18n framework for the frontend (customer-facing first: portal, shop, chat, KB, booking, NPS, business card; then staff screens), locale negotiation and switcher, number/date/currency formatting per locale, translation catalogs with missing-key reporting, and server messages via codes. Machine translation only as a reviewed draft.
   - **Acceptance at milestone gate:** The portal and shop run fully in Swahili and Turkish at phone width; missing-key report is empty for customer screens; formats are correct; no layout overflow.
   - **Required deliverables:** inspect/reuse existing code; necessary schema/migration, backend/API, real UI, RBAC/tenant/privacy/audit, docs, test cases, no-account degraded state and activation runbook if applicable.
   - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
+  Implemented 2026-11-26 [v]:
+  - i18n framework (frontend/src/lib/i18n):
+    - EN/SW/TR catalogs as JSON with English as the source;
+    - locale negotiation: saved choice → ?lang → browser → en, with a shared store and LanguageSwitcher;
+    - Intl formatters per locale (en-KE/sw-KE/tr-TR) for money, numbers, dates and times;
+    - server errors shown from their status code (error.<status>), not the English server text.
+  - Customer screens converted: portal/shop (all tabs), portal login/signup/activate (shared partner sign-in components), live chat, help centre (+ members), booking and manage, NPS, survey, payment link, public website shell. 314 keys.
+  - Missing-key report: scripts/i18n-report.mjs and `npm run test:i18n`. It checks sw/tr parity, unknown keys in code and hard-coded formatting.
+  - Machine translation is not used for UI catalogs. Website content translation is a reviewed draft (T005).
+  - Bounded delta: staff (dashboard) screens stay English for now; the framework is ready for them.
+  - Business cards (kartvizit) keep their existing EN/SW/TR dictionary from M42.
 
-- [v] M46.S01.T008 — M45 carry-overs (from the M45 gate review, 2026-11-26)
+- [x] M46.S01.T008 — M45 carry-overs (from the M45 gate review, 2026-11-26)
   - **Scope:**
     - Payment-link attempts left PENDING without a callback expire after a timeout, and the balance is released.
     - The M45 daily jobs (intelligence, retention, DQ snapshot, renewals, billing) keep a per-step daily ledger, so one failing step does not skip the others.
@@ -2810,8 +2821,32 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
   - Tests: tests/test_m46_s01_t008_carryovers.py.
 
 ## M46.S02 — Major milestone acceptance and synchronization
-- [ ] M46.S02.T001 — Run consolidated milestone acceptance once all implementation work is ready: backend/DB/provider-contract/frontend/build/real browser desktop+mobile/synthetic E2E/security/independent review; include relevant prior features, fix and rerun failures, record exact code SHA, commands, results, screenshots and reviewer. No live-provider requirement. Reconcile applicable older [v] rows only if evidence/gate covers them. Update TASKS.md; do not mark [x] on failure.
-- [ ] M46.S02.T002 — On gate PASS, mark accepted software tasks [x], document unresolved activation-only prerequisites, commit and push evidence/ledger; fetch and verify Desktop HEAD equals origin/main, record synchronization and clean status; update next milestone/action in TASKS.md. If sync fails do not claim milestone closed; retry safely. Continue autonomously.
+- [x] M46.S02.T001 — Run consolidated milestone acceptance once all implementation work is ready: backend/DB/provider-contract/frontend/build/real browser desktop+mobile/synthetic E2E/security/independent review; include relevant prior features, fix and rerun failures, record exact code SHA, commands, results, screenshots and reviewer. No live-provider requirement. Reconcile applicable older [v] rows only if evidence/gate covers them. Update TASKS.md; do not mark [x] on failure.
+  Done 2026-11-26 [x] — evidence in coordination/milestones/M46/gate/ (GATE_REPORT.md):
+  - Migrations: empty → head 0076 (16/16 tables + kb_articles.access_list_id); 0076 round trip.
+  - DB tests: M46 11/11. Regressions all pass: M36 timeline, M36 KB, M44 web analytics, M45 config bundles.
+  - Backend suite: 1811 passed, 0 failed.
+  - Frontend: tsc 0; eslint 0 errors; build OK.
+  - i18n missing-key report empty: 314 keys × 3 languages.
+  - Browser on the real local app (disposable DB, synthetic personas):
+    - public site with SEO head and JSON-LD; drafts 404; members gate;
+    - member video plays at 375 px with en/sw captions;
+    - shop in Swahili and Turkish: 8 tabs, 0 overflow, 0 missing keys;
+    - author → approver publish in the UI.
+  - One gate defect fixed: the API client redirected public pages to /login.
+  - Independent review: ACCEPT_WITH_FIXES.
+    - All 4 high and 8 medium findings fixed with regression tests: live pages under review stay online; redirects never beat live pages; members table rows don't leak; live content needs approval; approval reset on edits; atomic AI budget; verified identity only for CRM targeting; nested personalization; rule metadata stripped; alternates scoped; members KB scopes; re-review on approve.
+    - Low items moved to M47.S01.T006.
+- [x] M46.S02.T002 — On gate PASS, mark accepted software tasks [x], document unresolved activation-only prerequisites, commit and push evidence/ledger; fetch and verify Desktop HEAD equals origin/main, record synchronization and clean status; update next milestone/action in TASKS.md. If sync fails do not claim milestone closed; retry safely. Continue autonomously.
+  Done 2026-11-26 [x]:
+  - M46.S01.T001–T008 are [x].
+  - Activation-only items stay in M47.S02:
+    - custom domain, DNS and HTTPS for sites;
+    - Google Search Console;
+    - answer-engine measurement provider;
+    - real LLM provider budget for the content studio;
+    - CDN or object storage for media.
+  - The synchronization result is recorded below this row after the push.
 
 # M47 — Parity-plus final integrated acceptance and future commissioning register
 
@@ -2821,6 +2856,19 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
 - [ ] M47.S01.T003 — Verify all software surfaces, role permissions, privacy, consent, auditability, accessible desktop/mobile screens, multi-company/currency/locales, import/export/backup/recovery, operational limits, deployment configuration and no real business data/credentials in public repo. Record docs, screenshots and missing tasks; do not imply production readiness without actual acceptance. Update TASKS.md immediately.
 - [ ] M47.S01.T004 — Final feature-by-feature comparison report: each HubSpot capability with evidence, achieved local parity/advantage, remaining limitations due to vendor-only/private data or approvals, exact future activation prerequisites, and measurable native FMCG advantages. If a software gap remains, add tasks and close them before final acceptance. No fake market-size or live accuracy equivalence. Update TASKS.md immediately.
 - [ ] M47.S01.T005 — Consolidated final software milestone test gate: full backend, DB/migration, contracts, frontend build/type/lint, browser actual local app and screenshot walkthrough, critical end-to-end personas and independent security/code audit. Fix failures and rerun; no [x] before applicable PASS. Commit/push all accepted code/evidence/ledger and verify Desktop/main SHA match; update TASKS.md and report in Turkish.
+
+- [ ] M47.S01.T006 — M46 carry-overs (from the M46 gate review, 2026-11-26)
+  - **Scope:**
+    - Rate limits on the public media-view, experiment-convert and CTA-click writes.
+    - Sitemap without N+1 queries, with a bound and cache headers.
+    - Limit the embed query fan-out.
+    - The retention purge also covers cms_experiment_events.
+    - Race-safe first experiment row, plus atomic JSON counters.
+    - Approve-vs-edit version check.
+    - Podcast RSS channel link and description.
+    - Non-blocking media writes, with the upload limit enforced before spooling.
+  - **Acceptance at milestone gate:** each item has a test.
+  - **Claude checkpoint:** [v] pending milestone gate, tests NOT RUN until gate; never [x] before milestone PASS.
 
 ## M47.S02 — Future activation register (NOT_DUE [D], not outstanding software defects)
 These rows describe commissioning only; they must never stop accountless coding, testing, software milestone DONE or autonomous task selection. Claude must refine from source/evidence during M43.S00.T005. Do not change to [!] merely because the factory does not exist. Reopen activation when owner confirms actual prerequisites exist. Each row requires a setup checklist, minimal scoped real smoke test, rollback/disable, audit and exact live evidence; no credentials in Git.

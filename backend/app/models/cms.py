@@ -57,6 +57,7 @@ class CmsPage(Base):
     draft             = Column(JSON, nullable=False, default=dict)             # {blocks, seo, faq}
     status            = Column(String(10), nullable=False, default="DRAFT")    # DRAFT | IN_REVIEW | APPROVED | PUBLISHED | ARCHIVED
     live_version_id   = Column(UUID(as_uuid=True), nullable=True)
+    live_path         = Column(String(400), nullable=True)   # path the live version is served at (moves only on publish)
     access            = Column(String(8), nullable=False, default="PUBLIC")    # PUBLIC | MEMBERS
     access_list_id    = Column(UUID(as_uuid=True), ForeignKey("cms_access_lists.id", ondelete="SET NULL"), nullable=True)
     table_id          = Column(UUID(as_uuid=True), ForeignKey("cms_tables.id", ondelete="SET NULL"), nullable=True)   # DYNAMIC

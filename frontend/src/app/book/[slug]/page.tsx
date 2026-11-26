@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { API_ORIGIN } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 interface Page { slug: string; title: string; description: string | null; duration_minutes: number; time_zone: string;
   weekdays: number[]; max_days_ahead: number; consent_text: string | null }
@@ -12,6 +14,7 @@ const visitorTz = () => Intl.DateTimeFormat().resolvedOptions().timeZone || "Afr
 const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 export default function BookingPage() {
+  const { t, f, err, locale } = useI18n();
   const { slug } = useParams<{ slug: string }>();
   const tz = useMemo(() => visitorTz(), []);
   const [page, setPage] = useState<Page | null>(null);
@@ -56,19 +59,19 @@ export default function BookingPage() {
     }).catch(() => null);
     setBusy(false);
     if (r && r.status === 201) { const j = await r.json(); setManage(j.manage_token); setInvited(j.invitation === "SENT"); setState("booked"); return; }
-    const detail = r ? await r.json().then((j) => j.detail).catch(() => null) : null;
-    setError(typeof detail === "string" ? detail : "Please check the fields and try again.");
+    setError(err(r?.status));
   }
 
-  if (state === "loading") return <main className="p-6 text-sm text-gray-500">Loading…</main>;
-  if (state === "missing" || !page) return <main className="p-6 text-sm text-gray-600">This booking page is not available.</main>;
+  if (state === "loading") return <main className="p-6 text-sm text-gray-500 space-y-3"><div className="flex justify-end"><LanguageSwitcher /></div><p>{t("common.loading")}</p></main>;
+  if (state === "missing" || !page) return <main className="p-6 text-sm text-gray-600 space-y-3"><div className="flex justify-end"><LanguageSwitcher /></div><p>{t("public.book.pageMissing")}</p></main>;
   if (state === "booked") {
     const url = `${window.location.origin}/book/manage/${manage}`;
     return (
       <main className="p-6 max-w-lg mx-auto space-y-3">
-        <h1 className="text-xl font-semibold">You are booked</h1>
-        <p className="text-sm text-gray-700">{page.title} — {picked && new Date(picked.start_utc).toLocaleString([], { timeZone: tz, dateStyle: "full", timeStyle: "short" })} ({tz}).</p>
-        <p className="text-sm text-gray-700">{invited ? "A calendar invitation is on its way to your e-mail." : "Your booking is saved; the team will confirm by e-mail."} Keep this link to reschedule or cancel:</p>
+        <div className="flex justify-end"><LanguageSwitcher /></div>
+        <h1 className="text-xl font-semibold">{t("public.book.booked")}</h1>
+        <p className="text-sm text-gray-700 break-words">{page.title} — {picked && f.dateTime(picked.start_utc)} ({tz}).</p>
+        <p className="text-sm text-gray-700">{invited ? t("public.book.invited") : t("public.book.saved")} {t("public.book.keepLink")}</p>
         <a className="text-indigo-600 underline break-all text-sm" href={url}>{url}</a>
       </main>
     );
@@ -76,40 +79,43 @@ export default function BookingPage() {
   const input = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white text-gray-900";
   return (
     <main className="p-4 md:p-6 max-w-2xl mx-auto space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold text-gray-900">{page.title}</h1>
-        {page.description && <p className="text-sm text-gray-600 mt-1 whitespace-pre-line">{page.description}</p>}
-        <p className="text-xs text-gray-500 mt-1">{page.duration_minutes} minutes · times shown in {tz}</p>
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <h1 className="text-xl font-semibold text-gray-900 break-words min-w-0">{page.title}</h1>
+        <LanguageSwitcher />
       </div>
-      <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label="Day">
+      <div>
+        {page.description && <p className="text-sm text-gray-600 mt-1 whitespace-pre-line">{page.description}</p>}
+        <p className="text-xs text-gray-500 mt-1 break-words">{t("public.book.durationTz", { minutes: f.number(page.duration_minutes), tz })}</p>
+      </div>
+      <div className="flex gap-2 overflow-x-auto pb-1" role="tablist" aria-label={t("public.book.day")}>
         {days.map((d) => (
           <button key={d} role="tab" aria-selected={d === day} onClick={() => setDay(d)}
                   className={`shrink-0 px-3 py-2 rounded-lg border text-xs ${d === day ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-700"}`}>
-            {new Date(`${d}T12:00:00`).toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" })}
+            {f.day(`${d}T12:00:00`)}
           </button>
         ))}
       </div>
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2" aria-live="polite">
-        {slots === null && <p className="col-span-full text-sm text-gray-500">Loading times…</p>}
-        {slots?.length === 0 && <p className="col-span-full text-sm text-gray-500">No free times on this day.</p>}
+        {slots === null && <p className="col-span-full text-sm text-gray-500">{t("public.book.loadingTimes")}</p>}
+        {slots?.length === 0 && <p className="col-span-full text-sm text-gray-500">{t("public.book.noTimes")}</p>}
         {slots?.map((s) => (
           <button key={s.start_utc} onClick={() => setPicked(s)}
                   className={`px-2 py-2 rounded-lg border text-sm ${picked?.start_utc === s.start_utc ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-gray-800"}`}>
-            {new Date(s.start_utc).toLocaleTimeString([], { timeZone: tz, hour: "2-digit", minute: "2-digit" })}
+            {f.time(s.start_utc)}
           </button>
         ))}
       </div>
       {picked && (
         <form onSubmit={submit} className="space-y-3 border rounded-lg p-4 bg-white">
-          <input name="name" required maxLength={200} placeholder="Your name" aria-label="Your name" className={input} />
-          <input name="email" type="email" required placeholder="E-mail" aria-label="E-mail" className={input} />
+          <input name="name" required maxLength={200} placeholder={t("public.book.name")} aria-label={t("public.book.name")} className={input} />
+          <input name="email" type="email" required placeholder={t("common.email")} aria-label={t("common.email")} className={input} />
           <input name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
           {page.consent_text && (
-            <label className="flex gap-2 text-xs text-gray-700"><input type="checkbox" name="consent" required /> {page.consent_text}</label>
+            <label className="flex gap-2 text-xs text-gray-700"><input type="checkbox" name="consent" required /> <span className="min-w-0 break-words">{page.consent_text}</span></label>
           )}
           {error && <p role="alert" className="text-sm text-red-600">{error}</p>}
           <button disabled={busy} className="w-full bg-indigo-600 text-white rounded-lg py-2 text-sm disabled:opacity-50">
-            {busy ? "Booking…" : "Book this time"}
+            {busy ? t("public.book.booking") : t("public.book.bookThis")}
           </button>
         </form>
       )}

@@ -80,7 +80,10 @@ async def public_feedback(slug: str, body: PublicFeedback, request: Request, db:
 # ── M46.S01.T006 KB access groups: members-only articles for signed-in portal users on the article's list ──
 
 def _members():
-    return (KBArticle.status == "PUBLISHED", KBArticle.is_internal_only.is_(False), KBArticle.access_list_id.isnot(None))
+    # the access list widens nothing else: company/department/factory/module scopes still keep an article private
+    return (KBArticle.status == "PUBLISHED", KBArticle.is_internal_only.is_(False), KBArticle.access_list_id.isnot(None),
+            KBArticle.company_id.is_(None), KBArticle.access_scope_type.is_(None), KBArticle.access_level == "all",
+            KBArticle.department_id.is_(None), KBArticle.factory_id.is_(None), KBArticle.module_key.is_(None))
 
 
 @router.get("/members/articles")

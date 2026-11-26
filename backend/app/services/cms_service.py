@@ -151,6 +151,17 @@ def validate_block(b: dict, warnings: list[str], depth: int = 0) -> dict:
 
 
 def validate_doc(doc: dict) -> tuple[dict, list[str]]:
+    try:
+        return _validate_doc(doc)
+    except CmsError:
+        raise
+    except (ValueError, TypeError, AttributeError, KeyError) as e:     # malformed block data is an input error, not a 500
+        raise CmsError(f"Invalid block data: {type(e).__name__}")
+
+
+def _validate_doc(doc: dict) -> tuple[dict, list[str]]:
+    if not isinstance(doc, dict):
+        raise CmsError("A page document must be an object")
     warnings: list[str] = []
     blocks = doc.get("blocks") or []
     if not isinstance(blocks, list) or len(blocks) > MAX_BLOCKS:
@@ -201,7 +212,7 @@ def audit(db: AsyncSession, user, event: str, target_type: str, target_id, detai
 # ── workflow ───────────────────────────────────────────────────────────────────
 
 async def submit(db: AsyncSession, page: CmsPage, user) -> None:
-    if page.status not in ("DRAFT", "PUBLISHED", "APPROVED"):
+    if page.status not in ("DRAFT", "PUBLISHED", "APPROVED", "ARCHIVED"):
         raise CmsError(f"Cannot submit a page in {page.status}")
     page.status, page.submitted_by, page.approved_by = "IN_REVIEW", user.username, None
     audit(db, user, "cms.page.submitted", "cms_page", page.id, {"path": page.path})
@@ -227,16 +238,22 @@ async def publish(db: AsyncSession, page: CmsPage, user, note: str = "", content
         if site.require_approval and page.status != "APPROVED":
             raise CmsError("This site requires an approved review before publishing")
         content, _ = validate_doc(page.draft or {})
+    clash = (await db.execute(select(CmsPage.id).where(CmsPage.site_id == page.site_id, CmsPage.locale == page.locale,
+                                                       CmsPage.live_path == page.path, CmsPage.id != page.id,
+                                                       CmsPage.live_version_id.isnot(None)))).first()
+    if clash:
+        raise CmsError(f"Another live {page.locale} page is still served at {page.path}; move or unpublish it first")
     prev = await _live(db, page)
     n = (await db.execute(select(func.coalesce(func.max(CmsPageVersion.version), 0)).where(CmsPageVersion.page_id == page.id))).scalar_one()
-    v = CmsPageVersion(page_id=page.id, version=n + 1, title=title or page.title, content={**content, "path": page.path},
+    meta = {"author": page.author, "category": page.category, "tags": list(page.tags or [])}   # shown from the snapshot, not the row
+    v = CmsPageVersion(page_id=page.id, version=n + 1, title=title or page.title, content={**content, "path": page.path, "meta": meta},
                        note=note[:200] or None, published_by=user.username)
     db.add(v)
     await db.flush()
     old_path = (prev.content or {}).get("path") if prev else None
-    if old_path and old_path != page.path:                # slug changed after going live: keep old links working
+    if old_path and old_path != page.path and page.access == "PUBLIC":   # moved after going live: keep old links working
         await upsert_redirect(db, page.site_id, old_path, page.path, 301, auto=True)
-    page.live_version_id, page.status = v.id, "PUBLISHED"
+    page.live_version_id, page.live_path, page.status = v.id, page.path, "PUBLISHED"
     audit(db, user, "cms.page.published", "cms_page", page.id, {"version": v.version, "path": page.path})
     if page.translation_state == "SOURCE":               # translations of a changed source need a look
         for t in (await db.execute(select(CmsPage).where(CmsPage.translation_group == page.translation_group, CmsPage.id != page.id))).scalars():
@@ -249,18 +266,20 @@ async def rollback(db: AsyncSession, page: CmsPage, version: int, user) -> CmsPa
     old = (await db.execute(select(CmsPageVersion).where(CmsPageVersion.page_id == page.id, CmsPageVersion.version == version))).scalar_one_or_none()
     if old is None:
         raise CmsError("Version not found")
-    content = {k: v for k, v in old.content.items() if k != "path"}
+    content = {k: v for k, v in old.content.items() if k not in ("path", "meta")}
     page.draft = content
     return await publish(db, page, user, note=f"Rollback to v{version}", content=content, title=old.title)
 
 
 async def unpublish(db: AsyncSession, page: CmsPage, user) -> None:
-    page.live_version_id, page.status = None, "ARCHIVED"
+    page.live_version_id, page.live_path, page.status = None, None, "ARCHIVED"
     audit(db, user, "cms.page.unpublished", "cms_page", page.id, {"path": page.path})
 
 
 async def upsert_redirect(db: AsyncSession, site_id, src: str, dst: str, code: int = 301, auto: bool = False) -> CmsRedirect:
     src, dst = href(src), href(dst)
+    if not dst.startswith("/"):
+        raise CmsError("A redirect points to a path on this site")
     if not src.startswith("/"):
         raise CmsError("A redirect starts from a site path")
     if src == dst:
@@ -295,17 +314,18 @@ async def site_by_key(db: AsyncSession, key: str) -> Optional[CmsSite]:
     return (await db.execute(select(CmsSite).where(CmsSite.key == key))).scalar_one_or_none()
 
 
-async def find_live(db: AsyncSession, site: CmsSite, path: str, locale: str) -> tuple[Optional[CmsPage], Optional[CmsTableRow]]:
-    """The live page at a path in a locale (falls back to the default locale); dynamic pages match <prefix>/<row>."""
-    for loc in dict.fromkeys([locale, site.default_locale]):
-        p = (await db.execute(select(CmsPage).where(CmsPage.site_id == site.id, CmsPage.locale == loc, CmsPage.path == path,
-                                                    CmsPage.status == "PUBLISHED", CmsPage.live_version_id.isnot(None)))).scalar_one_or_none()
+async def find_live(db: AsyncSession, site: CmsSite, path: str, locale: str, fallback: bool = True) -> tuple[Optional[CmsPage], Optional[CmsTableRow]]:
+    """The page whose live version is served at a path in a locale (optionally falling back to the default locale);
+    dynamic pages match <prefix>/<row>. Live = has a live version, whatever its current draft/review status."""
+    for loc in dict.fromkeys([locale, site.default_locale] if fallback else [locale]):
+        p = (await db.execute(select(CmsPage).where(CmsPage.site_id == site.id, CmsPage.locale == loc, CmsPage.live_path == path,
+                                                    CmsPage.live_version_id.isnot(None)))).scalars().first()
         if p:
             return p, None
         prefix, _, row_slug = path.rpartition("/")
         if row_slug and prefix:
-            d = (await db.execute(select(CmsPage).where(CmsPage.site_id == site.id, CmsPage.locale == loc, CmsPage.path == prefix,
-                                                        CmsPage.kind == "DYNAMIC", CmsPage.status == "PUBLISHED"))).scalar_one_or_none()
+            d = (await db.execute(select(CmsPage).where(CmsPage.site_id == site.id, CmsPage.locale == loc, CmsPage.live_path == prefix,
+                                                        CmsPage.kind == "DYNAMIC", CmsPage.live_version_id.isnot(None)))).scalars().first()
             if d and d.table_id:
                 t = await db.get(CmsTable, d.table_id)
                 row = (await db.execute(select(CmsTableRow).where(CmsTableRow.table_id == d.table_id, CmsTableRow.slug == row_slug))).scalar_one_or_none()
@@ -329,7 +349,11 @@ def _fill_row(blocks: list, row: CmsTableRow) -> list:
     return [one(b) for b in blocks]
 
 
-async def expand(db: AsyncSession, site: CmsSite, blocks: list, depth: int = 0) -> list:
+async def _members_table(db: AsyncSession, table_id) -> bool:
+    return bool((await db.execute(select(CmsPage.id).where(CmsPage.table_id == table_id, CmsPage.access == "MEMBERS"))).first())
+
+
+async def expand(db: AsyncSession, site: CmsSite, blocks: list, depth: int = 0, public: bool = True) -> list:
     """Resolve CTAs, embeds and table blocks into data the page can render without more calls."""
     out = []
     for b in blocks:
@@ -345,32 +369,33 @@ async def expand(db: AsyncSession, site: CmsSite, blocks: list, depth: int = 0) 
                 continue
             src = await db.get(CmsPage, uuid.UUID(b["page_id"]))
             v = await _live(db, src) if src and src.site_id == site.id and src.access == "PUBLIC" else None
-            b["blocks"] = await expand(db, site, (v.content or {}).get("blocks", []), depth + 1) if v else []
+            b["blocks"] = await expand(db, site, (v.content or {}).get("blocks", []), depth + 1, public) if v else []
         elif b["type"] == "table":
             t = (await db.execute(select(CmsTable).where(CmsTable.site_id == site.id, CmsTable.key == b["table_key"]))).scalar_one_or_none()
-            rows = [] if not t or not t.published else (await db.execute(
+            hidden = not t or not t.published or (public and await _members_table(db, t.id))
+            rows = [] if hidden else (await db.execute(
                 select(CmsTableRow).where(CmsTableRow.table_id == t.id).order_by(CmsTableRow.position, CmsTableRow.slug).limit(200))).scalars().all()
             cols = b.get("columns") or [c["key"] for c in (t.columns if t else [])][:6]
             b["rows"] = [{"slug": r.slug, **{c: (r.values or {}).get(c) for c in cols}} for r in rows]
             b["columns"] = cols
         elif b["type"] == "columns":
-            b["left"], b["right"] = await expand(db, site, b["left"], depth), await expand(db, site, b["right"], depth)
+            b["left"], b["right"] = await expand(db, site, b["left"], depth, public), await expand(db, site, b["right"], depth, public)
         out.append(b)
     return out
 
 
 async def alternates(db: AsyncSession, site: CmsSite, page: CmsPage) -> list[dict]:
-    rows = (await db.execute(select(CmsPage.locale, CmsPage.path).where(CmsPage.translation_group == page.translation_group,
-                                                                        CmsPage.status == "PUBLISHED"))).all()
+    rows = (await db.execute(select(CmsPage.locale, CmsPage.live_path).where(CmsPage.translation_group == page.translation_group,
+                                                                             CmsPage.live_version_id.isnot(None), CmsPage.access == page.access))).all()
     return [{"locale": loc, "path": p} for loc, p in sorted(rows)]
 
 
 def json_ld(site: CmsSite, page: CmsPage, version: CmsPageVersion, blocks: list, base: str, row: Optional[CmsTableRow] = None) -> list[dict]:
-    url = f"{base}{page.path}" + (f"/{row.slug}" if row else "")
+    url = f"{base}{page.live_path}" + (f"/{row.slug}" if row else "")
     out: list[dict] = []
     if page.kind == "POST":
         out.append({"@context": "https://schema.org", "@type": "BlogPosting", "headline": version.title, "inLanguage": page.locale,
-                    "author": {"@type": "Person", "name": page.author or site.name}, "datePublished": version.published_at.isoformat() if version.published_at else None,
+                    "author": {"@type": "Person", "name": (version.content.get("meta") or {}).get("author") or site.name}, "datePublished": version.published_at.isoformat() if version.published_at else None,
                     "mainEntityOfPage": url, "publisher": {"@type": "Organization", "name": site.name}})
     else:
         out.append({"@context": "https://schema.org", "@type": "WebPage", "name": version.title, "inLanguage": page.locale, "url": url})
@@ -388,18 +413,18 @@ def base_url(site: CmsSite) -> str:
 
 async def sitemap(db: AsyncSession, site: CmsSite) -> str:
     base = base_url(site)
-    pages = (await db.execute(select(CmsPage).where(CmsPage.site_id == site.id, CmsPage.status == "PUBLISHED",
+    pages = (await db.execute(select(CmsPage).where(CmsPage.site_id == site.id, CmsPage.live_version_id.isnot(None),
                                                     CmsPage.access == "PUBLIC", CmsPage.kind != "DYNAMIC"))).scalars().all()
     groups: dict = {}
     for p in pages:
         v = await _live(db, p)
         if v and not (v.content.get("seo") or {}).get("noindex"):
             groups.setdefault(p.translation_group, []).append((p, v))
-    for p in (await db.execute(select(CmsPage).where(CmsPage.site_id == site.id, CmsPage.status == "PUBLISHED", CmsPage.kind == "DYNAMIC",
+    for p in (await db.execute(select(CmsPage).where(CmsPage.site_id == site.id, CmsPage.live_version_id.isnot(None), CmsPage.kind == "DYNAMIC",
                                                      CmsPage.access == "PUBLIC"))).scalars().all():
         t = await db.get(CmsTable, p.table_id) if p.table_id else None
-        if t and t.published:
-            v = await _live(db, p)
+        v = await _live(db, p)
+        if t and t.published and v and not (v.content.get("seo") or {}).get("noindex"):
             for r in (await db.execute(select(CmsTableRow).where(CmsTableRow.table_id == t.id))).scalars():
                 groups.setdefault(uuid.uuid4(), []).append((p, v, r))
     lines = ['<?xml version="1.0" encoding="UTF-8"?>',
@@ -407,12 +432,12 @@ async def sitemap(db: AsyncSession, site: CmsSite) -> str:
     for items in groups.values():
         for it in items:
             p, v = it[0], it[1]
-            path = p.path + (f"/{it[2].slug}" if len(it) > 2 else "")
+            path = p.live_path + (f"/{it[2].slug}" if len(it) > 2 else "")
             loc = f"{base}/{p.locale}{'' if path == '/' else path}"
             lines.append(f"<url><loc>{escape(loc)}</loc><lastmod>{v.published_at.date().isoformat()}</lastmod>")
             if len(it) == 2 and len(items) > 1:
                 for q, _ in items:
-                    lines.append(f'<xhtml:link rel="alternate" hreflang="{q.locale}" href="{escape(base + "/" + q.locale + ("" if q.path == "/" else q.path))}"/>')
+                    lines.append(f'<xhtml:link rel="alternate" hreflang="{q.locale}" href="{escape(base + "/" + q.locale + ("" if q.live_path == "/" else q.live_path))}"/>')
             lines.append("</url>")
     lines.append("</urlset>")
     return "\n".join(lines)

@@ -47,24 +47,27 @@ async def page(key: str, request: Request, response: Response, path: str = Query
     s = await _site(db, key)
     path = _clean(path)
     loc = locale if locale in (s.locales or []) else s.default_locale
-    r = (await db.execute(select(CmsRedirect).where(CmsRedirect.site_id == s.id, CmsRedirect.from_path == path))).scalar_one_or_none()
-    if r is not None:
-        r.hits += 1
-        await db.commit()
-        return {"redirect": r.to_path, "code": r.code}
-    p, row = await cms.find_live(db, s, path, loc)
+    p, row = await cms.find_live(db, s, path, loc, fallback=False)      # a live page always wins over a redirect
+    if p is None:
+        r = (await db.execute(select(CmsRedirect).where(CmsRedirect.site_id == s.id, CmsRedirect.from_path == path))).scalar_one_or_none()
+        if r is not None:
+            r.hits += 1
+            await db.commit()
+            return {"redirect": r.to_path, "code": r.code}
+        p, row = await cms.find_live(db, s, path, loc)
     if p is None:
         raise HTTPException(404, "Page not found")
+    portal_user = await media.optional_portal_user(request, db)
     if p.access == "MEMBERS":
-        await media.member_check(db, p.access_list_id, await media.optional_portal_user(request, db))
+        await media.member_check(db, p.access_list_id, portal_user)
     v = await db.get(CmsPageVersion, p.live_version_id)
     blocks = v.content.get("blocks", [])
     if row is not None:
         blocks = cms._fill_row(blocks, row)
-    who = await pz.visitor(db, visitor, p.locale)
+    who = await pz.visitor(db, visitor, p.locale, portal_user)
+    blocks = await cms.expand(db, s, blocks, public=p.access == "PUBLIC")   # embeds first, so their blocks are personalized too
     blocks = pz.personalize(blocks, who)
     blocks, picked = await pz.choose(db, p, blocks, who)
-    blocks = await cms.expand(db, s, blocks)
     keys = [b["cta"]["key"] for b in blocks if b.get("cta")]
     if keys:
         await db.execute(update(CmsCta).where(CmsCta.site_id == s.id, CmsCta.key.in_(keys)).values(views=CmsCta.views + 1))
@@ -73,12 +76,14 @@ async def page(key: str, request: Request, response: Response, path: str = Query
     response.headers["Cache-Control"] = "private, no-store" if personal else "public, max-age=60"
     base = cms.base_url(s)
     title = (row.values or {}).get("name") if row is not None else None
+    meta = v.content.get("meta") or {}
+    blocks = pz.strip(blocks)
     seo = dict(v.content.get("seo") or {})
     if p.access == "MEMBERS":
         seo["noindex"] = True
     return {"site": _site_public(s),
-            "page": {"id": str(p.id), "title": title or v.title, "kind": p.kind, "locale": p.locale, "path": path, "author": p.author,
-                     "category": p.category, "tags": p.tags or [], "published_at": v.published_at.isoformat(), "version": v.version,
+            "page": {"id": str(p.id), "title": title or v.title, "kind": p.kind, "locale": p.locale, "path": path, "author": meta.get("author"),
+                     "category": meta.get("category"), "tags": meta.get("tags") or [], "published_at": v.published_at.isoformat(), "version": v.version,
                      "members_only": p.access == "MEMBERS"},
             "blocks": blocks, "seo": seo, "alternates": await cms.alternates(db, s, p), "json_ld": cms.json_ld(s, p, v, blocks, base, row),
             "experiments": picked, "personalized": who.personalized, "canonical": seo.get("canonical") or f"{base}/{p.locale}{'' if path == '/' else path}"}
@@ -89,11 +94,12 @@ async def blog(key: str, locale: Optional[str] = None, category: Optional[str] =
     s = await _site(db, key)
     loc = locale if locale in (s.locales or []) else s.default_locale
     q = select(CmsPage, CmsPageVersion).join(CmsPageVersion, CmsPageVersion.id == CmsPage.live_version_id).where(
-        CmsPage.site_id == s.id, CmsPage.kind == "POST", CmsPage.status == "PUBLISHED", CmsPage.locale == loc, CmsPage.access == "PUBLIC")
+        CmsPage.site_id == s.id, CmsPage.kind == "POST", CmsPage.live_version_id.isnot(None), CmsPage.locale == loc, CmsPage.access == "PUBLIC")
+    rows = (await db.execute(q.order_by(CmsPageVersion.published_at.desc()).limit(200))).all()
     if category:
-        q = q.where(CmsPage.category == category)
-    rows = (await db.execute(q.order_by(CmsPageVersion.published_at.desc()).limit(100))).all()
-    return {"site": _site_public(s), "posts": [{"title": v.title, "path": p.path, "author": p.author, "category": p.category, "tags": p.tags or [],
+        rows = [(p, v) for p, v in rows if (v.content.get("meta") or {}).get("category") == category]
+    m = lambda v: v.content.get("meta") or {}   # noqa: E731
+    return {"site": _site_public(s), "posts": [{"title": v.title, "path": p.live_path, "author": m(v).get("author"), "category": m(v).get("category"), "tags": m(v).get("tags") or [],
             "published_at": v.published_at.isoformat(), "description": (v.content.get("seo") or {}).get("meta_description")} for p, v in rows]}
 
 

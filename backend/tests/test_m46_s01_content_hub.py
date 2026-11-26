@@ -131,6 +131,8 @@ async def test_cms_staging_approval_publish_rollback_seo():
         sid = site["id"]
         bad = await ca.post("/api/v1/cms/pages", json={"site_id": sid, "title": "Bad", "draft": {"blocks": [{"type": "button", "label": "x", "href": "javascript:alert(1)"}]}})
         assert bad.status_code == 422
+        for junk in ({"blocks": ["x"]}, {"blocks": [{"type": "heading", "level": "abc", "text": "x"}]}, {"blocks": [{"type": "embed", "page_id": "nope"}]}):
+            assert (await ca.post("/api/v1/cms/pages", json={"site_id": sid, "title": "Junk", "draft": junk})).status_code == 422   # (review #15)
         home = (await ca.post("/api/v1/cms/pages", json={"site_id": sid, "title": "POVU home", "slug": "home", "draft": {
             "blocks": [{"type": "hero", "title": "POVU Water 500 ml", "subtitle": "<img src=x onerror=alert(1)>"},
                        {"type": "text", "text": "Version one text"}],
@@ -155,7 +157,13 @@ async def test_cms_staging_approval_publish_rollback_seo():
         prev = (await ca.get(f"/api/v1/cms/pages/{hid}/preview")).json()
         assert prev["preview"] and prev["blocks"][1]["text"] == "Version two text"
         await ca.post(f"/api/v1/cms/pages/{hid}/submit")
+        assert (await pub.get(f"/api/v1/public/cms/site/{key}/page", params={"path": "/"})).status_code == 200   # in review: still live
         assert (await ca.post(f"/api/v1/cms/pages/{hid}/approve", json={"ok": True})).status_code == 403        # no approve permission
+        assert (await cb.post(f"/api/v1/cms/pages/{hid}/approve", json={"ok": True})).status_code == 200
+        await ca.patch(f"/api/v1/cms/pages/{hid}", json={"title": "POVU home (edited after approval)"})          # (review #5)
+        assert (await cb.post(f"/api/v1/cms/pages/{hid}/publish", json={})).status_code == 422                    # needs a new review
+        await ca.patch(f"/api/v1/cms/pages/{hid}", json={"title": "POVU home"})
+        await ca.post(f"/api/v1/cms/pages/{hid}/submit")
         await _publish(cb, hid)
         assert (await pub.get(f"/api/v1/public/cms/site/{key}/page", params={"path": "/"})).json()["blocks"][1]["text"] == "Version two text"
         rb = await cb.post(f"/api/v1/cms/pages/{hid}/rollback", json={"version": 1})
@@ -174,24 +182,33 @@ async def test_cms_staging_approval_publish_rollback_seo():
             await ca.post(f"/api/v1/cms/pages/{pid}/submit")
             await _publish(cb, pid)
         moved = (await ca.patch(f"/api/v1/cms/pages/{about['id']}", json={"slug": "company"})).json()
-        assert moved["path"] == "/company"
+        assert moved["path"] == "/company" and moved["live_path"] == "/about"
+        assert (await pub.get(f"/api/v1/public/cms/site/{key}/page", params={"path": "/about"})).status_code == 200    # (review #4c) moves on publish
+        assert (await pub.get(f"/api/v1/public/cms/site/{key}/page", params={"path": "/company"})).status_code == 404
         assert (await ca.get(f"/api/v1/cms/pages/{team['id']}")).json()["path"] == "/company/team"     # children follow
         for pid in (about["id"], team["id"]):
             await ca.post(f"/api/v1/cms/pages/{pid}/submit")
             await _publish(cb, pid)
         red = (await pub.get(f"/api/v1/public/cms/site/{key}/page", params={"path": "/about/team"})).json()
         assert red == {"redirect": "/company/team", "code": 301}
-        assert (await ca.post(f"/api/v1/cms/sites/{sid}/redirects", json={"from_path": "/company/team", "to_path": "/about/team"})).status_code == 422
+        assert (await ca.post(f"/api/v1/cms/sites/{sid}/redirects", json={"from_path": "/x", "to_path": "/company"})).status_code == 403   # approver only
+        assert (await cb.post(f"/api/v1/cms/sites/{sid}/redirects", json={"from_path": "/company/team", "to_path": "/about/team"})).status_code == 422
+        assert (await cb.post(f"/api/v1/cms/sites/{sid}/redirects", json={"from_path": "/go", "to_path": "https://evil.example.com"})).status_code == 422
+        await cb.post(f"/api/v1/cms/sites/{sid}/redirects", json={"from_path": "/company", "to_path": "/"})                 # a live page wins
+        assert "redirect" not in (await pub.get(f"/api/v1/public/cms/site/{key}/page", params={"path": "/company"})).json()
         assert (await ca.patch(f"/api/v1/cms/pages/{about['id']}", json={"parent_id": team["id"]})).status_code == 422   # no cycles
 
         # CTA, embed, dynamic table page
-        await ca.post(f"/api/v1/cms/sites/{sid}/ctas", json={"key": "find-a-shop", "label": "Find a shop", "href": "/company"})
+        assert (await ca.post(f"/api/v1/cms/sites/{sid}/ctas", json={"key": "find-a-shop", "label": "x", "href": "/company"})).status_code == 403
+        await cb.post(f"/api/v1/cms/sites/{sid}/ctas", json={"key": "find-a-shop", "label": "Find a shop", "href": "/company"})
         tbl = (await ca.post(f"/api/v1/cms/sites/{sid}/tables", json={"key": "products", "name": "Products",
                                                                      "columns": [{"key": "name", "label": "Name"}, {"key": "size", "label": "Size"}]})).json()
         assert (await ca.put(f"/api/v1/cms/tables/{tbl['id']}/rows", json={"rows": [{"slug": "povu-water-500", "name": "POVU Water", "size": "500 ml"},
                                                                                   {"slug": "povu-juice-1l", "name": "POVU Juice", "size": "1 L"}]})).json() == {"saved": 2}
         assert (await ca.patch(f"/api/v1/cms/tables/{tbl['id']}", json={"published": True})).status_code == 403   # publishing data = approver
         assert (await cb.patch(f"/api/v1/cms/tables/{tbl['id']}", json={"published": True})).status_code == 200
+        assert (await ca.put(f"/api/v1/cms/tables/{tbl['id']}/rows", json={"rows": [{"slug": "x", "name": "x"}]})).status_code == 403   # live rows: approver
+        assert (await cb.put(f"/api/v1/cms/tables/{tbl['id']}/rows", json={"rows": [{"slug": "d", "name": "a"}, {"slug": "d", "name": "b"}]})).status_code == 422
         prod = (await ca.post("/api/v1/cms/pages", json={"site_id": sid, "title": "Products", "slug": "products", "kind": "DYNAMIC",
                                                          "table_id": tbl["id"], "draft": {"blocks": [
                                                              {"type": "heading", "level": 1, "text": "{{row.name}}"}, {"type": "text", "text": "Size: {{row.size}}"},
@@ -228,7 +245,7 @@ async def test_cms_staging_approval_publish_rollback_seo():
         assert [x["path"] for x in bl["posts"]] == ["/blog/store-water"] and bl["posts"][0]["author"] == "POVU QA"
         pp = (await pub.get(f"/api/v1/public/cms/site/{key}/page", params={"path": "/blog/store-water"})).json()
         types = [x["@type"] for x in pp["json_ld"]]
-        assert types == ["BlogPosting", "FAQPage"]
+        assert types == ["BlogPosting", "FAQPage"] and pp["page"]["author"] == "POVU QA"
 
         # multilingual: translation workflow, hreflang, fallback
         tr = await ca.post(f"/api/v1/cms/pages/{hid}/translate", json={"locale": "sw"})
@@ -262,21 +279,29 @@ async def test_cms_staging_approval_publish_rollback_seo():
 @pytest.mark.asyncio
 async def test_personalization_consent_cache_and_bandit():
     from app.db.session import AsyncSessionLocal
+    from app.core.security import hash_password
     from app.models.crm import CRMContact
+    from app.models.portal import PortalAccount, PortalAccountStatus, PortalAccountType, PortalUser, PortalUserRole
     from app.services import web_analytics_service as wa
     a, b, _ = await _people()
     key = f"pz{uuid.uuid4().hex[:5]}"
     email = f"mama-{uuid.uuid4().hex[:5]}@example.com"
     async with AsyncSessionLocal() as db:
         db.add(CRMContact(full_name="Mama Duka", email=email, lifecycle_stage="CUSTOMER"))
+        acct = PortalAccount(account_code=f"PZ-{uuid.uuid4().hex[:6]}", account_type=PortalAccountType.CUSTOMER, portal_status=PortalAccountStatus.ACTIVE)
+        db.add(acct)
+        await db.flush()
+        db.add(PortalUser(portal_account_id=acct.id, full_name="Mama Duka", email=email, password_hash=hash_password(PW),
+                          role_type=PortalUserRole.OWNER, is_active=True))
         await wa.record_consent(db, "visitor-known-1", True, True)
         await db.flush()
         assert await wa.identify(db, "visitor-known-1", email)
         await wa.record_consent(db, "visitor-anon-01", True, False)
         await db.commit()
-    async with _client() as ca, _client() as cb, _client() as pub:
+    async with _client() as ca, _client() as cb, _client() as pub, _client() as member:
         await _login(ca, a)
         await _login(cb, b)
+        assert (await member.post("/api/v1/portal-self/auth/login", json={"email": email, "password": PW})).status_code == 200
         sid = (await cb.post("/api/v1/cms/sites", json={"name": "POVU PZ", "key": key})).json()["id"]
         pg = (await ca.post("/api/v1/cms/pages", json={"site_id": sid, "title": "Offers", "slug": "offers", "draft": {"blocks": [
             {"type": "text", "id": "w", "slot": "hi", "text": "Welcome back, valued customer", "audience": {"known": True, "lifecycle": ["CUSTOMER"]}},
@@ -286,24 +311,28 @@ async def test_personalization_consent_cache_and_bandit():
         await ca.post(f"/api/v1/cms/pages/{pg['id']}/submit")
         await _publish(cb, pg["id"])
         url = f"/api/v1/public/cms/site/{key}/page"
-        known = await pub.get(url, params={"path": "/offers", "visitor": "visitor-known-1"})
+        # (review #7) a self-typed e-mail is not verified: no CRM data is used for it
+        selfid = (await pub.get(url, params={"path": "/offers", "visitor": "visitor-known-1"})).json()
+        assert selfid["personalized"] and selfid["blocks"][0]["id"] == "f"
+        known = await member.get(url, params={"path": "/offers", "visitor": "visitor-known-1"})   # signed-in portal user: verified
         kj = known.json()
         assert known.headers["cache-control"] == "private, no-store" and kj["personalized"]
         assert [x["id"] for x in kj["blocks"]][0] == "w" and email not in known.text and "Mama" not in known.text
+        assert "audience" not in known.text and "CUSTOMER" not in known.text and "fallback" not in known.text     # (review #9)
         anon = await pub.get(url, params={"path": "/offers"})
         assert anon.headers["cache-control"] == "public, max-age=60" and [x["id"] for x in anon.json()["blocks"]] == ["f", "ba"]   # control
         # withdrawn marketing consent → anonymous fallback immediately
         async with AsyncSessionLocal() as db:
             await wa.record_consent(db, "visitor-known-1", True, False)
             await db.commit()
-        assert (await pub.get(url, params={"path": "/offers", "visitor": "visitor-known-1"})).json()["blocks"][0]["id"] == "f"
+        assert (await pub.get(url, params={"path": "/offers", "visitor": "visitor-known-1"})).json()["personalized"] is False
         # A/B: sticky per visitor; views recorded only with analytics consent
         first = (await pub.get(url, params={"path": "/offers", "visitor": "visitor-anon-01"})).json()["experiments"]["cta"]
         for _ in range(3):
             assert (await pub.get(url, params={"path": "/offers", "visitor": "visitor-anon-01"})).json()["experiments"]["cta"] == first
         await pub.get(url, params={"path": "/offers", "visitor": "no-consent-visitor"})
         exp = (await ca.get(f"/api/v1/cms/pages/{pg['id']}/experiments")).json()[0]
-        assert exp["views"] == 2                          # known-1 and anon-01 (both analytics-consented); no-consent not counted
+        assert exp["views"] == 2                          # known-1 and anon-01 (analytics-consented); no-consent not counted
         assert (await pub.post(f"/api/v1/public/cms/site/{key}/convert", json={"path": "/offers", "experiment": "cta", "visitor": "visitor-anon-01"})).json() == {"recorded": True}
         assert (await pub.post(f"/api/v1/public/cms/site/{key}/convert", json={"path": "/offers", "experiment": "cta", "visitor": "visitor-anon-01"})).json() == {"recorded": False}
         assert (await pub.post(f"/api/v1/public/cms/site/{key}/convert", json={"path": "/offers", "experiment": "cta", "visitor": "no-consent-visitor"})).json() == {"recorded": False}
@@ -401,9 +430,10 @@ async def test_members_media_captions_timeline_kb(tmp_path, monkeypatch):
                              files={"file": ("crates.mp4", mp4, "video/mp4")})).json()
         assert med["kind"] == "VIDEO" and med["mime"] == "video/mp4"
         mid = med["id"]
-        assert (await ca.put(f"/api/v1/cms/media/{mid}/captions/sw", json={"vtt": "not vtt"})).status_code == 422
+        assert (await cb.put(f"/api/v1/cms/media/{mid}/captions/sw", json={"vtt": "not vtt"})).status_code == 422
         vtt = "WEBVTT\n\n00:00.000 --> 00:02.000\n<script>x</script>Panga kreti za POVU\n"
-        assert (await ca.put(f"/api/v1/cms/media/{mid}/captions/sw", json={"vtt": vtt})).json()["captions"] == ["sw"]
+        assert (await ca.put(f"/api/v1/cms/media/{mid}/captions/sw", json={"vtt": vtt})).status_code == 403   # gated media: approver
+        assert (await cb.put(f"/api/v1/cms/media/{mid}/captions/sw", json={"vtt": vtt})).json()["captions"] == ["sw"]
         assert (await anon.get(f"/api/v1/public/cms/media/{mid}/file")).status_code == 401
         assert (await m_out.get(f"/api/v1/public/cms/media/{mid}/file")).status_code == 403
         part = await m_in.get(f"/api/v1/public/cms/media/{mid}/file", headers={"Range": "bytes=0-15"})
@@ -426,6 +456,24 @@ async def test_members_media_captions_timeline_kb(tmp_path, monkeypatch):
                             files={"file": ("ep1.wav", wav, "audio/wav")})).json()
         feed = await anon.get(f"/api/v1/public/cms/podcast/POVU Talk {s}.xml")
         assert feed.status_code == 200 and ep["id"] in feed.text
+
+        # (review #3) rows of a table behind a members-only dynamic page never show on a public page
+        tb = (await ca.post(f"/api/v1/cms/sites/{sid}/tables", json={"key": "member_prices", "name": "Member prices",
+                                                                    "columns": [{"key": "name"}, {"key": "price"}]})).json()
+        await ca.put(f"/api/v1/cms/tables/{tb['id']}/rows", json={"rows": [{"slug": "water", "name": "POVU Water", "price": "42"}]})
+        await cb.patch(f"/api/v1/cms/tables/{tb['id']}", json={"published": True})
+        dyn = (await ca.post("/api/v1/cms/pages", json={"site_id": sid, "title": "Member price", "slug": "member-price", "kind": "DYNAMIC",
+                                                        "table_id": tb["id"], "draft": {"blocks": [{"type": "text", "text": "{{row.price}}"}]}})).json()
+        await cb.patch(f"/api/v1/cms/pages/{dyn['id']}", json={"access": "MEMBERS", "access_list_id": acl["id"]})
+        pubpg = (await ca.post("/api/v1/cms/pages", json={"site_id": sid, "title": "Open", "slug": "open",
+                                                          "draft": {"blocks": [{"type": "table", "table_key": "member_prices"}]}})).json()
+        for pid in (dyn["id"], pubpg["id"]):
+            await ca.post(f"/api/v1/cms/pages/{pid}/submit")
+            await _publish(cb, pid)
+        op = await anon.get(url, params={"path": "/open"})
+        assert op.status_code == 200 and op.json()["blocks"][0]["rows"] == [] and "42" not in op.text
+        assert (await anon.get(url, params={"path": "/member-price/water"})).status_code == 401
+        assert (await m_in.get(url, params={"path": "/member-price/water"})).json()["blocks"][0]["text"] == "42"
 
         # KB access groups
         async with AsyncSessionLocal() as db:

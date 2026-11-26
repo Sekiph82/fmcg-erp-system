@@ -89,13 +89,20 @@ def _template_draft(profile: CsBrandProfile, channel: str, template: str, brief:
     return text if len(text) <= limit else text[: limit - 1].rsplit(" ", 1)[0] + "…"
 
 
-async def _usage(db: AsyncSession, profile: CsBrandProfile) -> CsUsage:
-    u = (await db.execute(select(CsUsage).where(CsUsage.profile_id == profile.id, CsUsage.month == _month()))).scalar_one_or_none()
-    if u is None:
-        u = CsUsage(profile_id=profile.id, month=_month(), spent=0.0, calls=0)
-        db.add(u)
-        await db.flush()
-    return u
+async def _reserve(db: AsyncSession, profile: CsBrandProfile, est: float, budget: float) -> bool:
+    """Atomically reserve the estimated cost inside this month's budget (concurrent drafts cannot overspend)."""
+    from sqlalchemy import text
+    await db.execute(text("INSERT INTO cs_usage (id, profile_id, month, spent, calls) VALUES (gen_random_uuid(), :p, :m, 0, 0) "
+                          "ON CONFLICT ON CONSTRAINT uq_cs_usage_month DO NOTHING"), {"p": profile.id, "m": _month()})
+    got = (await db.execute(text("UPDATE cs_usage SET spent = spent + :e, calls = calls + 1 WHERE profile_id = :p AND month = :m "
+                                 "AND spent + :e <= :b RETURNING id"), {"e": est, "p": profile.id, "m": _month(), "b": budget})).first()
+    return got is not None
+
+
+async def _settle(db: AsyncSession, profile: CsBrandProfile, delta: float) -> None:
+    from sqlalchemy import text
+    await db.execute(text("UPDATE cs_usage SET spent = GREATEST(0, spent + :d) WHERE profile_id = :p AND month = :m"),
+                     {"d": delta, "p": profile.id, "m": _month()})
 
 
 async def generate(db: AsyncSession, profile: CsBrandProfile, channel: str, template: str, brief: str, evidence_ids: list[str],
@@ -111,9 +118,8 @@ async def generate(db: AsyncSession, profile: CsBrandProfile, channel: str, temp
         from app.services.ai_provider import get_ai_provider
         provider = get_ai_provider()
         name = type(provider).__name__.replace("Provider", "").lower()
-        usage = await _usage(db, profile)
-        est = PRICE_PER_1K * 2          # ~2k tokens per draft, checked before the call
-        if name != "mock" and usage.spent + est <= budget:
+        est = PRICE_PER_1K * 2          # ~2k tokens per draft, reserved before the call
+        if name != "mock" and await _reserve(db, profile, est, budget):
             facts = "\n".join(f'[E:{e["id"]}] {e["text"]}' for e in profile.evidence or [] if str(e.get("id")) in evidence_ids)
             system = (f"You write marketing copy for {profile.name}. Voice: {profile.voice}\nNever use: {', '.join(profile.banned_terms or [])}.\n"
                       f"Only state facts from the evidence list and cite them as [E:id]. Max {CHANNELS[channel]} characters. Draft only.")
@@ -122,8 +128,8 @@ async def generate(db: AsyncSession, profile: CsBrandProfile, channel: str, temp
                 body = (r.text or "").strip()
                 cost = PRICE_PER_1K * ((getattr(r, "prompt_tokens", 0) or 0) + (getattr(r, "completion_tokens", 0) or 0)) / 1000
                 engine = getattr(r, "provider", name) or name
-                usage.spent, usage.calls = usage.spent + cost, usage.calls + 1
-            except Exception:                     # provider down: deterministic draft instead, nothing invented
+                await _settle(db, profile, cost - est)          # replace the reservation with the reported usage
+            except Exception:                     # provider down: the reservation stays (it may have been billed); rules draft
                 body = None
     if not body:
         engine, cost = "rules", 0.0
@@ -152,11 +158,13 @@ def submit(d: CsDraft, user) -> None:
     d.history = [*(d.history or []), {"at": datetime.now(timezone.utc).isoformat(), "by": user.username, "action": "submitted"}]
 
 
-def decide(d: CsDraft, user, ok: bool, note: str = "") -> None:
+def decide(d: CsDraft, user, ok: bool, note: str = "", profile: Optional[CsBrandProfile] = None) -> None:
     if d.status != "IN_REVIEW":
         raise StudioError("Only a draft in review can be decided")
     if d.created_by == user.username or any(h.get("by") == user.username and h.get("action") == "edited" for h in d.history or []):
         raise StudioError("A different person must approve (the author or an editor cannot)")
+    if ok and profile is not None:                    # the brand rules may have changed since the draft was checked
+        d.body, d.findings = review(profile, d.body, d.channel)
     if ok and any(f["level"] == "error" for f in d.findings or []):
         raise StudioError("Resolve the error findings before approving")
     d.status = "APPROVED" if ok else "REJECTED"

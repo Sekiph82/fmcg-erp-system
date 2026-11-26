@@ -50,7 +50,7 @@ function refreshSession(): Promise<void> {
 
 function redirectToLogin(): void {
   // public and external-partner pages (lead forms, help, shared documents, business cards, distributor/supplier portals) have no staff session
-  if (typeof window !== "undefined" && /^\/(forms|kb|unsubscribe|portal|supplier|verify|d|chat|nps|lp|kartvizit)(\/|$)/.test(window.location.pathname)) return;
+  if (typeof window !== "undefined" && /^\/(forms|kb|unsubscribe|portal|supplier|verify|d|chat|nps|lp|kartvizit|site|book|pay|survey|docs|plan)(\/|$)/.test(window.location.pathname)) return;
   if (_router) {
     _router.push("/login");
   } else if (typeof window !== "undefined") {

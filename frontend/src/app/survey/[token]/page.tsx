@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { API_ORIGIN } from "@/lib/api";
+import { useI18n } from "@/lib/i18n";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 type S = { kind: string; question: string; min: number; max: number; answered: boolean };
 
 export default function SurveyPage() {
+  const { t } = useI18n();
   const { token } = useParams<{ token: string }>();
   const url = `${API_ORIGIN}/api/v1/public/survey/${encodeURIComponent(token)}`;
   const [s, setS] = useState<S | null>(null);
@@ -25,14 +28,14 @@ export default function SurveyPage() {
   return (
     <main className="min-h-screen bg-gray-50 flex items-start justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-xl border shadow-sm p-5 space-y-3 text-sm">
-        <h1 className="text-lg font-semibold">POVU feedback</h1>
-        {state === "invalid" ? <p className="text-red-600">This link is not valid.</p> : state === "done" ? <p className="text-green-700">Thank you for your answer.</p> : !s ? <p className="text-gray-500">Loading…</p> : <>
-          <p>{s.question}</p>
+        <div className="flex flex-wrap items-center justify-between gap-2"><h1 className="text-lg font-semibold break-words min-w-0">{t("public.survey.title")}</h1><LanguageSwitcher /></div>
+        {state === "invalid" ? <p className="text-red-600">{t("public.survey.invalid")}</p> : state === "done" ? <p className="text-green-700">{t("public.survey.thanks")}</p> : !s ? <p className="text-gray-500">{t("common.loading")}</p> : <>
+          <p className="break-words">{s.question}</p>
           <div className="flex flex-wrap gap-2">{Array.from({ length: s.max - s.min + 1 }, (_, i) => s.min + i).map((n) =>
-            <button key={n} aria-label={`Score ${n}`} className={`w-10 h-10 rounded border ${score === n ? "bg-indigo-600 text-white" : ""}`} onClick={() => setScore(n)}>{n}</button>)}</div>
-          <p className="text-xs text-gray-500">{s.min} = {s.kind === "CES" ? "very hard" : "very unhappy"}, {s.max} = {s.kind === "CES" ? "very easy" : "very happy"}</p>
-          <textarea aria-label="Comment" className="border rounded w-full px-2 py-1" rows={3} placeholder="Anything to add? (optional)" value={comment} onChange={(e) => setComment(e.target.value)} />
-          <button className="w-full bg-indigo-600 text-white rounded py-2 disabled:opacity-50" disabled={score === null} onClick={send}>Send</button>
+            <button key={n} aria-label={t("public.survey.score", { n })} className={`w-10 h-10 rounded border ${score === n ? "bg-indigo-600 text-white" : ""}`} onClick={() => setScore(n)}>{n}</button>)}</div>
+          <p className="text-xs text-gray-500">{s.min} = {s.kind === "CES" ? t("public.survey.veryHard") : t("public.survey.veryUnhappy")}, {s.max} = {s.kind === "CES" ? t("public.survey.veryEasy") : t("public.survey.veryHappy")}</p>
+          <textarea aria-label={t("public.survey.comment")} className="border rounded w-full px-2 py-1" rows={3} placeholder={t("public.survey.commentPlaceholder")} value={comment} onChange={(e) => setComment(e.target.value)} />
+          <button className="w-full bg-indigo-600 text-white rounded py-2 disabled:opacity-50" disabled={score === null} onClick={send}>{t("common.send")}</button>
         </>}
       </div>
     </main>

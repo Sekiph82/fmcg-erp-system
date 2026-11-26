@@ -2,8 +2,11 @@
 
 Who is the visitor?
 - The browser sends its random analytics visitor id (povu-analytics.js); it is only ever used as a keyed hash.
-- A visitor is "known" only when they gave marketing consent AND linked their own e-mail (web_identities). Then the
-  CRM contact's lifecycle stage and the marketing audiences holding that e-mail drive block rules.
+- A visitor is "known" when they gave marketing consent AND linked an e-mail (web_identities), or are signed in to the
+  customer portal. CRM data (lifecycle stage, marketing audiences) is used ONLY for a verified identity — the signed-in
+  portal user's own e-mail — because a self-typed e-mail is unverified and would turn targeted blocks into an oracle
+  about someone else's CRM record (M46 gate review).
+- Rule metadata (audience, slot, fallback, experiment) is stripped from the public response.
 - No consent, withdrawn consent, or no id → anonymous fallback: rules needing CRM data never match, and fallback
   blocks show. The page response never contains the e-mail, contact or audience names.
 - Personalized responses are marked private/no-store so a shared cache never hands one visitor's page to another;
@@ -42,23 +45,21 @@ class Visitor:
         return self.known
 
 
-async def visitor(db: AsyncSession, raw: Optional[str], locale: str) -> Visitor:
-    v = Visitor(locale=locale)
-    if not raw or len(raw) < 8:
-        return v
-    v.vh = wa.hashed("v", raw[:100])
-    consent = await wa._latest_consent(db, v.vh)
-    v.analytics = bool(consent and consent.analytics)
-    if not (consent and consent.marketing):
-        return v
+async def visitor(db: AsyncSession, raw: Optional[str], locale: str, portal_user=None) -> Visitor:
     from app.models.crm import CRMContact, MarketingAudience, MarketingAudienceMember, WebIdentity
-    ident = await db.get(WebIdentity, v.vh)
-    if ident is None:
-        return v
-    v.known = True
-    v.lifecycle = (await db.execute(select(CRMContact.lifecycle_stage).where(func.lower(CRMContact.email) == ident.email).limit(1))).scalar_one_or_none()
-    v.segments = set((await db.execute(select(MarketingAudience.name).join(
-        MarketingAudienceMember, MarketingAudienceMember.audience_id == MarketingAudience.id).where(MarketingAudienceMember.email == ident.email))).scalars())
+    v = Visitor(locale=locale)
+    if raw and len(raw) >= 8:
+        v.vh = wa.hashed("v", raw[:100])
+        consent = await wa._latest_consent(db, v.vh)
+        v.analytics = bool(consent and consent.analytics)
+        if consent and consent.marketing and await db.get(WebIdentity, v.vh) is not None:
+            v.known = True                       # self-declared: no CRM data is used for it
+    if portal_user is not None and portal_user.email:
+        email = portal_user.email.strip().lower()  # verified by the portal sign-in
+        v.known = True
+        v.lifecycle = (await db.execute(select(CRMContact.lifecycle_stage).where(func.lower(CRMContact.email) == email).limit(1))).scalar_one_or_none()
+        v.segments = set((await db.execute(select(MarketingAudience.name).join(
+            MarketingAudienceMember, MarketingAudienceMember.audience_id == MarketingAudience.id).where(MarketingAudienceMember.email == email))).scalars())
     return v
 
 
@@ -80,8 +81,28 @@ def _crm_rule(aud: dict) -> bool:
     return bool(aud.get("lifecycle") or aud.get("segment") or aud.get("known") is True)
 
 
+RULE_KEYS = ("audience", "slot", "fallback", "experiment")
+
+
+def strip(blocks: list) -> list:
+    """Remove targeting rules from blocks before they leave the server."""
+    out = []
+    for b in blocks:
+        b = {k: v for k, v in b.items() if k not in RULE_KEYS}
+        for k in ("left", "right", "blocks"):
+            if isinstance(b.get(k), list):
+                b[k] = strip(b[k])
+        out.append(b)
+    return out
+
+
+def _nested(b: dict, fn) -> dict:
+    return {**b, **{k: fn(b[k]) for k in ("left", "right", "blocks") if isinstance(b.get(k), list)}}
+
+
 def personalize(blocks: list, v: Visitor) -> list:
-    """Drop blocks whose audience does not match; in a slot, fallback blocks show only if nothing targeted showed."""
+    """Drop blocks whose audience does not match; in a slot, fallback blocks show only if nothing targeted showed.
+    Applies inside columns and embedded sections too."""
     shown = [b for b in blocks if not b.get("fallback") and matches(b.get("audience") or {}, v)]
     filled = {b["slot"] for b in shown if b.get("slot") and _crm_rule(b.get("audience") or {})}
     out = []
@@ -90,10 +111,25 @@ def personalize(blocks: list, v: Visitor) -> list:
             if b.get("slot") not in filled:
                 out.append(b)
         elif b in shown:
-            if b["type"] == "columns":
-                b = {**b, "left": personalize(b["left"], v), "right": personalize(b["right"], v)}
-            out.append(b)
+            out.append(_nested(b, lambda x: personalize(x, v)))
     return out
+
+
+def _experiment_groups(blocks: list, groups: dict) -> dict:
+    for b in blocks:
+        if b.get("experiment"):
+            vs = groups.setdefault(b["experiment"]["key"], [])
+            if b["experiment"]["variant"] not in vs:
+                vs.append(b["experiment"]["variant"])
+        for k in ("left", "right", "blocks"):
+            if isinstance(b.get(k), list):
+                _experiment_groups(b[k], groups)
+    return groups
+
+
+def _keep(blocks: list, picked: dict) -> list:
+    return [_nested(b, lambda x: _keep(x, picked)) for b in blocks
+            if not b.get("experiment") or picked.get(b["experiment"]["key"]) == b["experiment"]["variant"]]
 
 
 def _beta_pick(variants: list[str], counts: dict) -> str:
@@ -115,12 +151,7 @@ async def _experiment(db: AsyncSession, page: CmsPage, key: str, variants: list[
 
 async def choose(db: AsyncSession, page: CmsPage, blocks: list, v: Visitor) -> tuple[list, dict]:
     """Keep one variant per experiment. Returns (blocks, {experiment key: variant})."""
-    groups: dict[str, list[str]] = {}
-    for b in blocks:
-        if b.get("experiment"):
-            groups.setdefault(b["experiment"]["key"], [])
-            if b["experiment"]["variant"] not in groups[b["experiment"]["key"]]:
-                groups[b["experiment"]["key"]].append(b["experiment"]["variant"])
+    groups = _experiment_groups(blocks, {})
     picked: dict[str, str] = {}
     for key, variants in groups.items():
         e = await _experiment(db, page, key, variants)
@@ -143,8 +174,7 @@ async def choose(db: AsyncSession, page: CmsPage, blocks: list, v: Visitor) -> t
                 c = dict(e.counts or {})
                 c[picked[key]] = {**c.get(picked[key], {"n": 0, "c": 0}), "n": c.get(picked[key], {}).get("n", 0) + 1}
                 e.counts = c
-    out = [b for b in blocks if not b.get("experiment") or picked.get(b["experiment"]["key"]) == b["experiment"]["variant"]]
-    return out, picked
+    return _keep(blocks, picked), picked
 
 
 async def convert(db: AsyncSession, page: CmsPage, key: str, raw_visitor: str) -> bool:

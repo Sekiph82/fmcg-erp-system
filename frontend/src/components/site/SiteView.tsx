@@ -2,6 +2,7 @@
 // M46 public site shell: theme, navigation, language switcher, blocks, members gate and experiment conversions.
 import { useEffect, useState } from "react";
 import { API_ORIGIN } from "@/lib/api";
+import { LOCALES, LOCALE_NAME, formatters, translate, type Locale } from "@/lib/i18n";
 import { SiteBlocks, type Block, type Theme } from "./SiteBlocks";
 
 export type PageData = {
@@ -12,12 +13,8 @@ export type PageData = {
   alternates: { locale: string; path: string }[]; json_ld: object[]; experiments: Record<string, string>; personalized: boolean; canonical: string;
 };
 
-const LANG: Record<string, string> = { en: "English", sw: "Kiswahili", tr: "Türkçe" };
-const MSG: Record<string, Record<string, string>> = {
-  en: { members: "This page is for signed-in members.", denied: "Your account does not have access to this page.", signin: "Sign in", unavailable: "This page is not available right now.", by: "By" },
-  sw: { members: "Ukurasa huu ni kwa wanachama walioingia.", denied: "Akaunti yako haina ruhusa ya ukurasa huu.", signin: "Ingia", unavailable: "Ukurasa huu haupatikani kwa sasa.", by: "Na" },
-  tr: { members: "Bu sayfa giriş yapmış üyeler içindir.", denied: "Hesabınızın bu sayfaya erişimi yok.", signin: "Giriş yap", unavailable: "Bu sayfa şu anda kullanılamıyor.", by: "Yazar" },
-};
+// The page language comes from the URL, not the visitor's switcher; unknown site locales fall back to English texts.
+const asLocale = (l: string): Locale => ((LOCALES as readonly string[]).includes(l) ? (l as Locale) : "en");
 
 function consentedVisitor(): string | null {
   try {
@@ -29,7 +26,7 @@ function consentedVisitor(): string | null {
 export default function SiteView({ siteKey, locale, path, initial, initialStatus }: { siteKey: string; locale: string; path: string; initial: PageData | null; initialStatus: number }) {
   const [data, setData] = useState<PageData | null>(initial);
   const [status, setStatus] = useState(initialStatus);
-  const t = MSG[locale] ?? MSG.en;
+  const t = (key: string, vars?: Record<string, string | number>) => translate(asLocale(locale), key, vars);
 
   useEffect(() => {
     const visitor = consentedVisitor();
@@ -56,8 +53,8 @@ export default function SiteView({ siteKey, locale, path, initial, initialStatus
   const theme = data?.site.theme;
   if (!data || !theme) {
     return <main className="min-h-screen p-6 max-w-2xl mx-auto">
-      {status === 401 ? <p>{t.members} <a className="underline" href="/portal/login">{t.signin}</a></p>
-        : status === 403 ? <p>{t.denied}</p> : <p>{t.unavailable}</p>}</main>;
+      {status === 401 ? <p>{t("public.site.members")} <a className="underline" href="/portal/login">{t("common.signIn")}</a></p>
+        : status === 403 ? <p>{t("public.site.denied")}</p> : <p>{t("public.site.unavailable")}</p>}</main>;
   }
   return (
     <div style={{ background: theme.background, color: theme.text_color, fontFamily: theme.font }} className="min-h-screen">
@@ -65,16 +62,16 @@ export default function SiteView({ siteKey, locale, path, initial, initialStatus
       <header className="border-b" style={{ borderColor: `${theme.brand_color}33` }}>
         <div className="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
           <a href={base} className="font-bold text-lg" style={{ color: theme.brand_color }}>{data.site.name}</a>
-          <nav aria-label="Main" className="flex flex-wrap gap-4 text-sm">{data.site.nav.filter((n) => !n.locale || n.locale === data.page.locale).map((n) =>
+          <nav aria-label={t("public.site.mainNav")} className="flex flex-wrap gap-4 text-sm">{data.site.nav.filter((n) => !n.locale || n.locale === data.page.locale).map((n) =>
             <a key={n.path + n.label} href={n.path.startsWith("/") ? `${base}${n.path === "/" ? "" : n.path}` : n.path} className="hover:underline">{n.label}</a>)}</nav>
-          {data.alternates.length > 1 && <nav aria-label="Language" className="flex gap-2 text-xs">{data.alternates.map((a) =>
+          {data.alternates.length > 1 && <nav aria-label={t("common.language")} className="flex flex-wrap gap-2 text-xs">{data.alternates.map((a) =>
             <a key={a.locale} hrefLang={a.locale} lang={a.locale} href={`/site/${siteKey}/${a.locale}${a.path === "/" ? "" : a.path}`}
-              className={a.locale === data.page.locale ? "font-bold underline" : "opacity-70"}>{LANG[a.locale] ?? a.locale}</a>)}</nav>}
+              className={a.locale === data.page.locale ? "font-bold underline" : "opacity-70"}>{LOCALE_NAME[a.locale as Locale] ?? a.locale}</a>)}</nav>}
         </div>
       </header>
       <main className="max-w-3xl mx-auto px-4 py-6" onClickCapture={(e) => { if ((e.target as HTMLElement).closest("a")) convert(); }}>
-        {data.page.kind === "POST" && <div className="mb-4"><h1 className="text-3xl font-bold">{data.page.title}</h1>
-          <p className="text-sm opacity-70">{data.page.author && `${t.by} ${data.page.author} · `}{new Date(data.page.published_at).toLocaleDateString(data.page.locale)}{data.page.category ? ` · ${data.page.category}` : ""}</p></div>}
+        {data.page.kind === "POST" && <div className="mb-4"><h1 className="text-3xl font-bold break-words">{data.page.title}</h1>
+          <p className="text-sm opacity-70">{data.page.author && `${t("public.site.by", { author: data.page.author })} · `}{formatters(asLocale(data.page.locale)).date(data.page.published_at)}{data.page.category ? ` · ${data.page.category}` : ""}</p></div>}
         <SiteBlocks blocks={data.blocks} theme={theme} base={base} siteKey={siteKey} />
       </main>
       <footer className="max-w-5xl mx-auto px-4 py-6 text-xs opacity-60">© {data.site.name}</footer>

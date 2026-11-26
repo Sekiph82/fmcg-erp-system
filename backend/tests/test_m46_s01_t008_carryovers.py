@@ -29,6 +29,8 @@ def test_strip_people_from_graphs():
     out = strip_people(g)
     assert out["nodes"][0]["config"] == {"action": "assign_owner", "user_id": None, "to": "<set after import>", "subject": "Hi"}
     assert out["nodes"][1]["config"] == {"owner_user_ids": None, "event": "won"}
+    real = strip_people({"payload": {"rep_ids": ["7"], "usernames": ["mary"], "username": "joe", "sequence_id": "s1"}})   # real node keys
+    assert real == {"payload": {"rep_ids": None, "usernames": None, "username": None, "sequence_id": "s1"}}
 
 
 @DB

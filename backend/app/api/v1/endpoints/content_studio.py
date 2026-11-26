@@ -212,7 +212,7 @@ async def decide(did: uuid.UUID, b: DecideIn, db: AsyncSession = Depends(get_db)
     _need(user, APPROVE)
     d = await _draft(db, did)
     try:
-        cs.decide(d, user, b.ok, b.note)
+        cs.decide(d, user, b.ok, b.note, await db.get(CsBrandProfile, d.profile_id))
     except cs.StudioError as e:
         raise HTTPException(422, str(e))
     cms.audit(db, user, "studio.draft.approved" if b.ok else "studio.draft.rejected", "cs_draft", d.id, {"note": b.note})

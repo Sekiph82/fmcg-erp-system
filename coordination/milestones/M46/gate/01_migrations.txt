@@ -1,0 +1,15 @@
+## empty -> head
+INFO  [alembic.runtime.migration] Running upgrade 20261125_0074 -> 20261126_0075, M45 AI Agent & Customer Data Hub.
+INFO  [alembic.runtime.migration] Running upgrade 20261126_0075 -> 20261127_0076, M46 Content & Digital Experience Hub.
+## head version
+20261127_0076
+## M46 tables present (expect 16) and kb_articles.access_list_id
+16
+1
+## downgrade -1
+INFO  [alembic.runtime.migration] Running downgrade 20261127_0076 -> 20261126_0075, M46 Content & Digital Experience Hub.
+0
+## upgrade head again
+INFO  [alembic.runtime.migration] Running upgrade 20261126_0075 -> 20261127_0076, M46 Content & Digital Experience Hub.
+16
+## gate fix (cms_pages.live_path): template DB downgrade -1 / upgrade head re-run — PASS, column present

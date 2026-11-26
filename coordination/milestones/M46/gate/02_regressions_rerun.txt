@@ -1,0 +1,4 @@
+== tests/test_m36_s03_customer_timeline_db.py :: 1 passed in 4.53s
+== tests/test_m36_s04_t005_kb_db.py :: 1 passed, 77 warnings in 18.41s
+== tests/test_m44_s01_t009_web_analytics_db.py :: 2 passed in 4.32s
+== tests/test_m45_s01_t018_config_bundle.py :: 1 passed, 4 warnings in 4.53s

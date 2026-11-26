@@ -56,7 +56,7 @@ def _tables():
     return Base.metadata.tables
 
 
-PEOPLE_KEY = re.compile(r"(^|_)(user|owner|assignee|rep|approver|agent)(_ids?|s)?$", re.I)
+PEOPLE_KEY = re.compile(r"(^|_)(user|owner|assignee|rep|approver|agent)(_?(ids?|names?)|s)?$", re.I)   # incl. notify "usernames"
 EMAIL = re.compile(r"[^@\s\"']+@[^@\s\"']+\.[a-z]{2,}", re.I)
 
 

@@ -1,8 +1,10 @@
 "use client";
 import { PartnerLogin } from "@/components/PartnerLogin";
+import { useI18n } from "@/lib/i18n";
 
 export default function PortalLogin() {
-  return <PartnerLogin base="portal-self" home="/portal" title="Partner portal"
-    subtitle="Distributors and customers: order, track deliveries and see your statement."
-    helper="Forgot your password? Ask your sales representative for a set-password link." signupHref="/portal/signup" />;
+  const { t } = useI18n();
+  return <PartnerLogin base="portal-self" home="/portal" title={t("portal.login.title")}
+    subtitle={t("portal.login.subtitle")}
+    helper={t("portal.login.helper")} signupHref="/portal/signup" />;
 }
