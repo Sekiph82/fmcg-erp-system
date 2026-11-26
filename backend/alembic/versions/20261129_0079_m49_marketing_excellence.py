@@ -23,6 +23,7 @@ TABLES = [
     "m49_ad_edits",                                                                                  # T006
     "m49_social_post_metrics", "m49_social_optouts", "m49_social_webhook_events", "m49_social_quota_use",
     "m49_audience_syncs", "m49_audience_sync_members", "m49_audience_suppressions",                  # T011
+    "m49_studio_campaigns", "m49_studio_links", "m49_studio_budget_requests",                        # T012
 ]
 
 COLUMNS = [
@@ -41,7 +42,7 @@ COLUMNS = [
 
 EVIDENCE = ["voice_voicemails", "voice_provider_events", "m49_transcript_jobs", "m49_transcript_edits",
             "calendar_webhook_receipts", "m49_social_optouts", "m49_social_webhook_events", "m49_audience_suppressions",
-            "m49_ad_edits"]
+            "m49_ad_edits", "m49_studio_budget_requests"]
 
 
 def _tables():

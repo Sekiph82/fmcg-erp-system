@@ -261,11 +261,13 @@ const TPMPage                 = dynamic(() => import("@/app/dashboard/tpm/page")
 const MarketIntelPage         = dynamic(() => import("@/app/dashboard/market-intelligence/page"),   { ssr: false });
 const WebsitePage             = dynamic(() => import("@/app/dashboard/marketing/website/page"),     { ssr: false });   // M46
 const ContentStudioPage       = dynamic(() => import("@/app/dashboard/marketing/content-studio/page"), { ssr: false });
+const MarketingStudioPage     = dynamic(() => import("@/app/dashboard/marketing/studio/page"), { ssr: false });   // M49.S01.T012
 const MembersMediaPage        = dynamic(() => import("@/app/dashboard/marketing/members-media/page"), { ssr: false });
 
 export default function MarketingPage() {
   const tabs = [
     { key: "overview",      label: "Overview",         permission: "marketing.view", content: <MarketingDashboardTab /> },
+    { key: "studio",        label: "Marketing Studio", permission: "marketing.view", content: <MarketingStudioPage /> },
     { key: "campaigns",     label: "Campaigns",        permission: "campaigns.view", content: <MarketingCampaignsPage /> },
     { key: "promotions",    label: "Promotions",       permission: "promotions.view", content: <MarketingPromotionsPage /> },
     { key: "promotions-schemes", label: "Schemes",    permission: "promotions.view", content: <MarketingPromotionsPage /> },

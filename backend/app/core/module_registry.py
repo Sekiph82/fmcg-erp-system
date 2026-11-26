@@ -587,6 +587,7 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="shared_mailboxes", route_prefix="/shared-mailboxes", import_path="app.api.v1.endpoints.shared_mailboxes", tags=('email',)),  # M49.S01.T003
     EndpointRouteDefinition(key="ads_lifecycle", route_prefix="/ads-lifecycle", import_path="app.api.v1.endpoints.ads_lifecycle", tags=('marketing',)),  # M49.S01.T006
     EndpointRouteDefinition(key="audience_sync", route_prefix="/audience-sync", import_path="app.api.v1.endpoints.audience_sync", tags=('marketing',)),  # M49.S01.T011
+    EndpointRouteDefinition(key="marketing_studio", route_prefix="/marketing-studio", import_path="app.api.v1.endpoints.marketing_studio", tags=('marketing',)),  # M49.S01.T012
     EndpointRouteDefinition(key="booking_pages", route_prefix="/booking-pages", import_path="app.api.v1.endpoints.booking_pages", tags=('meetings',)),
     EndpointRouteDefinition(key="booking_public", route_prefix="/public/book", import_path="app.api.v1.endpoints.booking_public", tags=('meetings',)),
     EndpointRouteDefinition(key="oauth_connections", route_prefix="/integrations/oauth", import_path="app.api.v1.endpoints.oauth_connections", tags=('integrations',)),

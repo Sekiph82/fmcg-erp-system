@@ -80,6 +80,7 @@ async def list_campaigns(
              dependencies=[Depends(require_permission("campaigns", "create"))])
 async def create_campaign(data: CampaignCreate, db: AsyncSession = Depends(get_db),
                           current_user: User = Depends(get_current_user)):
+    _guard_budget_cap(data.budget)
     obj = Campaign(**data.model_dump(), owner_user_id=current_user.id)
     db.add(obj)
     await db.commit()
@@ -97,6 +98,13 @@ async def get_campaign(cid: str, db: AsyncSession = Depends(get_db)):
     return obj
 
 
+def _guard_budget_cap(budget) -> None:
+    """M49.S01.T012: budgets above the finance cap go through the Marketing Studio finance-approved request."""
+    from app.services.marketing_studio_service import cap
+    if budget is not None and budget > cap():
+        raise HTTPException(409, f"Budget above {cap()} needs finance approval: request it in Marketing Studio")
+
+
 @router.patch("/campaigns/{cid}", response_model=CampaignRead,
               dependencies=[Depends(require_permission("campaigns", "edit"))])
 async def update_campaign(cid: str, data: CampaignUpdate, db: AsyncSession = Depends(get_db)):
@@ -104,7 +112,10 @@ async def update_campaign(cid: str, data: CampaignUpdate, db: AsyncSession = Dep
     obj = r.scalar_one_or_none()
     if not obj:
         raise HTTPException(404, "Campaign not found")
-    for k, v in data.model_dump(exclude_unset=True).items():
+    changes = data.model_dump(exclude_unset=True)
+    if "budget" in changes:
+        _guard_budget_cap(changes["budget"])
+    for k, v in changes.items():
         setattr(obj, k, v)
     await db.commit()
     await db.refresh(obj)

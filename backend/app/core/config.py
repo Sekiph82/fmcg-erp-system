@@ -197,6 +197,7 @@ class Settings(BaseSettings):
     SOCIAL_LISTEN_POLL_MINUTES: int = 15
     GOOGLE_DATA_MANAGER_API_URL: str = "https://datamanager.googleapis.com"
     GOOGLE_CUSTOMER_MATCH_TOS_ACCEPTED: bool = False
+    MARKETING_STUDIO_BUDGET_CAP: float = 50000
     ADS_LIVE_MUTATIONS: bool = False             # M48.S01.T001–T004 live ad mutations
     CARD_PAYMENTS_LIVE_ENABLED: bool = False     # M48.S01.T010 Pesapal live money
     WAREHOUSE_LIVE_ENABLED: bool = False         # M48.S01.T007/T008 Snowflake/BigQuery live sync

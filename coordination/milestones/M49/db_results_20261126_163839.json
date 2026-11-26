@@ -1,0 +1,30 @@
+{
+  "sha": "6266f442304ee07409f76dadc2b845be5c165dfb",
+  "template": "m49_tmpl",
+  "totals": {
+    "PASS": 1
+  },
+  "results": [
+    {
+      "file": "test_m49_s01_t012_marketing_studio.py",
+      "flags": [
+        "M48_DB",
+        "M49_DB"
+      ],
+      "legacy_flags": [],
+      "db_name": "m48r_f8670d9c6493852e1243",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "summary": "2 passed, 77 warnings in 25.31s",
+      "counts": {
+        "passed": 2
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    }
+  ]
+}
