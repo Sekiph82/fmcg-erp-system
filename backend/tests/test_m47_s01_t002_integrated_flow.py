@@ -395,15 +395,14 @@ async def test_integrated_povu_flow(monkeypatch):
         await db.rollback()
         ok = await quote_api.approve_discount(quote_id, quote_api.DiscountDecisionIn(), db, await _load(db, mgr_id))
         assert ok.approval_status == "DISCOUNT_APPROVED"
-        # CPQ multi-step levels read the same percentages: 15 % needs level 1 only (above 10 %), not finance (above 25 %)
+        # CPQ multi-step levels read the same percentages: 15 % needs level 1 only (above 10 %), not finance (above 25 %);
+        # one approval state (M48.S01.T021): the manager's discount approval recorded level 1
         from app.services import cpq_service as cpq
         st = await cpq.approval_state(db, await cpq._quote(db, quote_id))
-        assert st["discount_pct"] == "15.00" and [lv["level"] for lv in st["levels"]] == [1] and not st["complete"]
+        assert st["discount_pct"] == "15.00" and [lv["level"] for lv in st["levels"]] == [1] and st["complete"]
         with pytest.raises(cpq.CPQError):
-            await cpq.approve_level(db, quote_id, await _load(db, rep_id))              # the price setter
+            await cpq.approve_level(db, quote_id, await _load(db, rep_id))              # nothing left, never the price setter
         await db.rollback()
-        assert (await cpq.approve_level(db, quote_id, await _load(db, mgr_id)))["complete"] is True
-        await db.commit()
         q_row = await cpq._quote(db, quote_id)
         assert (q_row.total_amount, q_row.tax_amount, q_row.grand_total) == (Decimal("3400.0000"), Decimal("544.0000"), Decimal("3944.0000"))
         sent = await quote_api.send_quote(quote_id, db, await _load(db, rep_id))

@@ -176,6 +176,9 @@ async def inbox(db: AsyncSession, user) -> dict:
         if key in _NOT_OWN:
             cond = and_(cond, or_(model.created_by_id.is_(None), model.created_by_id != user.id),
                         or_(model.discount_changed_by_id.is_(None), model.discount_changed_by_id != user.id))
+        if key == "quote_discount":          # approved one CPQ level already: the next level is someone else's (M48.S01.T021)
+            from app.models.cpq import QuoteApproval
+            cond = and_(cond, ~exists().where(QuoteApproval.quote_id == model.id, QuoteApproval.approver_id == user.id))
         if access == "all":
             count = (await db.execute(select(func.count()).select_from(model).where(cond))).scalar_one()
             rows = await _rows(db, model, cond, _PER_ENTRY) if count else []

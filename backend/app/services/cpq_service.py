@@ -104,7 +104,7 @@ async def apply_price_book(db: AsyncSession, qid) -> list[dict]:
         else:
             out.append({"line_no": ln.line_no, "old": str(ln.unit_price), "new": None, "source": "no price in the customer's price book"})
     recompute(q)
-    await _refresh_approval(db, q)
+    await reset_approvals(db, q)
     return out
 
 
@@ -146,7 +146,7 @@ async def evaluate_promotions(db: AsyncSession, qid, apply: bool = False) -> dic
         if header and gross > 0:
             q.discount_pct = max(Decimal(q.discount_pct or 0), (header / gross * 100).quantize(Decimal("0.0001")))
         recompute(q)
-        await _refresh_approval(db, q)
+        await reset_approvals(db, q)
     return {"applied": applied, "skipped": res.skipped_promos, "total_discount": str(res.total_discount),
             "free_goods_value": str(res.total_free_goods_value)}
 
@@ -277,9 +277,16 @@ async def save_proposed_quote(db: AsyncSession, rec, lines: list[dict], user) ->
 
 # ── multi-step approval ──────────────────────────────────────────────────────
 
-async def _refresh_approval(db: AsyncSession, q) -> None:
-    """Any price change invalidates earlier level approvals for this version."""
+# One approval state per quote version (M48.S01.T021): the CPQ level rows are the record; the M41 approval_status
+# (inbox, badges, conversion) follows them. M41 approve_discount records the next open level, the last level sets
+# DISCOUNT_APPROVED, and any price change drops both.
+
+async def reset_approvals(db: AsyncSession, q, lines=None, editor_id=None) -> None:
+    """Any price change invalidates every approval of this version: the level approvals and the discount decision."""
+    from app.services import discount_approval_service as disc
     await db.execute(QuoteApproval.__table__.delete().where(QuoteApproval.quote_id == q.id))
+    await disc.refresh(db, q, q.lines if lines is None else lines, Decimal(q.discount_pct or 0),
+                       editor_id=editor_id or q.discount_changed_by_id)
 
 
 def quote_discount(q) -> Decimal:
@@ -306,11 +313,14 @@ async def approval_state(db: AsyncSession, q) -> dict:
 
 async def approve_level(db: AsyncSession, qid, user) -> dict:
     from app.core.access_control import has_permission
+    from app.services import discount_approval_service as disc
     q = await _quote(db, qid)
     st = await approval_state(db, q)
     nxt = next((l for l in st["levels"] if l["approved_by"] is None), None)
     if nxt is None:
         raise CPQError(409, "No approval is waiting for this quotation.")
+    if q.approval_status == disc.REJECTED:
+        raise CPQError(409, "This discount was rejected; change it before it is approved.")
     if user.id in (q.created_by_id, q.discount_changed_by_id):
         raise CPQError(403, "The person who set the price cannot approve it.")
     from app.services.impersonation_service import current as _imp
@@ -328,7 +338,31 @@ async def approve_level(db: AsyncSession, qid, user) -> dict:
     db.add(QuoteApproval(quote_id=q.id, level=nxt["level"], permission=nxt["permission"], approver=user.username, approver_id=user.id,
                          discount_pct=quote_discount(q)))
     await db.flush()
-    return await approval_state(db, q)
+    st = await approval_state(db, q)
+    if st["complete"] and q.approval_status == disc.PENDING:       # the last level decides the discount
+        await disc.record(db, q, user, True, None, "/dashboard/sales/quotes")
+    return st
+
+
+async def approve_next(db: AsyncSession, q, user) -> tuple[dict, bool]:
+    """M41 approve_discount: record the next open level for this approver (same checks as approve_level).
+    Returns the state and whether a level was recorded."""
+    st = await approval_state(db, q)
+    if st["complete"]:
+        return st, False
+    return await approve_level(db, q.id, user), True
+
+
+async def may_approve_next(db: AsyncSession, q, user) -> bool:
+    """UI hint: this user holds the next open level's right and has not approved another level of this version."""
+    from app.core.access_control import has_permission
+    st = await approval_state(db, q)
+    nxt = next((l for l in st["levels"] if l["approved_by"] is None), None)
+    if nxt is None:
+        return True
+    mine = (await db.execute(select(QuoteApproval.id).where(QuoteApproval.quote_id == q.id,
+                                                            QuoteApproval.approver_id == user.id))).first()
+    return mine is None and has_permission(user, nxt["permission"])
 
 
 async def ensure_levels(db: AsyncSession, q, action: str) -> None:

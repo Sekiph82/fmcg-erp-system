@@ -43,7 +43,9 @@ from app.services.commercial_access_service import (
     ensure_commercial_action_allowed,
     inherit_commercial_scope,
 )
+from app.services import cpq_service as cpq
 from app.services import discount_approval_service as discount_approval
+from app.services import pat_service as pats
 
 router = APIRouter()
 
@@ -87,6 +89,8 @@ async def _build_read(db: AsyncSession, q: Quotation, user: User | None = None) 
     if user is not None:
         row.access = build_commercial_access_hint(user, q, "sales")
         row.access.can_discount_approve = discount_approval.can_decide(user, q)
+        if row.access.can_discount_approve:            # and holds the next CPQ level's right (M48.S01.T021)
+            row.access.can_discount_approve = await cpq.may_approve_next(db, q, user)
     return row
 
 
@@ -292,11 +296,11 @@ async def update_quote(
         q.total_amount = subtotal
         q.tax_amount = tax
         q.grand_total = grand
-        await discount_approval.refresh(db, q, line_objs, q.discount_pct, editor_id=current_user.id)
+        await cpq.reset_approvals(db, q, line_objs, editor_id=current_user.id)
     elif body.discount_pct is not None:
         subtotal, tax, grand = _compute_totals(list(q.lines), q.discount_pct)
         q.total_amount, q.tax_amount, q.grand_total = subtotal, tax, grand
-        await discount_approval.refresh(db, q, list(q.lines), q.discount_pct, editor_id=current_user.id)
+        await cpq.reset_approvals(db, q, list(q.lines), editor_id=current_user.id)
 
     await db.commit()
     return await _build_read(db, await _get_or_404(db, quote_id), current_user)
@@ -599,7 +603,20 @@ async def _decide_discount(quote_id: uuid.UUID, approve: bool, body: DiscountDec
     ensure_commercial_action_allowed(user, q, "view", "sales")
     if q.status != QuoteStatus.DRAFT:
         raise HTTPException(409, "Only a draft quotation's discount can be decided.")
-    await discount_approval.decide(db, q, user, approve, body.reason, "/dashboard/sales/quotes")
+    if approve:
+        # M48.S01.T021: approving here records the next open CPQ level (its right, a different person per level);
+        # the last level sets DISCOUNT_APPROVED. No level needed (limit below level 1): decided here directly.
+        discount_approval.check_decision(q, user, True, body.reason)
+        try:
+            state, recorded = await cpq.approve_next(db, q, user)
+        except cpq.CPQError as e:
+            raise HTTPException(e.status, str(e))
+        if recorded:
+            pats.audit(db, user, "QUOTE_LEVEL_APPROVED", "quotation", str(quote_id), {"discount_pct": state["discount_pct"], "via": "discount_approve"})
+        if state["complete"] and q.approval_status == discount_approval.PENDING:
+            await discount_approval.record(db, q, user, True, body.reason, "/dashboard/sales/quotes")
+    else:
+        await discount_approval.decide(db, q, user, approve, body.reason, "/dashboard/sales/quotes")
     await db.commit()
     return await _build_read(db, await _get_or_404(db, quote_id), user)
 

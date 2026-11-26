@@ -1,0 +1,173 @@
+{
+  "sha": "16b109cce30221aede4f9b48f6b4d3b57ea64f21",
+  "template": "m48_tmpl",
+  "totals": {
+    "PASS": 7
+  },
+  "results": [
+    {
+      "file": "test_m05_s03_t002_transaction_integrity_db.py",
+      "flags": [
+        "M05_S03_T002_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M05_S03_T002_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m05_s03_t002_48c32813924287da99f094a9",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m05_s03_t002_[a-f0-9]{20,32}"
+        ],
+        "startswith": []
+      },
+      "summary": "7 passed, 11 warnings in 10.19s",
+      "counts": {
+        "passed": 7
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m05_s03_t003_stock_concurrency_db.py",
+      "flags": [
+        "M05_S03_T003_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M05_S03_T003_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m05_s03_t003_2bd605abcb826654a4690932",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m05_s03_t003_[a-f0-9]{20,32}"
+        ],
+        "startswith": []
+      },
+      "summary": "5 passed, 12 warnings in 7.31s",
+      "counts": {
+        "passed": 5
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m06_s03_t001_three_way_match_db.py",
+      "flags": [
+        "M06_S03_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M06_S03_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m06_s03_t001_397c0c6a85a14b91b5da09cf",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m06_s03_t001_[a-f0-9]{20,32}"
+        ],
+        "startswith": []
+      },
+      "summary": "5 passed, 9 warnings in 7.51s",
+      "counts": {
+        "passed": 5
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m48_s01_t001_meta_ads.py",
+      "flags": [
+        "M48_DB"
+      ],
+      "legacy_flags": [],
+      "db_name": "m48r_f8b06f38c39f25871109",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "summary": "13 passed, 76 warnings in 44.41s",
+      "counts": {
+        "passed": 13
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m48_s01_t009_esign_providers.py",
+      "flags": [
+        "M48_DB"
+      ],
+      "legacy_flags": [],
+      "db_name": "m48r_b20130ae87a0f1c6f655",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "summary": "11 passed, 77 warnings in 33.78s",
+      "counts": {
+        "passed": 11
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m48_s01_t014_scan_flows.py",
+      "flags": [
+        "M48_DB"
+      ],
+      "legacy_flags": [],
+      "db_name": "m48r_167baddd741a78f25756",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "summary": "3 passed, 77 warnings in 24.16s",
+      "counts": {
+        "passed": 3
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m48_s01_t018_t019_transfer_replay_count_ambiguity.py",
+      "flags": [
+        "M48_DB"
+      ],
+      "legacy_flags": [],
+      "db_name": "m48r_9024c7ad7ad1b6a633a0",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "summary": "5 passed, 76 warnings in 25.17s",
+      "counts": {
+        "passed": 5
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    }
+  ]
+}

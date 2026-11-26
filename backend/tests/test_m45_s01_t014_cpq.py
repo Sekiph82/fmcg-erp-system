@@ -92,6 +92,10 @@ async def test_cpq_lifecycle(monkeypatch):
         with pytest.raises(cpq.CPQError):
             await cpq.approve_level(db, qid, SimpleNamespace(**{**maker.__dict__}))                    # the price setter
         mgr, fin = _user(("sales.approve",)), _user(("finance.approve",))
+        for a in (mgr, fin):          # real users: the last level now records the quote's discount_approved_by_id (M48.S01.T021)
+            db.add(User(id=a.id, username=a.username, email=f"{a.username}@povu-demo.test", full_name="Approver",
+                        hashed_password=hash_password(uuid.uuid4().hex), is_active=True))
+        await db.flush()
         with pytest.raises(cpq.CPQError):
             await cpq.approve_level(db, qid, fin)                                                     # level 1 first
         await cpq.approve_level(db, qid, mgr)

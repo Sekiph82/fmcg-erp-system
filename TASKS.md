@@ -3330,6 +3330,19 @@ These rows describe commissioning only; they must never stop accountless coding,
   - What happened: a TikTok campaign with a daily budget below the provider minimum passed "local checks", received approval, and was then rejected by the provider at submit (40002).
   - Fix: add the documented TikTok minimum daily and total budget, plus other provider budget minimums that are available locally, to the local validation. A budget below the minimum must be refused before approval, with the documented reason.
 
+- [v] M48.S01.T021 — Defect found by the T012 full legacy DB run (test_m41_s01_db): the M41 quote discount approval and the M45 multi-level CPQ approval are not integrated.
+  - Fixed 2026-11-26 [v], pending the gate.
+    - The CPQ level rows are the single source of truth for discount approval.
+    - M41 approve_discount records the next open CPQ level for that approver, keeping the M45 permission, distinct-approver and stale-approval rules.
+    - Only the last level sets DISCOUNT_APPROVED.
+    - An edit, price-book change or promotion change resets all levels.
+    - The inbox and UI hints reflect the level state.
+    - Tests: test_m41_s01_db 5 passed, test_m45_s01_t014_cpq 2 passed, new test_m48_s01_t021_discount_levels 1 passed; integrated flow 5 passed and approval inbox 6 passed.
+    - Recorded limit: the M41 limit setting and the CPQ level-1 threshold are separate settings; an admin must keep them aligned (default 10% = 10%).
+  - Scenario: a manager approves the discount through the M41 approve_discount flow, so the quote becomes DISCOUNT_APPROVED. Sending is then still refused because CPQ "level 1 (sales.approve) still open".
+  - Fix: make the two consistent, with one source of truth for discount approval. Keep separate approvers per level, and keep the stale-approval reset on edit.
+  - Acceptance: test_m41_s01_db and test_m45_s01_t014_cpq both pass, plus a regression test.
+
 ## M48.S02 — Consolidated milestone gate and synchronization
 - [ ] M48.S02.T001 — Run milestone-only consolidated tests on frozen candidate SHA: full applicable backend, DB-gated integration and legacy regression, migration from empty and prior populated head, local provider contracts, frontend tsc/lint/build, security/roles/company isolation, real local ERP manual UI clicks and screenshots desktop/mobile for every affected persona and feature; evaluate applicable quality categories and original task mappings; add remediation tasks for any gap; independent reviewer on exact source; record commands, counts, skipped-test dispositions, screenshot paths, click logs, reviewer identity and verdict. Fix failures, rerun, [x] only after all applicable checks pass; no account activation needed.
 - [ ] M48.S02.T002 — After successful gate, mark evidence-backed tasks [x], update TASKS.md/Project Status, commit/push main, fetch and verify Desktop HEAD == origin/main, preserve owner changes, record evidence SHA and sync result. Automatically proceed to next milestone; do not stop for missing business accounts.

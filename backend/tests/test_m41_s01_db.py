@@ -313,7 +313,7 @@ async def test_signer_code_only_to_email_on_file():
         row_id, q_id = row.id, q.id
         assert len(row.code_hash) == 64 and row.code_hash != code and row.email == f"buyer-{tag}@duka.example".lower()  # keyed hash only
 
-        doc = await public.shared_document(token, db)
+        doc = await public.shared_document(token, req, db)
 
         def body(**over):
             return public.DecisionIn(**{"decision": "ACCEPTED", "signer_name": "Achieng Otieno", "signer_email": f"buyer-{tag}@duka.example",

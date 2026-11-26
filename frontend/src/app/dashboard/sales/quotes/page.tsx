@@ -317,7 +317,7 @@ function SharePanel({ quote, onClose }: { quote: Quotation; onClose: () => void 
           <input aria-label="Password (optional)" type="password" placeholder="Password (optional)" value={password} onChange={(e) => setPassword(e.target.value)} className="border rounded px-2 py-1.5 text-sm w-40" />
           <button disabled={create.isPending} onClick={() => create.mutate()} className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded">Create link</button>
         </div>
-        <CPQPanel quoteId={quote.id} status={quote.status} onChanged={() => qc.invalidateQueries({ queryKey: ["quotes"] })} />
+        <CPQPanel key={`${quote.id}:${quote.approval_status ?? ""}:${quote.discount_approved_at ?? ""}:${quote.grand_total ?? ""}`} quoteId={quote.id} status={quote.status} onChanged={() => qc.invalidateQueries({ queryKey: ["quotes"] })} />
         {newUrl && (
           <div className="space-y-1">
             <p className="text-xs text-emerald-700">Copy it now; it is shown only once.</p>

@@ -340,8 +340,13 @@ async def root_lock(db: AsyncSession, root: AdCampaignNode):
         try:
             yield
         finally:
-            await conn.execute(text("SELECT pg_advisory_unlock(:k)"), {"k": key})
-            await conn.commit()
+            try:
+                await conn.execute(text("SELECT pg_advisory_unlock(:k)"), {"k": key})
+                await conn.commit()
+            except BaseException:
+                # never return a connection that may still hold the session lock to the pool (review N2)
+                await conn.invalidate()
+                raise
 
 
 def _check_mode(root: AdCampaignNode, nodes, g: dict) -> None:

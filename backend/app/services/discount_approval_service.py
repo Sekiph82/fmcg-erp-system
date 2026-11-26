@@ -81,7 +81,7 @@ def _own(user, doc) -> bool:
     return uid is not None and uid in (doc.created_by_id, getattr(doc, "discount_changed_by_id", None))
 
 
-async def decide(db, doc, user, approve: bool, reason: str | None, link: str) -> None:
+def check_decision(doc, user, approve: bool, reason: str | None) -> None:
     from app.core.access_control import can_modify_record
 
     if doc.approval_status != PENDING:
@@ -92,6 +92,15 @@ async def decide(db, doc, user, approve: bool, reason: str | None, link: str) ->
         raise HTTPException(403, "You may not approve discounts on this document.")
     if not approve and not (reason or "").strip():
         raise HTTPException(422, "Give a reason for the rejection.")
+
+
+async def decide(db, doc, user, approve: bool, reason: str | None, link: str) -> None:
+    check_decision(doc, user, approve, reason)
+    await record(db, doc, user, approve, reason, link)
+
+
+async def record(db, doc, user, approve: bool, reason: str | None, link: str) -> None:
+    """Store a checked decision and tell the creator (quotations: also when the last CPQ level completes it)."""
     now = datetime.now(timezone.utc)
     if approve:
         doc.approval_status, doc.discount_approved_by_id, doc.discount_approved_at = APPROVED, user.id, now

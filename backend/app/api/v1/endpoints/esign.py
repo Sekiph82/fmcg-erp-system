@@ -596,13 +596,19 @@ async def provider_envelopes(source_type: Optional[str] = Query(None, pattern="^
                              current_user: User = Depends(get_current_user)):
     """Only envelopes whose quotation / contract the caller may see (e-signature admins: all)."""
     from app.models.m48_esign import ESignEnvelope
-    q = select(ESignEnvelope).order_by(ESignEnvelope.created_at.desc()).limit(200)
+    q = select(ESignEnvelope).order_by(ESignEnvelope.created_at.desc(), ESignEnvelope.id)
     if source_type:
         q = q.where(ESignEnvelope.source_type == source_type)
     if source_id:
         q = q.where(ESignEnvelope.source_id == source_id)
-    envs = list((await db.execute(q)).scalars())
-    return [esp.envelope_out(e) for e in await esp.visible_envelopes(db, current_user, envs)]
+    out, offset = [], 0
+    while len(out) < 200:              # page until 200 visible ones: scope is filtered after the query (review N1)
+        page = list((await db.execute(q.offset(offset).limit(200))).scalars())
+        if not page:
+            break
+        out += await esp.visible_envelopes(db, current_user, page)
+        offset += len(page)
+    return [esp.envelope_out(e) for e in out[:200]]
 
 
 async def _envelope(db, env_id, user):

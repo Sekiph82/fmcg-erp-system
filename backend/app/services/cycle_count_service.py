@@ -219,7 +219,8 @@ AMBIGUOUS_COUNT = ("This item has several stock rows (lots or locations) in this
                    "Scan or choose the lot or location you counted.")
 
 
-async def _count_stock_rows(db: AsyncSession, warehouse_id, product_id, material_id, lot_id, location_id) -> list:
+async def _count_stock_rows(db: AsyncSession, warehouse_id, product_id, material_id, lot_id, location_id,
+                            for_update: bool = False) -> list:
     """Stock rows a count adjusts: the item in the counted warehouse, narrowed by lot/location when given (T019)."""
     q = select(Stock).where(Stock.warehouse_id == warehouse_id,
                             Stock.product_id == product_id if product_id else Stock.material_id == material_id)
@@ -227,6 +228,8 @@ async def _count_stock_rows(db: AsyncSession, warehouse_id, product_id, material
         q = q.where(Stock.location_id == location_id)
     if lot_id:
         q = q.where(Stock.lot_id == lot_id)
+    if for_update:                     # posting path: serialise concurrent adjustments of the same stock row
+        q = q.with_for_update().execution_options(populate_existing=True)
     return list((await db.execute(q)).scalars().all())
 
 
@@ -437,7 +440,8 @@ async def _post_stock_adjustment(
 
     # Update Stock record — in the counted warehouse only (M48.S01.T014: the same item in another warehouse was hit)
     warehouse_id = (await db.execute(select(CycleCountTask.warehouse_id).where(CycleCountTask.id == entry.task_id))).scalar_one()
-    rows = await _count_stock_rows(db, warehouse_id, entry.product_id, entry.material_id, entry.lot_id, entry.location_id)
+    rows = await _count_stock_rows(db, warehouse_id, entry.product_id, entry.material_id, entry.lot_id, entry.location_id,
+                                   for_update=True)
     if len(rows) > 1:
         from fastapi import HTTPException
         raise HTTPException(status_code=400, detail=AMBIGUOUS_COUNT)

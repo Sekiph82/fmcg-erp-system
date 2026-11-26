@@ -1,0 +1,3 @@
+SKIPPED [1] tests\test_m48_s01_t018_t019_transfer_replay_count_ambiguity.py:256: requires the task-owned disposable PostgreSQL
+SKIPPED [1] tests\test_waste_recipe_standard_loss_db.py:18: requires the task-owned disposable PostgreSQL runner
+1888 passed, 592 skipped, 127 warnings in 100.68s (0:01:40)
