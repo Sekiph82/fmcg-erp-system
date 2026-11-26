@@ -32,10 +32,10 @@ async def _dispose_engine():
 
 def test_recap_rules_quote_the_transcript():
     from app.services import meeting_service as svc
-    t = ("Amina: We agreed on POVU Water 500 ml for Duka Moja. Juma: I will send the price list tomorrow.\n"
+    t = ("Amina: We agreed on POVU AllClean 1 L for Duka Moja. Juma: I will send the price list tomorrow.\n"
          "Amina: Thanks. Juma: I will call the depot in 5 days.")
     r = svc.recap_rules(t)
-    assert [d["quote"] for d in r["decisions"]] == ["We agreed on POVU Water 500 ml for Duka Moja."]
+    assert [d["quote"] for d in r["decisions"]] == ["We agreed on POVU AllClean 1 L for Duka Moja."]
     assert [(a["quote"], a["owner"], a["due_in_days"]) for a in r["action_items"]] == [
         ("I will send the price list tomorrow.", "Juma", 1), ("I will call the depot in 5 days.", "Juma", 5)]
     # AI output is kept only where its quote is verbatim in the transcript
@@ -102,7 +102,7 @@ async def _world(s: str):
     async with AsyncSessionLocal() as db:
         rep = await _user(db, REP, "rep")
         cust = Customer(id=uuid.uuid4(), code=f"DUKA-{s}", name="Duka Moja", currency="KES")
-        prod = Product(id=uuid.uuid4(), sku=f"POVU-W500-{s}", name="POVU Water 500 ml", category="BEVERAGE")
+        prod = Product(id=uuid.uuid4(), sku=f"POVU-ALC-1L-{s}", name="POVU AllClean 1 L", category="HOUSEHOLD")
         db.add_all([cust, prod])
         await db.flush()
         pl = PLHeader(id=uuid.uuid4(), price_list_code=f"PL-{s}", price_list_name="Duka Moja prices", valid_from=date.today() - timedelta(days=1),
@@ -117,9 +117,9 @@ async def _world(s: str):
         db.add(SOLine(so_id=so.id, line_no=1, product_id=prod.id, ordered_quantity=Decimal("24"), unit="PCS", unit_price=Decimal("50"),
                       tax_rate=Decimal("0.16")))
         deal = CRMRecord(id=uuid.uuid4(), record_type=CRMRecordType.OPPORTUNITY, company_name="Duka Moja re-order",
-                         assigned_customer_id=cust.id, assigned_rep_id=str(rep.id), currency="KES", notes="Wants the usual POVU Water.")
+                         assigned_customer_id=cust.id, assigned_rep_id=str(rep.id), currency="KES", notes="Wants the usual POVU AllClean.")
         db.add(deal)
-        db.add(HelpdeskTicket(ticket_no=f"TCK-{s}", subject="Late delivery of POVU Water", customer_id=cust.id))
+        db.add(HelpdeskTicket(ticket_no=f"TCK-{s}", subject="Late delivery of POVU AllClean", customer_id=cust.id))
         await db.commit()
         return rep.username, rep.id, cust.id, prod.id, so.id, deal.id
 
@@ -293,7 +293,7 @@ async def test_meeting_recap_and_brief():
         assert (await c.get(f"/api/v1/sales-depth/meetings/{mid}/recap")).json() == {"status": "NO_TRANSCRIPT"}
         audio = await c.post(f"/api/v1/sales-depth/meetings/{mid}/transcript", files={"file": ("call.mp3", b"ID3" + b"\x00" * 50, "audio/mpeg")})
         assert audio.status_code == 409 and "NOT_AVAILABLE" in audio.json()["detail"]
-        t = "Amina: We agreed to list POVU Juice 1 L at Duka Moja.\nJuma: I will send the price list tomorrow.\nAmina: Fine."
+        t = "Amina: We agreed to list POVU WhiteCare 1 kg at Duka Moja.\nJuma: I will send the price list tomorrow.\nAmina: Fine."
         r = await c.post(f"/api/v1/sales-depth/meetings/{mid}/transcript", files={"file": ("notes.txt", t.encode(), "text/plain")})
         assert r.status_code == 200, r.text
         rc = r.json()

@@ -27,7 +27,7 @@ from app.models.procurement import (
     ProcurementApprovalRule,
     PRStatus, POStatus, RFQStatus, RFQResponseStatus, RFQInvitationStatus,
     RFQEvaluationStatus, RFQEvaluationCriterion, RFQResponseEvaluation, RFQResponseLineQuote,
-    BPAStatus,
+    BPAStatus, GRNStatus,
     RFQAward, RFQAwardAllocation, RFQAwardApproval, RFQAwardStatus,
     RFQAwardApprovalStatus, ProcurementApprovalDocumentType,
     BlanketAgreementPriceBreak,
@@ -423,7 +423,8 @@ async def create_grn(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    target = GoodsReceipt(**body.model_dump(exclude={"lines"}))
+    # a new receipt is a draft; without the explicit status the check saw None and refused every receipt (M48.S01.T014)
+    target = GoodsReceipt(**body.model_dump(exclude={"lines"}), status=GRNStatus.DRAFT)
     _require_procurement_action(current_user, target, "receive")
     grn = await crud.create_grn(db, body.model_dump(), current_user.id)
     await db.commit()

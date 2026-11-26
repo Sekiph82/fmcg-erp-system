@@ -1,4 +1,5 @@
 """PostgreSQL regression tests for strict M20 audit findings F11 and F12."""
+import os
 from datetime import date, datetime, timezone
 from uuid import uuid4
 
@@ -24,7 +25,7 @@ class _RollbackFixture(Exception):
 @pytest.mark.asyncio
 async def test_postgres_released_plan_with_partial_order_links_fails_idempotent_retry_closed():
     """A RELEASED header must not hide an unreleased positive-quantity line."""
-    if "postgresql" not in str(settings.DATABASE_URL):
+    if "postgresql" not in str(settings.DATABASE_URL) or os.environ.get("M20_DISPOSABLE_TEST_DATABASE") != "1":  # M48: explicit opt-in, never the dev DB
         pytest.skip("M20 release-integrity proof requires PostgreSQL")
 
     # The application engine is shared while pytest-asyncio uses function
@@ -102,7 +103,7 @@ async def test_postgres_released_plan_with_partial_order_links_fails_idempotent_
 @pytest.mark.asyncio
 async def test_postgres_material_shortage_is_complete_calculation_but_unknown_bom_is_partial():
     """A shortage is a computed result; absent approved master data is unknown."""
-    if "postgresql" not in str(settings.DATABASE_URL):
+    if "postgresql" not in str(settings.DATABASE_URL) or os.environ.get("M20_DISPOSABLE_TEST_DATABASE") != "1":  # M48: explicit opt-in, never the dev DB
         pytest.skip("M20 scenario status proof requires PostgreSQL")
 
     await engine.dispose()

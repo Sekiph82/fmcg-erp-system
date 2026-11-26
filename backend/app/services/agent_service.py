@@ -129,6 +129,13 @@ async def tool_audience_brief(db, user, args) -> dict:
             "computed_at": a.computed_at.isoformat() if a.computed_at else None}
 
 
+async def tool_brand_context(db, user, args) -> dict:
+    """M48.S01.T006: brand and active product range from DB records (no invented products); `sources` cites them."""
+    from app.services import brand_context_service as bcs
+    ctx = await bcs.context(db)
+    return {"brand": ctx["brand"], "range": bcs.range_text(ctx), "sources": "; ".join(bcs.citations(ctx)) or "none (empty catalogue)"}
+
+
 async def tool_draft_campaign(db, user, args) -> dict:
     """Save the plan as a DRAFT marketing campaign with approval PENDING: it appears in the campaign approval queue
     (My Approvals → Marketing campaign) and nothing is sent; a person edits, approves and launches it."""
@@ -154,6 +161,7 @@ async def tool_draft_campaign(db, user, args) -> dict:
 
 TOOLS: dict[str, dict] = {
     "audience_brief": {"fn": tool_audience_brief, "write": False, "label": "Dynamic audience size and rules (no addresses)"},
+    "brand_context": {"fn": tool_brand_context, "write": False, "label": "Brand and active product range, with SKU citations"},
     "draft_campaign": {"fn": tool_draft_campaign, "write": False, "draft": True,
                        "label": "Save a campaign plan / e-mail sequence as a DRAFT waiting for approval (never sends)"},
     "overdue_invoices": {"fn": tool_overdue_invoices, "write": False, "label": "Overdue invoices (dunning list)"},
@@ -234,21 +242,23 @@ TEMPLATES = {
     # M47.S01.T010 marketing templates: inputs {"goal": "...", "audience": "<audience name>"}; output is a DRAFT
     # campaign waiting for approval (campaign approval queue); nothing is sent.
     "campaign_planner": {"name": "Campaign planner", "description": "From a goal and an audience, drafts a campaign plan as a DRAFT campaign waiting for approval. Sends nothing.",
-                         "definition": {"trigger": {"type": "manual"}, "tools": ["audience_brief", "draft_campaign"], "steps": [
-                             {"id": "s1", "type": "tool", "tool": "audience_brief", "args": {"name": "{{input.audience}}"}, "next": "s2"},
-                             {"id": "s2", "type": "llm", "prompt": "Draft a short campaign plan (objective, audience, channels, timeline, success measure) for the goal.",
-                              "template": "Goal: {{input.goal}}\nAudience: {{s1.audience}} ({{s1.members}} consented members)\nChannels: e-mail to consented members; retail visits by the sales team\nTimeline: 4 weeks from approval\nSuccess measure: to be set by the marketing owner before approval",
-                              "next": "s3"},
-                             {"id": "s3", "type": "tool", "tool": "draft_campaign",
-                              "args": {"name": "{{input.goal}}", "objective": "{{input.goal}}", "plan": "{{s2}}", "campaign_type": "ACQUISITION"}}]}},
+                         "definition": {"trigger": {"type": "manual"}, "tools": ["brand_context", "audience_brief", "draft_campaign"], "steps": [
+                             {"id": "s1", "type": "tool", "tool": "brand_context", "next": "s2"},
+                             {"id": "s2", "type": "tool", "tool": "audience_brief", "args": {"name": "{{input.audience}}"}, "next": "s3"},
+                             {"id": "s3", "type": "llm", "prompt": "Draft a short campaign plan (objective, audience, channels, timeline, success measure) for the goal. Mention only products from the range.",
+                              "template": "Goal: {{input.goal}}\nAudience: {{s2.audience}} ({{s2.members}} consented members)\nRange: {{s1.brand}} {{s1.range}}\nChannels: e-mail to consented members; retail visits by the sales team\nTimeline: 4 weeks from approval\nSuccess measure: to be set by the marketing owner before approval\nSources: {{s1.sources}}",
+                              "next": "s4"},
+                             {"id": "s4", "type": "tool", "tool": "draft_campaign",
+                              "args": {"name": "{{input.goal}}", "objective": "{{input.goal}}", "plan": "{{s3}}", "campaign_type": "ACQUISITION"}}]}},
     "nurture_sequence": {"name": "Nurture e-mail sequence", "description": "From a goal and an audience, drafts a three-e-mail nurture sequence as a DRAFT campaign waiting for approval. Sends nothing.",
-                         "definition": {"trigger": {"type": "manual"}, "tools": ["audience_brief", "draft_campaign"], "steps": [
-                             {"id": "s1", "type": "tool", "tool": "audience_brief", "args": {"name": "{{input.audience}}"}, "next": "s2"},
-                             {"id": "s2", "type": "llm", "prompt": "Draft a three-step nurture e-mail sequence (subject and body each) for the goal.",
-                              "template": "Sequence for {{s1.audience}} — goal: {{input.goal}}\nE-mail 1 (day 0) subject: Welcome from POVU\nBody: Thank you for your interest. Here is what POVU Water 500 ml and POVU Juice 1 L can do for your shop.\nE-mail 2 (day 4) subject: How other shops stock POVU\nBody: A short guide to ordering and delivery.\nE-mail 3 (day 10) subject: Ready to order?\nBody: Reply to this e-mail or contact your sales representative.",
-                              "next": "s3"},
-                             {"id": "s3", "type": "tool", "tool": "draft_campaign",
-                              "args": {"name": "Nurture: {{input.goal}}", "objective": "{{input.goal}}", "plan": "{{s2}}", "campaign_type": "RETENTION"}}]}},
+                         "definition": {"trigger": {"type": "manual"}, "tools": ["brand_context", "audience_brief", "draft_campaign"], "steps": [
+                             {"id": "s1", "type": "tool", "tool": "brand_context", "next": "s2"},
+                             {"id": "s2", "type": "tool", "tool": "audience_brief", "args": {"name": "{{input.audience}}"}, "next": "s3"},
+                             {"id": "s3", "type": "llm", "prompt": "Draft a three-step nurture e-mail sequence (subject and body each) for the goal. Mention only products from the range.",
+                              "template": "Sequence for {{s2.audience}} — goal: {{input.goal}}\nE-mail 1 (day 0) subject: Welcome from {{s1.brand}}\nBody: Thank you for your interest. Here is what {{s1.brand}} {{s1.range}} can do for your shop.\nE-mail 2 (day 4) subject: How other shops stock {{s1.brand}}\nBody: A short guide to ordering and delivery.\nE-mail 3 (day 10) subject: Ready to order?\nBody: Reply to this e-mail or contact your sales representative.\nSources: {{s1.sources}}",
+                              "next": "s4"},
+                             {"id": "s4", "type": "tool", "tool": "draft_campaign",
+                              "args": {"name": "Nurture: {{input.goal}}", "objective": "{{input.goal}}", "plan": "{{s3}}", "campaign_type": "RETENTION"}}]}},
     "kb_agent": {"name": "Knowledge-base answerer", "description": "Answers a question from approved help articles, with citations.",
                  "definition": {"trigger": {"type": "manual"}, "tools": ["kb_search"], "steps": [
                      {"id": "s1", "type": "tool", "tool": "kb_search", "args": {"query": "{{input.question}}"}, "next": "s2"},

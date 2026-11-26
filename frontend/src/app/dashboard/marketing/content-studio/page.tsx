@@ -17,7 +17,7 @@ function ImageForm({ say }: { say: (m: string) => void }) {
   return <section className="border rounded p-3 bg-white space-y-2 text-xs">
     <h3 className="font-semibold text-sm">AI image (draft creative)</h3>
     <p className="text-gray-500">The image lands in the asset library as a draft; it cannot be used in e-mail, social or the website until approved there.</p>
-    <input aria-label="Image title" placeholder="Title, e.g. POVU Water counter visual" className="border rounded px-1 w-full" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />
+    <input aria-label="Image title" placeholder="Title, e.g. POVU AllClean counter visual" className="border rounded px-1 w-full" value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} />
     <textarea aria-label="Image prompt" rows={2} placeholder="Describe the image" className="border rounded px-1 w-full" value={f.prompt} onChange={(e) => setF({ ...f, prompt: e.target.value })} />
     <button className="border rounded px-3 py-1" onClick={() => apiClient.post("/api/v1/content-studio/images", f).then((r) => { say(`Draft creative created (document ${r.data.document_id}); approve it in the asset library.`); setF({ title: "", prompt: "" }); }).catch((e) => say(err(e)))}>Generate image</button>
   </section>;
@@ -82,7 +82,7 @@ export default function ContentStudioPage() {
           <select aria-label="Channel" className="border rounded" value={g.channel} onChange={(e) => setG({ ...g, channel: e.target.value })}>{Object.entries(opts.channels).map(([c, n]) => <option key={c} value={c}>{c} (≤{n})</option>)}</select>
           <select aria-label="Template" className="border rounded" value={g.template} onChange={(e) => setG({ ...g, template: e.target.value })}>{Object.keys(opts.templates).map((t) => <option key={t}>{t}</option>)}</select>
         </div>
-        <textarea aria-label="Brief" rows={2} placeholder="Brief, e.g. Launch POVU Water 500 ml for Nairobi shops" className="border rounded px-1 w-full" value={g.brief} onChange={(e) => setG({ ...g, brief: e.target.value })} />
+        <textarea aria-label="Brief" rows={2} placeholder="Brief, e.g. Launch POVU AllClean 1 L (POVU-ALC-1L) for Nairobi shops" className="border rounded px-1 w-full" value={g.brief} onChange={(e) => setG({ ...g, brief: e.target.value })} />
         <fieldset className="flex flex-wrap gap-2"><legend>Evidence to use</legend>{profile.evidence.map((e) => <label key={e.id} className="flex gap-1"><input type="checkbox" checked={g.evidence.includes(e.id)}
           onChange={(x) => setG({ ...g, evidence: x.target.checked ? [...g.evidence, e.id] : g.evidence.filter((y) => y !== e.id) })} />{e.id}: {e.text}</label>)}</fieldset>
         <button className="bg-indigo-600 text-white rounded px-3 py-1" onClick={() => apiClient.post("/api/v1/content-studio/drafts", { profile_id: pid, channel: g.channel, template: g.template, brief: g.brief, evidence_ids: g.evidence }).then(after).catch((e) => say(err(e)))}>Write draft</button>

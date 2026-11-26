@@ -33,7 +33,7 @@ async def _dispose_engine():
 def _graph(trigger: dict) -> dict:
     return {"nodes": [{"id": "t", "type": "trigger", "config": trigger},
                       {"id": "task", "type": "action", "config": {"action_type": "create_task",
-                                                                  "payload": {"subject": "Call about POVU Water 500 ml"}}},
+                                                                  "payload": {"subject": "Call about POVU AllClean 1 L"}}},
                       {"id": "end", "type": "end"}],
             "edges": [{"from": "t", "to": "task"}, {"from": "task", "to": "end"}]}
 
@@ -70,9 +70,9 @@ def test_event_definition_and_property_cleaning():
     for n, p in (("has space", {}), ("ok", {"Bad-Name": "string"}), ("ok", {"x": "date"}), ("ok", {f"p{i}": "string" for i in range(21)})):
         with pytest.raises(ValueError):
             wa.validate_definition(n, p)
-    clean = wa.clean_properties(props, {"product": "POVU Juice 1 L", "cartons": 3, "trial": True, "unknown": "x",
+    clean = wa.clean_properties(props, {"product": "POVU WhiteCare 1 kg", "cartons": 3, "trial": True, "unknown": "x",
                                         "email": "a@b.c"})
-    assert clean == {"product": "POVU Juice 1 L", "cartons": 3, "trial": True}
+    assert clean == {"product": "POVU WhiteCare 1 kg", "cartons": 3, "trial": True}
     assert wa.clean_properties(props, {"cartons": "3", "trial": 1, "product": 5}) == {}          # wrong types dropped
     assert wa.clean_properties(props, {"cartons": True}) == {}                                  # a bool is not a number
 
@@ -88,7 +88,7 @@ def test_web_audience_rules():
                               {"field": "web_event", "op": "occurred", "value": "demo_requested"},
                               {"field": "intent_score", "op": "gte", "value": "10"}]})
     now = datetime(2026, 11, 26, tzinfo=timezone.utc)
-    facts = {"_now": now, "intent_score": 12.0, "web": [("PAGE", None, "/pricing/povu-water", now - timedelta(days=2)),
+    facts = {"_now": now, "intent_score": 12.0, "web": [("PAGE", None, "/pricing/povu-allclean", now - timedelta(days=2)),
                                                        ("CUSTOM", "demo_requested", "/demo", now - timedelta(days=20))]}
     assert aus.matches(r, facts)
     assert not aus.matches(r, {**facts, "intent_score": 9.0})
@@ -194,7 +194,7 @@ async def test_scheduled_daily_weekly_and_relative_enrol_once_per_occurrence():
         assert runs[0].event_key == f"rel:expected_close_date:{close.isoformat()}:{a_id}"
         await wfs.process(db, now=at(fire, 12) + timedelta(seconds=5))
         acts = (await db.execute(select(CRMActivity.subject).where(CRMActivity.crm_record_id == a_id))).scalars().all()
-        assert "Call about POVU Water 500 ml" in acts
+        assert "Call about POVU AllClean 1 L" in acts
         # the close date moves: a new occurrence for the new date, never a second run for the old one
         rec = await db.get(CRMRecord, a_id)
         rec.expected_close_date = close + timedelta(days=3)
@@ -315,17 +315,17 @@ async def test_event_definitions_collector_and_web_event_trigger():
         rid = rec.id
         v, s = uuid.uuid4().hex, uuid.uuid4().hex
         ev = {"event_id": uuid.uuid4().hex, "kind": "CUSTOM", "name": ev_name, "path": "/demo",
-              "properties": {"product": "POVU Water 500 ml", "cartons": 4, "phone": "0700000000", "cartons_x": "a"}}
+              "properties": {"product": "POVU AllClean 1 L", "cartons": 4, "phone": "0700000000", "cartons_x": "a"}}
         assert (await wa.collect(db, v, s, [ev]))["stored"] == 0                          # no analytics consent: nothing
         await wa.record_consent(db, v, analytics=True, marketing=False)
         await db.flush()
         out = await wa.collect(db, v, s, [ev, {"event_id": uuid.uuid4().hex, "kind": "CUSTOM", "name": f"undefined_{tag}",
-                                               "path": "/x", "properties": {"product": "POVU Juice 1 L"}}])
+                                               "path": "/x", "properties": {"product": "POVU WhiteCare 1 kg"}}])
         assert out["stored"] == 2 and out["dropped_properties"] == 3
         await db.commit()
         rows = (await db.execute(select(WebEvent.name, WebEventProperty.properties).outerjoin(
             WebEventProperty, WebEventProperty.event_id == WebEvent.id).where(WebEvent.visitor_hash == wa.hashed("v", v)))).all()
-        assert dict(rows) == {ev_name: {"product": "POVU Water 500 ml", "cartons": 4}, f"undefined_{tag}": None}
+        assert dict(rows) == {ev_name: {"product": "POVU AllClean 1 L", "cartons": 4}, f"undefined_{tag}": None}
 
         t0 = datetime.now(timezone.utc) + timedelta(seconds=5)
         await wfs.enqueue(db, t0)
@@ -376,7 +376,7 @@ async def test_web_behaviour_audiences():
             await db.flush()
             assert await wa.identify(db, v, c.email)
             await wa.collect(db, v, uuid.uuid4().hex, [
-                {"event_id": uuid.uuid4().hex, "kind": "PAGE", "path": "/pricing/povu-water"},
+                {"event_id": uuid.uuid4().hex, "kind": "PAGE", "path": "/pricing/povu-allclean"},
                 {"event_id": uuid.uuid4().hex, "kind": "CUSTOM", "name": f"demo_{tag}", "path": "/demo"}])
         await db.flush()
         seg = {"field": "segment", "op": "eq", "value": f"web-{tag}"}

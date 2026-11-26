@@ -42,7 +42,7 @@ async def test_dispatch_prints_job_marks_records_and_retries_after_failure():
         assert engine.url.host in {"127.0.0.1", "localhost", "::1"} and engine.url.password is None
         assert TASK_DB_PATTERN.fullmatch(os.environ.get(TASK_DB_NAME_ENV, ""))
         assert (await db.execute(select(func.current_database()))).scalar_one() == os.environ[TASK_DB_NAME_ENV]
-        product = Product(sku=f"LBL-{s}", name=f"Synthetic juice {s}", category=ProductCategory.BEVERAGE, uom=UnitOfMeasure.PCS)
+        product = Product(sku=f"LBL-{s}", name=f"Synthetic AllClean {s}", category=ProductCategory.HOUSEHOLD, uom=UnitOfMeasure.PCS)
         db.add(product)
         await db.flush()
         config = ProductGS1Config(product_id=product.id)

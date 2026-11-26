@@ -1,4 +1,5 @@
 """PostgreSQL behavioral proof for isolated what-if material simulations."""
+import os
 from datetime import date
 from decimal import Decimal
 from uuid import uuid4
@@ -21,7 +22,7 @@ class _RollbackFixture(Exception):
 
 @pytest.mark.asyncio
 async def test_postgres_material_resimulation_uses_real_bom_supply_and_rolls_back_all_live_changes():
-    if "postgresql" not in str(settings.DATABASE_URL):
+    if "postgresql" not in str(settings.DATABASE_URL) or os.environ.get("M20_DISPOSABLE_TEST_DATABASE") != "1":  # M48: explicit opt-in, never the dev DB
         pytest.skip("MPS material savepoint proof requires PostgreSQL")
 
     # Prevent asyncpg connections from a prior pytest event loop being reused.

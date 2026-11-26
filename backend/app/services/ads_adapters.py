@@ -1,6 +1,8 @@
 """Ad platform adapters (M44.S01.T002–T005): Meta Marketing API, Google Ads API, LinkedIn Marketing API, TikTok API for
 Business. Read/report mapping, account discovery, validate-only draft checks where the platform documents one, and
-error mapping. Nothing here creates or publishes a live campaign.
+error mapping. M48.S01.T001–T004 (end of file): documented campaign-tree mutation requests (create / budget update /
+pause-resume / read-back / reconcile search) per provider; whether they run LIVE or SIMULATED is decided fail-closed
+in ads_service, never here.
 
 Every adapter is NOT_CONFIGURED until its token settings are filled (owner activation, M47). All traffic goes through
 the provider egress guard (`provider_http`), so tests and local runs reach only the local simulator.
@@ -48,11 +50,12 @@ class ReportRow:
 
 
 class AdsError(Exception):
-    """kind: NOT_CONFIGURED | AUTH | RATE_LIMIT | PERMISSION | VALIDATION | VERSION | PROVIDER"""
+    """kind: NOT_CONFIGURED | AUTH | RATE_LIMIT | PERMISSION | VALIDATION | VERSION | PROVIDER | UNKNOWN.
+    UNKNOWN (M48): a mutation was sent but its outcome is not known (timeout / 5xx) → reconcile by read-back."""
 
-    def __init__(self, kind: str, message: str, retry_after: Optional[int] = None):
+    def __init__(self, kind: str, message: str, retry_after: Optional[int] = None, http_status: Optional[int] = None):
         super().__init__(message)
-        self.kind, self.retry_after = kind, retry_after
+        self.kind, self.retry_after, self.http_status = kind, retry_after, http_status
 
 
 def _dec(v) -> Decimal:
@@ -97,7 +100,7 @@ class MetaAds(Adapter):
         try:
             body = r.json()
         except ValueError:
-            raise AdsError("PROVIDER", f"Meta returned HTTP {r.status_code} without JSON") from None
+            raise AdsError("PROVIDER", f"Meta returned HTTP {r.status_code} without JSON", None, r.status_code) from None
         err = body.get("error") if isinstance(body, dict) else None
         if err or r.status_code >= 400:
             err = err or {}
@@ -106,7 +109,7 @@ class MetaAds(Adapter):
                     "RATE_LIMIT" if code in self.RATE_CODES or r.status_code == 429 else
                     "PERMISSION" if code in self.PERM_CODES or r.status_code == 403 else
                     "VALIDATION" if code == 100 else "PROVIDER")
-            raise AdsError(kind, f"Meta: {msg}", _retry_after(r))
+            raise AdsError(kind, f"Meta: {msg}", _retry_after(r), r.status_code)
         return body
 
     async def accounts(self) -> list[dict]:
@@ -180,7 +183,7 @@ class GoogleAds(Adapter):
         try:
             body = r.json()
         except ValueError:
-            raise AdsError("PROVIDER", f"Google Ads returned HTTP {r.status_code} without JSON") from None
+            raise AdsError("PROVIDER", f"Google Ads returned HTTP {r.status_code} without JSON", None, r.status_code) from None
         err = body[0].get("error") if isinstance(body, list) and body and isinstance(body[0], dict) else (
             body.get("error") if isinstance(body, dict) else None)
         if err or r.status_code >= 400:
@@ -190,7 +193,7 @@ class GoogleAds(Adapter):
                     "INVALID_ARGUMENT": "VALIDATION", "UNIMPLEMENTED": "VERSION"}.get(status, "PROVIDER")
             if r.status_code == 429:
                 kind = "RATE_LIMIT"
-            raise AdsError(kind, f"Google Ads: {err.get('message', status or r.status_code)}", _retry_after(r))
+            raise AdsError(kind, f"Google Ads: {err.get('message', status or r.status_code)}", _retry_after(r), r.status_code)
         return body
 
     async def _search(self, customer_id: str, query: str) -> list[dict]:
@@ -248,14 +251,14 @@ class LinkedInAds(Adapter):
 
     def _check(self, r: httpx.Response) -> dict:
         if r.status_code < 400:
-            return r.json()
+            return r.json() if r.content else {}          # 201 create / 204 update carry no body
         try:
             body = r.json()
         except ValueError:
             body = {}
         kind = {401: "AUTH", 403: "PERMISSION", 429: "RATE_LIMIT", 426: "VERSION", 400: "VALIDATION",
                 422: "VALIDATION"}.get(r.status_code, "PROVIDER")
-        raise AdsError(kind, f"LinkedIn: {body.get('message', r.status_code)}", _retry_after(r))
+        raise AdsError(kind, f"LinkedIn: {body.get('message', r.status_code)}", _retry_after(r), r.status_code)
 
     async def accounts(self) -> list[dict]:
         self._need()
@@ -312,7 +315,7 @@ class LinkedInAds(Adapter):
 
 class TikTokAds(Adapter):
     provider = "tiktok"
-    RATE, AUTH, PERM = {40100, 40133, 51021}, {40104, 40105, 40102}, {40002, 40300}
+    RATE, AUTH, PERM = {40100, 40133, 51021}, {40104, 40105, 40102}, {40001, 40300}   # M48: 40001 no permission, 40002 parameter error
     MIN_DAILY_BUDGET_USD = Decimal(50)      # documented minimum campaign daily budget
 
     def configured(self) -> bool:
@@ -325,12 +328,14 @@ class TikTokAds(Adapter):
         try:
             body = r.json()
         except ValueError:
-            raise AdsError("PROVIDER", f"TikTok returned HTTP {r.status_code} without JSON") from None
+            raise AdsError("PROVIDER", f"TikTok returned HTTP {r.status_code} without JSON", None, r.status_code) from None
         code = body.get("code", r.status_code if r.status_code >= 400 else 0)
         if code != 0:
             kind = ("RATE_LIMIT" if code in self.RATE or r.status_code == 429 else "AUTH" if code in self.AUTH else
-                    "PERMISSION" if code in self.PERM else "VALIDATION" if code == 40001 else "PROVIDER")
-            raise AdsError(kind, f"TikTok: {body.get('message', code)} (code {code})", _retry_after(r))
+                    "PERMISSION" if code in self.PERM else "VALIDATION" if code == 40002 else "PROVIDER")
+            # TikTok answers HTTP 200 with a code; 5xxxx codes are server-side errors (outcome of a write unknown)
+            raise AdsError(kind, f"TikTok: {body.get('message', code)} (code {code})", _retry_after(r),
+                           500 if code >= 50000 else r.status_code)
         return body.get("data") or {}
 
     async def accounts(self) -> list[dict]:
@@ -599,3 +604,495 @@ async def upload_conversions(db, provider: str, since) -> dict:
                                                             error=err).on_conflict_do_update(
             constraint="uq_ads_conversion_upload", set_={"status": status, "error": err}))
     return {"status": "OK" if status == "UPLOADED" else "FAILED", "uploaded": n, "error": err}
+
+
+# ── M48.S01.T001–T004 campaign mutations ────────────────────────────────────
+# Request construction follows the official public contracts (checked 2026-11-26):
+#  Meta Marketing API (Graph version = META_ADS_API_VERSION):
+#    https://developers.facebook.com/docs/marketing-api/reference/ad-account/campaigns/
+#    https://developers.facebook.com/docs/marketing-api/reference/ad-account/adsets/
+#    https://developers.facebook.com/docs/marketing-api/reference/ad-account/adcreatives/
+#    https://developers.facebook.com/docs/marketing-api/reference/ad-account/ads/
+#    Create on act_<id>/{campaigns,adsets,adcreatives,ads}; update/read on /<object id>; status PAUSED|ACTIVE;
+#    special_ad_categories required; budgets in the account currency's minor unit; execution_options validate_only.
+#  Google Ads API REST (version = GOOGLE_ADS_API_VERSION):
+#    https://developers.google.com/google-ads/api/rest/reference/rest  (campaignBudgets / campaigns / adGroups /
+#    adGroupAds :mutate, googleAds:mutate with temporary ids, googleAds:search GAQL), validateOnly, partialFailure,
+#    resource names customers/<id>/<collection>/<id>, money in micros, updates carry an updateMask.
+#  LinkedIn Marketing API, versioned REST (LinkedIn-Version = LINKEDIN_ADS_VERSION; docs view li-lms-2026-11):
+#    https://learn.microsoft.com/en-us/linkedin/marketing/integrations/ads/account-structure/create-and-manage-campaign-groups
+#    https://learn.microsoft.com/en-us/linkedin/marketing/integrations/ads/account-structure/create-and-manage-campaigns
+#    https://learn.microsoft.com/en-us/linkedin/marketing/integrations/ads/account-structure/create-and-manage-creatives
+#    X-Restli-Protocol-Version 2.0.0; create → 201 + x-restli-id; update = POST + X-RestLi-Method PARTIAL_UPDATE
+#    {"patch":{"$set":{...}}} → 204; groups/campaigns DRAFT|PAUSED|ACTIVE, creatives intendedStatus. No validate-only
+#    call is documented → local checks. Writes need the rw_ads scope and Standard access tier (refused otherwise).
+#  TikTok API for Business v1.3: https://business-api.tiktok.com/portal/docs (campaign|adgroup|ad /create/,
+#    /update/, /status/update/ with operation_status ENABLE|DISABLE, /get/ with filtering + page/page_size);
+#    Access-Token header, advertiser_id in every call, budget in account currency, code != 0 = error.
+#    Ads need uploaded assets first (video_id, identity_id); organic Content Posting is a different API (social).
+# Nothing here decides LIVE vs SIMULATED: ads_service does (fail-closed). Every call goes through provider_client().
+
+LEVELS = {"meta": ("CAMPAIGN", "ADSET", "CREATIVE", "AD"), "google": ("BUDGET", "CAMPAIGN", "ADSET", "AD"),
+          "linkedin": ("CAMPAIGN", "ADSET", "AD"), "tiktok": ("CAMPAIGN", "ADSET", "AD")}
+STATUS_LEVELS = ("CAMPAIGN", "ADSET", "AD")              # every provider: these carry a pause/active status
+BUDGET_LEVEL = {"meta": "CAMPAIGN", "google": "BUDGET", "linkedin": "ADSET", "tiktok": "CAMPAIGN"}
+# Only objectives whose full tree can be built from documented fields without pixels, apps or lead forms.
+OBJECTIVES = {"meta": ("OUTCOME_AWARENESS", "OUTCOME_TRAFFIC"), "google": ("SEARCH",),
+              "linkedin": ("BRAND_AWARENESS", "WEBSITE_VISIT"), "tiktok": ("REACH", "TRAFFIC")}
+LEVEL_LABEL = {"meta": {"CAMPAIGN": "Campaign", "ADSET": "Ad set", "CREATIVE": "Ad creative", "AD": "Ad"},
+               "google": {"BUDGET": "Campaign budget", "CAMPAIGN": "Search campaign", "ADSET": "Ad group",
+                          "AD": "Responsive search ad"},
+               "linkedin": {"CAMPAIGN": "Campaign group", "ADSET": "Campaign", "AD": "Creative"},
+               "tiktok": {"CAMPAIGN": "Campaign", "ADSET": "Ad group", "AD": "Ad"}}
+MAX_TRIES, BACKOFF = 3, 0.5          # tests set BACKOFF = 0
+
+
+@dataclass
+class Req:
+    method: str
+    url: str
+    json: Optional[dict] = None
+    data: Optional[dict] = None
+    params: Optional[dict] = None
+    headers: Optional[dict] = None
+
+    def log(self) -> dict:
+        """What the ledger stores. Credentials live only in adapter headers and are never stored."""
+        return {"method": self.method, "url": self.url, "body": self.json if self.json is not None else self.data,
+                "params": self.params, "headers": self.headers}
+
+
+def _https(v) -> bool:
+    return isinstance(v, str) and v.startswith("https://") and len(v) <= 1000
+
+
+def check_spec(provider: str, objective: str, spec: dict, budget: Decimal, currency: str) -> list[str]:
+    """Local checks of documented limits before anything is sent (the only check where no validate-only exists)."""
+    import re
+    p: list[str] = []
+    if objective not in OBJECTIVES[provider]:
+        p.append(f"Objective {objective} is not offered for {provider}; supported: {', '.join(OBJECTIVES[provider])}.")
+    usd = currency.upper() == "USD"
+    if provider == "meta":
+        if not str(spec.get("page_id", "")).isdigit():
+            p.append("Meta needs the Facebook Page id the ad runs from.")
+        if not _https(spec.get("link")):
+            p.append("Meta link must be an https URL.")
+        if not str(spec.get("message") or "").strip():
+            p.append("Meta ad text (message) is required.")
+        if not re.fullmatch(r"[A-Za-z]{2}", str(spec.get("country", ""))):
+            p.append("Meta targeting needs a 2-letter country code.")
+    elif provider == "google":
+        hs, ds = spec.get("headlines") or [], spec.get("descriptions") or []
+        if not 3 <= len(hs) <= 15 or any(not h or len(h) > 30 for h in hs):
+            p.append("Responsive search ads need 3–15 headlines of at most 30 characters.")
+        if not 2 <= len(ds) <= 4 or any(not d or len(d) > 90 for d in ds):
+            p.append("Responsive search ads need 2–4 descriptions of at most 90 characters.")
+        if not _https(spec.get("final_url")):
+            p.append("Google final URL must be an https URL.")
+        if _dec(spec.get("cpc_bid")) <= 0:
+            p.append("Google manual CPC bid must be positive.")
+    elif provider == "linkedin":
+        if not re.fullmatch(r"urn:li:(share|ugcPost):\d+", str(spec.get("share_urn", ""))):
+            p.append("LinkedIn creative needs an existing post URN (urn:li:share:… or urn:li:ugcPost:…).")
+        if not re.fullmatch(r"urn:li:geo:\d+", str(spec.get("geo_urn", ""))):
+            p.append("LinkedIn targeting needs a location URN (urn:li:geo:…).")
+        if _dec(spec.get("unit_cost")) <= 0:
+            p.append("LinkedIn bid (unit cost) must be positive.")
+        if usd and budget < LinkedInAds.MIN_DAILY_BUDGET_USD:
+            p.append("LinkedIn's minimum daily budget is USD 10.")
+    elif provider == "tiktok":
+        locs = spec.get("location_ids") or []
+        if not locs or any(not str(x).isdigit() for x in locs):
+            p.append("TikTok ad group needs location ids.")
+        if not str(spec.get("video_id") or "").strip() or not str(spec.get("identity_id") or "").strip():
+            p.append("TikTok ads need an uploaded video_id and an identity_id (asset prerequisites).")
+        if not str(spec.get("ad_text") or "").strip() or len(str(spec.get("ad_text") or "")) > 100:
+            p.append("TikTok ad text is required (at most 100 characters).")
+        if not _https(spec.get("landing_page_url")):
+            p.append("TikTok landing page must be an https URL.")
+        if usd and budget < TikTokAds.MIN_DAILY_BUDGET_USD:
+            p.append("TikTok's minimum campaign daily budget is USD 50.")
+    return p
+
+
+async def send(adapter: Adapter, req: Req, safe: bool) -> tuple[dict, httpx.Headers]:
+    """One provider call with the retry policy.
+
+    safe (read): retried with backoff on RATE_LIMIT, 5xx and timeouts.
+    write: retried only on RATE_LIMIT (the provider refused it, nothing happened) or when the connection never
+    opened. A 5xx or a timeout after sending → AdsError("UNKNOWN"): the caller marks the ledger UNKNOWN and
+    reconciles by read-back; it never re-sends blindly."""
+    import asyncio
+    adapter._need()
+    if not safe and adapter.provider == "linkedin" and settings.LINKEDIN_ADS_ACCESS_TIER != "standard":
+        raise AdsError("PERMISSION", "LinkedIn Development tier: campaign writes need Standard tier access.")
+    headers = {**adapter._h(), **(req.headers or {})}
+    async with provider_client() as c:
+        for attempt in range(MAX_TRIES):
+            last = attempt == MAX_TRIES - 1
+            wait = BACKOFF * 2 ** attempt
+            try:
+                r = await c.request(req.method, req.url, json=req.json, data=req.data, params=req.params, headers=headers)
+            except httpx.ConnectError as e:              # never reached the provider: certainly not executed
+                if not last:
+                    await asyncio.sleep(wait)
+                    continue
+                raise AdsError("PROVIDER", f"{adapter.provider}: cannot connect ({e.__class__.__name__})") from None
+            except httpx.TransportError as e:            # timeout / dropped after sending
+                if safe and not last:
+                    await asyncio.sleep(wait)
+                    continue
+                raise AdsError("PROVIDER" if safe else "UNKNOWN",
+                               f"{adapter.provider}: no answer ({e.__class__.__name__})") from None
+            try:
+                return adapter._check(r), r.headers
+            except AdsError as e:
+                server = (e.http_status or 0) >= 500
+                if not last and (e.kind == "RATE_LIMIT" or (safe and server)):
+                    await asyncio.sleep(min(e.retry_after or wait, 30) if BACKOFF else 0)
+                    continue
+                if server and not safe:
+                    e.kind = "UNKNOWN"
+                raise
+    raise AdsError("PROVIDER", "unreachable")
+
+
+def _ms(d: Optional[str]) -> int:
+    day = date.fromisoformat(d) if d else date.today()
+    return int(datetime(day.year, day.month, day.day).timestamp() * 1000)
+
+
+def _num(v: str) -> str:
+    return str(v).rsplit(":", 1)[-1]
+
+
+# Builders per provider. create(level, x) / status(level, pid, active, x) / budget(pid, x) / read(level, pid, x) /
+# find(level, x) → Req;  parse_create / parse_read / parse_find → plain values.
+# x: {"account": external id, "name": tagged name, "tag": name tag, "objective", "budget": Decimal, "currency",
+#     "spec": dict, "ids": {level: provider id of the already created ancestors}}
+
+class MetaBuild:
+    EDGE = {"CAMPAIGN": "campaigns", "ADSET": "adsets", "CREATIVE": "adcreatives", "AD": "ads"}
+    GOAL = {"OUTCOME_AWARENESS": "REACH", "OUTCOME_TRAFFIC": "LINK_CLICKS"}
+    a = ADAPTERS["meta"]
+
+    def create(self, level: str, x: dict, validate_only: bool = False) -> Req:
+        s, acct = x["spec"], x["account"]
+        if level == "CAMPAIGN":
+            data = {"name": x["name"], "objective": x["objective"], "status": "PAUSED",
+                    "special_ad_categories": json.dumps(s.get("special_ad_categories") or []),
+                    "daily_budget": minor_units(x["budget"], x["currency"]), "bid_strategy": "LOWEST_COST_WITHOUT_CAP"}
+        elif level == "ADSET":
+            data = {"name": x["name"], "campaign_id": x["ids"]["CAMPAIGN"], "status": "PAUSED", "billing_event": "IMPRESSIONS",
+                    "optimization_goal": self.GOAL.get(x["objective"], "REACH"),
+                    "targeting": json.dumps({"geo_locations": {"countries": [str(s.get("country", "")).upper()]}}),
+                    "start_time": f"{s.get('start_date') or date.today().isoformat()}T00:00:00+0300"}
+        elif level == "CREATIVE":
+            data = {"name": x["name"], "object_story_spec": json.dumps({"page_id": str(s.get("page_id")), "link_data": {
+                "link": s.get("link"), "message": s.get("message"), "name": s.get("headline") or ""}})}
+        else:
+            data = {"name": x["name"], "adset_id": x["ids"]["ADSET"], "status": "PAUSED",
+                    "creative": json.dumps({"creative_id": x["ids"]["CREATIVE"]})}
+        if validate_only:
+            data["execution_options"] = json.dumps(["validate_only"])
+        return Req("POST", self.a._url(f"act_{acct}/{self.EDGE[level]}"), data=data)
+
+    def parse_create(self, level: str, body: dict, headers) -> str:
+        if not body.get("id"):
+            raise AdsError("PROVIDER", "Meta did not return an object id.")
+        return str(body["id"])
+
+    def status(self, level: str, pid: str, active: bool, x: dict) -> Req:
+        return Req("POST", self.a._url(pid), data={"status": "ACTIVE" if active else "PAUSED"})
+
+    def budget(self, pid: str, x: dict) -> Req:
+        return Req("POST", self.a._url(pid), data={"daily_budget": minor_units(x["budget"], x["currency"])})
+
+    def read(self, level: str, pid: str, x: dict) -> Req:
+        f = "id,name,status" if level == "CREATIVE" else "id,name,status,effective_status" + (
+            ",daily_budget" if level == "CAMPAIGN" else "")
+        return Req("GET", self.a._url(pid), params={"fields": f})
+
+    def parse_read(self, level: str, body: dict, x: dict) -> dict:
+        b = body.get("daily_budget")
+        return {"status": body.get("effective_status") or body.get("status"), "configured": body.get("status"),
+                "budget_ok": None if b in (None, "") else int(b) == minor_units(x["budget"], x["currency"])}
+
+    def find(self, level: str, x: dict) -> Req:
+        return Req("GET", self.a._url(f"act_{x['account']}/{self.EDGE[level]}"), params={
+            "fields": "id,name,status", "filtering": json.dumps([{"field": "name", "operator": "CONTAIN", "value": x["tag"]}])})
+
+    def parse_find(self, level: str, body: dict, x: dict) -> Optional[str]:
+        hit = [d for d in body.get("data", []) if x["tag"] in (d.get("name") or "")]
+        return str(hit[0]["id"]) if hit else None
+
+
+class GoogleBuild:
+    SVC = {"BUDGET": "campaignBudgets", "CAMPAIGN": "campaigns", "ADSET": "adGroups", "AD": "adGroupAds"}
+    GAQL = {"BUDGET": "campaign_budget", "CAMPAIGN": "campaign", "ADSET": "ad_group", "AD": "ad_group_ad"}
+    KEY = {"BUDGET": "campaignBudget", "CAMPAIGN": "campaign", "ADSET": "adGroup", "AD": "adGroupAd"}
+    OP = {"BUDGET": "campaignBudgetOperation", "CAMPAIGN": "campaignOperation", "ADSET": "adGroupOperation",
+          "AD": "adGroupAdOperation"}
+    a = ADAPTERS["google"]
+
+    @staticmethod
+    def _cid(x: dict) -> str:
+        return x["account"].replace("-", "")
+
+    @staticmethod
+    def _version() -> int:
+        try:
+            return int(str(settings.GOOGLE_ADS_API_VERSION).lstrip("v").split(".")[0])
+        except ValueError:
+            return 0
+
+    @staticmethod
+    def _micros(v) -> str:
+        return str(int((_dec(v) * 1_000_000).to_integral_value()))
+
+    def resource(self, level: str, x: dict) -> dict:
+        s, ids = x["spec"], x["ids"]
+        if level == "BUDGET":
+            return {"name": x["name"], "amountMicros": self._micros(x["budget"]), "deliveryMethod": "STANDARD",
+                    "explicitlyShared": False}
+        if level == "CAMPAIGN":
+            c = {"name": x["name"], "status": "PAUSED", "advertisingChannelType": "SEARCH", "campaignBudget": ids["BUDGET"],
+                 "manualCpc": {}, "networkSettings": {"targetGoogleSearch": True, "targetSearchNetwork": False,
+                                                       "targetContentNetwork": False, "targetPartnerSearchNetwork": False}}
+            if self._version() >= 20:     # EU political-advertising declaration required for new campaigns (v20+)
+                c["containsEuPoliticalAdvertising"] = "DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING"
+            return c
+        if level == "ADSET":
+            return {"name": x["name"], "campaign": ids["CAMPAIGN"], "status": "PAUSED", "type": "SEARCH_STANDARD",
+                    "cpcBidMicros": self._micros(s.get("cpc_bid"))}
+        return {"adGroup": ids["ADSET"], "status": "PAUSED", "ad": {
+            "finalUrls": [s.get("final_url")], "responsiveSearchAd": {
+                "headlines": [{"text": h} for h in s.get("headlines") or []],
+                "descriptions": [{"text": d} for d in s.get("descriptions") or []]}}}
+
+    def create(self, level: str, x: dict) -> Req:
+        return Req("POST", self.a._url(f"customers/{self._cid(x)}/{self.SVC[level]}:mutate"),
+                   json={"operations": [{"create": self.resource(level, x)}], "partialFailure": True})
+
+    def validate_tree(self, x: dict, names: dict) -> Req:
+        """googleAds:mutate with validateOnly and temporary (negative) resource ids chaining the creates.
+        Google checks the whole tree; nothing is created."""
+        cid = self._cid(x)
+        ids = {lv: f"customers/{cid}/{self.SVC[lv]}/-{i + 1}" for i, lv in enumerate(("BUDGET", "CAMPAIGN", "ADSET"))}
+        ops = []
+        for lv in LEVELS["google"]:
+            res = self.resource(lv, {**x, "ids": ids, "name": names[lv]})
+            if lv in ids:
+                res["resourceName"] = ids[lv]
+            ops.append({self.OP[lv]: {"create": res}})
+        return Req("POST", self.a._url(f"customers/{cid}/googleAds:mutate"), json={"mutateOperations": ops, "validateOnly": True})
+
+    def parse_create(self, level: str, body: dict, headers) -> str:
+        pf = body.get("partialFailureError")
+        if pf:   # one operation per request: a partial failure means that operation failed and nothing was created
+            raise AdsError("VALIDATION", f"Google Ads: {pf.get('message', 'operation failed')}")
+        rn = ((body.get("results") or [{}])[0]).get("resourceName")
+        if not rn:
+            raise AdsError("PROVIDER", "Google Ads did not return a resource name.")
+        return rn
+
+    def status(self, level: str, pid: str, active: bool, x: dict) -> Req:
+        return Req("POST", self.a._url(f"customers/{self._cid(x)}/{self.SVC[level]}:mutate"), json={"operations": [
+            {"update": {"resourceName": pid, "status": "ENABLED" if active else "PAUSED"}, "updateMask": "status"}],
+            "partialFailure": True})
+
+    def budget(self, pid: str, x: dict) -> Req:
+        return Req("POST", self.a._url(f"customers/{self._cid(x)}/campaignBudgets:mutate"), json={"operations": [
+            {"update": {"resourceName": pid, "amountMicros": self._micros(x["budget"])}, "updateMask": "amountMicros"}],
+            "partialFailure": True})
+
+    def _search(self, x: dict, q: str) -> Req:
+        return Req("POST", self.a._url(f"customers/{self._cid(x)}/googleAds:search"), json={"query": q})
+
+    def read(self, level: str, pid: str, x: dict) -> Req:
+        r = self.GAQL[level]
+        extra = ", campaign_budget.amount_micros" if level == "BUDGET" else ""
+        return self._search(x, f"SELECT {r}.resource_name, {r}.status{extra} FROM {r} WHERE {r}.resource_name = '{pid}'")
+
+    def parse_read(self, level: str, body: dict, x: dict) -> dict:
+        row = ((body.get("results") or [{}])[0]).get(self.KEY[level]) or {}
+        m = row.get("amountMicros")
+        return {"status": row.get("status"), "configured": row.get("status"),
+                "budget_ok": None if not m else str(m) == self._micros(x["budget"])}
+
+    def find(self, level: str, x: dict) -> Req:
+        r = self.GAQL[level]
+        if level == "AD":     # responsive search ads carry no name: it is the only ad in our ad group
+            return self._search(x, f"SELECT {r}.resource_name, {r}.status FROM {r} WHERE {r}.ad_group = '{x['ids']['ADSET']}'")
+        return self._search(x, f"SELECT {r}.resource_name, {r}.name FROM {r} WHERE {r}.name LIKE '%{x['tag']}%'")
+
+    def parse_find(self, level: str, body: dict, x: dict) -> Optional[str]:
+        rows = [(row.get(self.KEY[level]) or {}).get("resourceName") for row in body.get("results") or []]
+        return next((r for r in rows if r), None)
+
+
+class LinkedInBuild:
+    COLL = {"CAMPAIGN": "adCampaignGroups", "ADSET": "adCampaigns", "AD": "creatives"}
+    COST = {"BRAND_AWARENESS": "CPM", "WEBSITE_VISIT": "CPC"}
+    PATCH = {"X-RestLi-Method": "PARTIAL_UPDATE"}
+
+    @staticmethod
+    def _base(acct: str) -> str:
+        return f"{settings.LINKEDIN_ADS_API_URL.rstrip('/')}/rest/adAccounts/{acct}"
+
+    def _path(self, level: str, pid: str, x: dict) -> str:
+        from urllib.parse import quote
+        return f"{self._base(x['account'])}/{self.COLL[level]}/{quote(pid, safe='')}"
+
+    def create(self, level: str, x: dict) -> Req:
+        s, acct, cur = x["spec"], x["account"], x["currency"].upper()
+        start = {"start": _ms(s.get("start_date"))}
+        if level == "CAMPAIGN":
+            body = {"account": f"urn:li:sponsoredAccount:{acct}", "name": x["name"], "status": "DRAFT", "runSchedule": start}
+        elif level == "ADSET":
+            body = {"account": f"urn:li:sponsoredAccount:{acct}", "name": x["name"], "status": "DRAFT",
+                    "campaignGroup": f"urn:li:sponsoredCampaignGroup:{_num(x['ids']['CAMPAIGN'])}",
+                    "type": "SPONSORED_UPDATES", "costType": self.COST.get(x["objective"], "CPM"),
+                    "objectiveType": x["objective"], "politicalIntent": "NOT_POLITICAL",
+                    "dailyBudget": {"amount": str(x["budget"]), "currencyCode": cur},
+                    "unitCost": {"amount": str(_dec(s.get("unit_cost"))), "currencyCode": cur},
+                    "locale": {"country": "US", "language": "en"}, "offsiteDeliveryEnabled": False,
+                    "audienceExpansionEnabled": False, "runSchedule": start,
+                    "targetingCriteria": {"include": {"and": [{"or": {"urn:li:adTargetingFacet:locations": [s.get("geo_urn")]}}]}}}
+        else:
+            body = {"campaign": f"urn:li:sponsoredCampaign:{_num(x['ids']['ADSET'])}",
+                    "content": {"reference": s.get("share_urn")}, "intendedStatus": "DRAFT"}
+        return Req("POST", f"{self._base(acct)}/{self.COLL[level]}", json=body)
+
+    def parse_create(self, level: str, body: dict, headers) -> str:
+        rid = headers.get("x-restli-id") or headers.get("x-linkedin-id")
+        if not rid:
+            raise AdsError("PROVIDER", "LinkedIn did not return x-restli-id.")
+        return rid
+
+    def status(self, level: str, pid: str, active: bool, x: dict) -> Req:
+        field = "intendedStatus" if level == "AD" else "status"
+        return Req("POST", self._path(level, pid, x), headers=self.PATCH,
+                   json={"patch": {"$set": {field: "ACTIVE" if active else "PAUSED"}}})
+
+    def budget(self, pid: str, x: dict) -> Req:
+        return Req("POST", self._path("ADSET", pid, x), headers=self.PATCH, json={"patch": {"$set": {
+            "dailyBudget": {"amount": str(x["budget"]), "currencyCode": x["currency"].upper()}}}})
+
+    def read(self, level: str, pid: str, x: dict) -> Req:
+        return Req("GET", self._path(level, pid, x))
+
+    def parse_read(self, level: str, body: dict, x: dict) -> dict:
+        st = body.get("intendedStatus") if level == "AD" else body.get("status")
+        serving = body.get("servingStatuses") or ([] if level != "AD" else (["SERVING"] if body.get("isServing") else []))
+        amt = (body.get("dailyBudget") or {}).get("amount")
+        status = f"{st} ({', '.join(serving)})" if serving else st
+        return {"status": status, "configured": st, "budget_ok": None if amt is None else _dec(amt) == x["budget"]}
+
+    def find(self, level: str, x: dict) -> Req:
+        from urllib.parse import quote
+        base = self._base(x["account"])
+        if level == "CAMPAIGN":       # Rest.li query syntax: built by hand so it is not encoded twice
+            url = f"{base}/adCampaignGroups?q=search&search=(name:(values:List({quote(x['name'], safe='')})))"
+        elif level == "ADSET":
+            g = quote(f"urn:li:sponsoredCampaignGroup:{_num(x['ids']['CAMPAIGN'])}", safe="")
+            url = f"{base}/adCampaigns?q=search&search=(campaignGroup:(values:List({g})))"
+        else:
+            cm = quote(f"urn:li:sponsoredCampaign:{_num(x['ids']['ADSET'])}", safe="")
+            url = f"{base}/creatives?q=criteria&campaigns=List({cm})"
+        return Req("GET", url)
+
+    def parse_find(self, level: str, body: dict, x: dict) -> Optional[str]:
+        els = [e for e in body.get("elements", []) if level == "AD" or x["tag"] in (e.get("name") or "")]
+        return str(els[0]["id"]) if els else None
+
+
+class TikTokBuild:
+    KIND = {"CAMPAIGN": "campaign", "ADSET": "adgroup", "AD": "ad"}
+    GOAL = {"REACH": ("REACH", "CPM"), "TRAFFIC": ("CLICK", "CPC")}
+
+    @staticmethod
+    def _url(path: str) -> str:
+        return f"{settings.TIKTOK_ADS_API_URL.rstrip('/')}/open_api/v1.3/{path}"
+
+    def create(self, level: str, x: dict) -> Req:
+        s, adv = x["spec"], x["account"]
+        if level == "CAMPAIGN":
+            body = {"advertiser_id": adv, "campaign_name": x["name"], "objective_type": x["objective"],
+                    "budget_optimize_on": True, "budget_mode": "BUDGET_MODE_DAY", "budget": float(x["budget"]),
+                    "operation_status": "DISABLE"}
+        elif level == "ADSET":
+            goal, billing = self.GOAL.get(x["objective"], ("REACH", "CPM"))
+            body = {"advertiser_id": adv, "campaign_id": x["ids"]["CAMPAIGN"], "adgroup_name": x["name"],
+                    "placement_type": "PLACEMENT_TYPE_AUTOMATIC", "location_ids": [str(v) for v in s.get("location_ids") or []],
+                    "schedule_type": "SCHEDULE_FROM_NOW",
+                    "schedule_start_time": f"{s.get('start_date') or date.today().isoformat()} 00:00:00",
+                    "optimization_goal": goal, "billing_event": billing, "bid_type": "BID_TYPE_NO_BID",
+                    "pacing": "PACING_MODE_SMOOTH", "operation_status": "DISABLE"}
+            if x["objective"] == "TRAFFIC":
+                body["promotion_type"] = "WEBSITE"
+        else:
+            body = {"advertiser_id": adv, "adgroup_id": x["ids"]["ADSET"], "operation_status": "DISABLE", "creatives": [{
+                "ad_name": x["name"], "ad_format": "SINGLE_VIDEO", "video_id": s.get("video_id"),
+                "identity_type": "CUSTOMIZED_USER", "identity_id": s.get("identity_id"), "ad_text": s.get("ad_text"),
+                "call_to_action": "LEARN_MORE", "landing_page_url": s.get("landing_page_url")}]}
+        return Req("POST", self._url(f"{self.KIND[level]}/create/"), json=body)
+
+    def parse_create(self, level: str, data: dict, headers) -> str:
+        pid = (data.get("ad_ids") or [None])[0] if level == "AD" else data.get(f"{self.KIND[level]}_id")
+        if not pid:
+            raise AdsError("PROVIDER", "TikTok did not return an id.")
+        return str(pid)
+
+    def status(self, level: str, pid: str, active: bool, x: dict) -> Req:
+        k = self.KIND[level]
+        return Req("POST", self._url(f"{k}/status/update/"), json={
+            "advertiser_id": x["account"], f"{k}_ids": [pid], "operation_status": "ENABLE" if active else "DISABLE"})
+
+    def budget(self, pid: str, x: dict) -> Req:
+        return Req("POST", self._url("campaign/update/"), json={"advertiser_id": x["account"], "campaign_id": pid,
+                                                                  "budget": float(x["budget"])})
+
+    def read(self, level: str, pid: str, x: dict) -> Req:
+        k = self.KIND[level]
+        return Req("GET", self._url(f"{k}/get/"), params={"advertiser_id": x["account"],
+                                                         "filtering": json.dumps({f"{k}_ids": [pid]})})
+
+    def parse_read(self, level: str, data: dict, x: dict) -> dict:
+        row = (data.get("list") or [{}])[0]
+        st = row.get("operation_status")
+        sec = row.get("secondary_status")
+        return {"status": f"{st} ({sec})" if sec else st, "configured": st,
+                "budget_ok": None if row.get("budget") is None else _dec(row["budget"]) == x["budget"]}
+
+    def find(self, level: str, x: dict, page: int = 1) -> Req:
+        k = self.KIND[level]
+        flt = {} if level == "CAMPAIGN" else ({"campaign_ids": [x["ids"]["CAMPAIGN"]]} if level == "ADSET"
+                                              else {"adgroup_ids": [x["ids"]["ADSET"]]})
+        return Req("GET", self._url(f"{k}/get/"), params={"advertiser_id": x["account"], "filtering": json.dumps(flt),
+                                                         "page": page, "page_size": 100})
+
+    def parse_find(self, level: str, data: dict, x: dict) -> Optional[str]:
+        k = self.KIND[level]
+        for row in data.get("list") or []:
+            if level != "CAMPAIGN" or x["tag"] in (row.get("campaign_name") or ""):
+                return str(row.get(f"{k}_id"))
+        return None
+
+
+BUILDERS = {"meta": MetaBuild(), "google": GoogleBuild(), "linkedin": LinkedInBuild(), "tiktok": TikTokBuild()}
+
+
+async def find_created(provider: str, level: str, x: dict) -> Optional[str]:
+    """Read-back used to reconcile an UNKNOWN create. TikTok campaign lists are paged (page_info.total_page)."""
+    a, b = ADAPTERS[provider], BUILDERS[provider]
+    if provider == "tiktok" and level == "CAMPAIGN":
+        for page in range(1, MAX_PAGES + 1):
+            data, _ = await send(a, b.find(level, x, page), safe=True)
+            hit = b.parse_find(level, data, x)
+            if hit or page >= int((data.get("page_info") or {}).get("total_page") or 1):
+                return hit
+        return None
+    body, _ = await send(a, b.find(level, x), safe=True)
+    return b.parse_find(level, body, x)

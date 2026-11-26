@@ -1,0 +1,201 @@
+{
+  "sha": "6ac96f1ed375a3f067d367c8aba598854787e8e9",
+  "template": "m48_tmpl",
+  "totals": {
+    "PASS": 8
+  },
+  "results": [
+    {
+      "file": "test_m02_security_runtime.py",
+      "flags": [
+        "M02_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M02_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m02_t005_9f994b8bbe0e200396e6ccde",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m02_t005_[a-f0-9]{20,32}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed, 75 warnings in 42.35s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m22_s02_t001_routing_sequence_db.py",
+      "flags": [
+        "M22_S02_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M22_S02_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m22_s02_t001_73fcbded39f266db74e0fde1",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m22_s02_t001_[a-f0-9]{20,32}"
+        ],
+        "startswith": []
+      },
+      "summary": "2 passed in 9.31s",
+      "counts": {
+        "passed": 2
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m27_s03_t001_hold_quarantine_db.py",
+      "flags": [
+        "M27_S03_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M27_S03_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m27_s03_t001_548ff0ca3ab0c45fc498",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m27_s03_t001_[a-f0-9]{20}"
+        ],
+        "startswith": []
+      },
+      "summary": "1 passed in 9.36s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m34_s04_t001_invoice_match_db.py",
+      "flags": [
+        "M34_S04_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M34_S04_T001_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m34_s04_t001_5dc1ea624d36f4c261467847",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m34_s04_t001_[a-f0-9]{24}"
+        ],
+        "startswith": []
+      },
+      "summary": "5 passed, 15 warnings in 11.29s",
+      "counts": {
+        "passed": 5
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m45_s01_t018_config_bundle.py",
+      "flags": [
+        "M45_DB"
+      ],
+      "legacy_flags": [],
+      "db_name": "m48r_88568e91a7b494da5596",
+      "needs_db2": true,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "summary": "1 passed, 4 warnings in 9.95s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m46_s01_content_hub.py",
+      "flags": [
+        "M46_DB"
+      ],
+      "legacy_flags": [],
+      "db_name": "m48r_fba7606782d325b1f5c3",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "summary": "7 passed, 82 warnings in 68.44s (0:01:08)",
+      "counts": {
+        "passed": 7
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m48_s01_t009_esign_providers.py",
+      "flags": [
+        "M48_DB"
+      ],
+      "legacy_flags": [],
+      "db_name": "m48r_6c77efd5f73a36a6c9b2",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "summary": "10 passed, 76 warnings in 54.56s",
+      "counts": {
+        "passed": 10
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m48_s01_t010_card_payments.py",
+      "flags": [
+        "M48_DB"
+      ],
+      "legacy_flags": [],
+      "db_name": "m48r_041f4e619866e77d9d09",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "summary": "8 passed, 75 warnings in 50.71s",
+      "counts": {
+        "passed": 8
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    }
+  ]
+}

@@ -67,7 +67,7 @@ async def test_parallel_same_key_one_row_and_stale_approver(sim):
         aid, cid = a.id, ch.id
 
     key = f"k-{uuid.uuid4().hex[:12]}"
-    body = ep.DraftIn(account_id=aid, idempotency_key=key, name="POVU Juice", objective="SEARCH", daily_budget=Decimal("20"))
+    body = ep.DraftIn(account_id=aid, idempotency_key=key, name="POVU WhiteCare", objective="SEARCH", daily_budget=Decimal("20"))
 
     async def mk_draft():
         async with AsyncSessionLocal() as db:

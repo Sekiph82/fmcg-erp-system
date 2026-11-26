@@ -1,0 +1,76 @@
+{
+  "sha": "6ac96f1ed375a3f067d367c8aba598854787e8e9",
+  "template": "m48_tmpl",
+  "totals": {
+    "PASS": 1,
+    "ERROR": 2
+  },
+  "results": [
+    {
+      "file": "test_m20_auth_transaction_boundary.py",
+      "flags": [
+        "DATABASE_URL=postgresql"
+      ],
+      "legacy_flags": [],
+      "db_name": "m48r_3762424c6f5d78afe40c",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "summary": "1 passed, 2 warnings in 10.57s",
+      "counts": {
+        "passed": 1
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    },
+    {
+      "file": "test_m25_s02_t003_landed_cost_actuals.py",
+      "flags": [
+        "M25_S02_T003_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M25_S02_T003_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m25_s02_t003_2b9aaec084272ade5c8e",
+      "needs_db2": false,
+      "prep": true,
+      "services": [],
+      "class": "RUN",
+      "note": "legacy prep: downgrade/seed/upgrade",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m25_s02_t003_[a-f0-9]{20}"
+        ],
+        "startswith": []
+      },
+      "status": "ERROR",
+      "summary": "prep upgrade head failed: .exceptions.UndefinedTableError'>: relation \"mkt_email_designs\" does not exist\n[SQL: \nCREATE TABLE crm_email_campaigns (\n\tid UUID NOT NULL, \n\tname VARCHAR(150) NOT NULL, \n\tsubject VARCHAR(300) NOT NULL, \n\tbody TEXT NOT NULL, \n\tsegment_id UUID NOT NULL, \n\tcompany_id UUID, \n\tmarketing_campaign_id UUID, \n\ttrack_engagement BOOLEAN DEFAULT 'false' NOT NULL, \n\tdesign_id UUID, \n\tab_split_pct INTEGER DEFAULT '0' NOT NULL, \n\tvariant_b_subject VARCHAR(300), \n\tvariant_b_body TEXT, \n\tvariant_b_design_id UUID, \n\tsend_time_optimize BOOLEAN DEFAULT 'false' NOT NULL, \n\tapproval_status VARCHAR(10) DEFAULT 'NONE' NOT NULL, \n\tapproval_requested_by VARCHAR(100), \n\tapproved_by VARCHAR(100), \n\tapproved_at TIMESTAMP WITH TIME ZONE, \n\tstatus VARCHAR(10) NOT NULL, \n\tscheduled_at TIMESTAMP WITH TIME ZONE, \n\tqueued_at TIMESTAMP WITH TIME ZONE, \n\taudience_size INTEGER, \n\tcreated_by VARCHAR(100), \n\tcreated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL, \n\tupdated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(segment_id) REFERENCES mkt_customer_segments (id) ON DELETE RESTRICT, \n\tFOREIGN KEY(company_id) REFERENCES companies (id) ON DELETE SET NULL, \n\tFOREIGN KEY(marketing_campaign_id) REFERENCES mkt_campaigns (id) ON DELETE SET NULL, \n\tFOREIGN KEY(design_id) REFERENCES mkt_email_designs (id) ON DELETE RESTRICT, \n\tFOREIGN KEY(variant_b_design_id) REFERENCES mkt_email_designs (id) ON DELETE RESTRICT\n)\n\n]\n(Background on this error at: https://sqlalche.me/e/20/f405)"
+    },
+    {
+      "file": "test_m31_s02_t002_event_schema_governance_db.py",
+      "flags": [
+        "M31_S02_T002_DISPOSABLE_TEST_DATABASE"
+      ],
+      "legacy_flags": [
+        "M31_S02_T002_DISPOSABLE_TEST_DATABASE"
+      ],
+      "db_name": "fmcg_m31_s02_t002_f67a3df8b74e2ec2ae64f96a",
+      "needs_db2": false,
+      "prep": true,
+      "services": [],
+      "class": "RUN",
+      "note": "legacy prep: downgrade/seed/upgrade",
+      "name_rule": {
+        "regexes": [
+          "fmcg_m31_s02_t002_[a-f0-9]{20,32}"
+        ],
+        "startswith": []
+      },
+      "status": "ERROR",
+      "summary": "prep upgrade head failed: .exceptions.UndefinedTableError'>: relation \"mkt_email_designs\" does not exist\n[SQL: \nCREATE TABLE crm_email_campaigns (\n\tid UUID NOT NULL, \n\tname VARCHAR(150) NOT NULL, \n\tsubject VARCHAR(300) NOT NULL, \n\tbody TEXT NOT NULL, \n\tsegment_id UUID NOT NULL, \n\tcompany_id UUID, \n\tmarketing_campaign_id UUID, \n\ttrack_engagement BOOLEAN DEFAULT 'false' NOT NULL, \n\tdesign_id UUID, \n\tab_split_pct INTEGER DEFAULT '0' NOT NULL, \n\tvariant_b_subject VARCHAR(300), \n\tvariant_b_body TEXT, \n\tvariant_b_design_id UUID, \n\tsend_time_optimize BOOLEAN DEFAULT 'false' NOT NULL, \n\tapproval_status VARCHAR(10) DEFAULT 'NONE' NOT NULL, \n\tapproval_requested_by VARCHAR(100), \n\tapproved_by VARCHAR(100), \n\tapproved_at TIMESTAMP WITH TIME ZONE, \n\tstatus VARCHAR(10) NOT NULL, \n\tscheduled_at TIMESTAMP WITH TIME ZONE, \n\tqueued_at TIMESTAMP WITH TIME ZONE, \n\taudience_size INTEGER, \n\tcreated_by VARCHAR(100), \n\tcreated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL, \n\tupdated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL, \n\tPRIMARY KEY (id), \n\tFOREIGN KEY(segment_id) REFERENCES mkt_customer_segments (id) ON DELETE RESTRICT, \n\tFOREIGN KEY(company_id) REFERENCES companies (id) ON DELETE SET NULL, \n\tFOREIGN KEY(marketing_campaign_id) REFERENCES mkt_campaigns (id) ON DELETE SET NULL, \n\tFOREIGN KEY(design_id) REFERENCES mkt_email_designs (id) ON DELETE RESTRICT, \n\tFOREIGN KEY(variant_b_design_id) REFERENCES mkt_email_designs (id) ON DELETE RESTRICT\n)\n\n]\n(Background on this error at: https://sqlalche.me/e/20/f405)"
+    }
+  ]
+}

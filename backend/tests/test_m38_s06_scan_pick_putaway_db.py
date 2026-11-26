@@ -54,7 +54,7 @@ async def test_scan_pick_and_putaway():
             User(email=f"ot-{s}@example.com", username=f"ot{s}", full_name="Other", hashed_password="x")
         db.add_all([pk, other])
         whs = [Warehouse(code=f"W{n}-{s}", name=f"WH{n}", warehouse_type=list(WarehouseType)[0]) for n in (1, 2)]
-        prod = Product(sku=f"SKU-{s}", barcode=f"BC{s}", name="Juice", category=ProductCategory.BEVERAGE)
+        prod = Product(sku=f"SKU-{s}", barcode=f"BC{s}", name="POVU AllClean 1 L", category=ProductCategory.HOUSEHOLD)
         db.add_all([*whs, prod])
         await db.flush()
         locs = {}
@@ -75,7 +75,7 @@ async def test_scan_pick_and_putaway():
                           suggested_location_id=locs[(0, "A-02")].id)
         db.add_all([pick, mine, put])
         await db.flush()
-        prod2 = Product(sku=f"SKU2-{s}", name="Water", category=ProductCategory.BEVERAGE)
+        prod2 = Product(sku=f"SKU2-{s}", name="POVU WhiteCare 1 kg", category=ProductCategory.HOUSEHOLD)
         db.add(prod2)
         await db.flush()
         nostock = PutawayTask(task_no=f"PA0-{s}", warehouse_id=whs[0].id, product_id=prod2.id, quantity=Decimal("1"))

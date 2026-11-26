@@ -1,0 +1,29 @@
+{
+  "sha": "6ac96f1ed375a3f067d367c8aba598854787e8e9",
+  "template": "m48_tmpl",
+  "totals": {
+    "PASS": 1
+  },
+  "results": [
+    {
+      "file": "test_m45_s01_t014_cpq.py",
+      "flags": [
+        "M45_DB"
+      ],
+      "legacy_flags": [],
+      "db_name": "m48r_25ed2cbf4841e242caf0",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "summary": "2 passed, 75 warnings in 38.65s",
+      "counts": {
+        "passed": 2
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    }
+  ]
+}

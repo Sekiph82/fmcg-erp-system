@@ -57,11 +57,11 @@ def test_personalize_slots_and_fallback():
 def test_studio_review_flags_claims_and_terms():
     from types import SimpleNamespace
     from app.services import content_studio_service as cs
-    prof = SimpleNamespace(terminology={"soda": "soft drink"}, banned_terms=["miracle"], claim_terms=["healthy"],
-                           evidence=[{"id": "e1", "text": "POVU Water is bottled in Kenya", "source": "QA file"}])
-    text, f = cs.review(prof, "POVU soda is a miracle. It is 50% better. It is healthy [E:e1]. Fake fact [E:e9].", "web")
+    prof = SimpleNamespace(terminology={"washpowder": "washing powder"}, banned_terms=["miracle"], claim_terms=["healthy"],
+                           evidence=[{"id": "e1", "text": "POVU AllClean is made in Kenya", "source": "QA file"}])
+    text, f = cs.review(prof, "POVU washpowder is a miracle. It is 50% better. It is healthy [E:e1]. Fake fact [E:e9].", "web")
     codes = [x["code"] for x in f]
-    assert "soft drink" in text and "terminology" in codes and "banned_term" in codes
+    assert "washing powder" in text and "terminology" in codes and "banned_term" in codes
     assert codes.count("uncited_claim") == 1 and "unknown_evidence" in codes
     _, f2 = cs.review(prof, "x" * 300, "social")
     assert any(x["code"] == "too_long" for x in f2)
@@ -125,7 +125,7 @@ async def test_cms_staging_approval_publish_rollback_seo():
         await _login(cr, r)
         assert (await cr.get("/api/v1/cms/sites")).status_code == 403                       # no marketing permission
         assert (await ca.post("/api/v1/cms/sites", json={"name": "POVU", "key": key})).status_code == 403   # author cannot create sites
-        site = (await cb.post("/api/v1/cms/sites", json={"name": "POVU Drinks", "key": key, "locales": ["en", "sw", "tr"],
+        site = (await cb.post("/api/v1/cms/sites", json={"name": "POVU Home Care", "key": key, "locales": ["en", "sw", "tr"],
                                                          "domain": "www.povu.example.com", "nav": [{"label": "Home", "path": "/"}]})).json()
         assert site["domain_status"] == "DNS_PENDING" and site["local_url"] == f"/site/{key}"
         sid = site["id"]
@@ -134,9 +134,9 @@ async def test_cms_staging_approval_publish_rollback_seo():
         for junk in ({"blocks": ["x"]}, {"blocks": [{"type": "heading", "level": "abc", "text": "x"}]}, {"blocks": [{"type": "embed", "page_id": "nope"}]}):
             assert (await ca.post("/api/v1/cms/pages", json={"site_id": sid, "title": "Junk", "draft": junk})).status_code == 422   # (review #15)
         home = (await ca.post("/api/v1/cms/pages", json={"site_id": sid, "title": "POVU home", "slug": "home", "draft": {
-            "blocks": [{"type": "hero", "title": "POVU Water 500 ml", "subtitle": "<img src=x onerror=alert(1)>"},
+            "blocks": [{"type": "hero", "title": "POVU AllClean 1 L", "subtitle": "<img src=x onerror=alert(1)>"},
                        {"type": "text", "text": "Version one text"}],
-            "seo": {"meta_title": "POVU Water — refreshing", "meta_description": "short"}}})).json()
+            "seo": {"meta_title": "POVU AllClean — fresh clean", "meta_description": "short"}}})).json()
         assert home["path"] == "/" and home["status"] == "DRAFT"
         hid = home["id"]
         assert (await pub.get(f"/api/v1/public/cms/site/{key}/page", params={"path": "/"})).status_code == 404     # draft is not public
@@ -151,7 +151,7 @@ async def test_cms_staging_approval_publish_rollback_seo():
         assert "<img" not in p.text and body["page"]["version"] == 1      # markup stripped at input; the rest is plain text
 
         # staging: edits do not touch the live page until the next publish
-        await ca.patch(f"/api/v1/cms/pages/{hid}", json={"draft": {"blocks": [{"type": "hero", "title": "POVU Water"}, {"type": "text", "text": "Version two text"}]}})
+        await ca.patch(f"/api/v1/cms/pages/{hid}", json={"draft": {"blocks": [{"type": "hero", "title": "POVU AllClean"}, {"type": "text", "text": "Version two text"}]}})
         live = (await pub.get(f"/api/v1/public/cms/site/{key}/page", params={"path": "/"})).json()
         assert live["blocks"][1]["text"] == "Version one text"
         prev = (await ca.get(f"/api/v1/cms/pages/{hid}/preview")).json()
@@ -203,8 +203,8 @@ async def test_cms_staging_approval_publish_rollback_seo():
         await cb.post(f"/api/v1/cms/sites/{sid}/ctas", json={"key": "find-a-shop", "label": "Find a shop", "href": "/company"})
         tbl = (await ca.post(f"/api/v1/cms/sites/{sid}/tables", json={"key": "products", "name": "Products",
                                                                      "columns": [{"key": "name", "label": "Name"}, {"key": "size", "label": "Size"}]})).json()
-        assert (await ca.put(f"/api/v1/cms/tables/{tbl['id']}/rows", json={"rows": [{"slug": "povu-water-500", "name": "POVU Water", "size": "500 ml"},
-                                                                                  {"slug": "povu-juice-1l", "name": "POVU Juice", "size": "1 L"}]})).json() == {"saved": 2}
+        assert (await ca.put(f"/api/v1/cms/tables/{tbl['id']}/rows", json={"rows": [{"slug": "povu-allclean-1l", "name": "POVU AllClean", "size": "1 L"},
+                                                                                  {"slug": "povu-whitecare-1kg", "name": "POVU WhiteCare", "size": "1 kg"}]})).json() == {"saved": 2}
         assert (await ca.patch(f"/api/v1/cms/tables/{tbl['id']}", json={"published": True})).status_code == 403   # publishing data = approver
         assert (await cb.patch(f"/api/v1/cms/tables/{tbl['id']}", json={"published": True})).status_code == 200
         assert (await ca.put(f"/api/v1/cms/tables/{tbl['id']}/rows", json={"rows": [{"slug": "x", "name": "x"}]})).status_code == 403   # live rows: approver
@@ -216,23 +216,23 @@ async def test_cms_staging_approval_publish_rollback_seo():
                                                              {"type": "table", "table_key": "products"}]}})).json()
         await ca.post(f"/api/v1/cms/pages/{prod['id']}/submit")
         await _publish(cb, prod["id"])
-        dp = (await pub.get(f"/api/v1/public/cms/site/{key}/page", params={"path": "/products/povu-water-500"})).json()
-        assert dp["page"]["title"] == "POVU Water" and dp["blocks"][1]["text"] == "Size: 500 ml"
+        dp = (await pub.get(f"/api/v1/public/cms/site/{key}/page", params={"path": "/products/povu-allclean-1l"})).json()
+        assert dp["page"]["title"] == "POVU AllClean" and dp["blocks"][1]["text"] == "Size: 1 L"
         assert dp["blocks"][2]["cta"]["href"] == "/company" and dp["blocks"][3]["blocks"][0]["text"] == "Our team"
-        assert [x["slug"] for x in dp["blocks"][4]["rows"]] == ["povu-water-500", "povu-juice-1l"]      # row order as entered
+        assert [x["slug"] for x in dp["blocks"][4]["rows"]] == ["povu-allclean-1l", "povu-whitecare-1kg"]      # row order as entered
         assert (await pub.get(f"/api/v1/public/cms/site/{key}/page", params={"path": "/products/nope"})).status_code == 404
         await pub.post(f"/api/v1/public/cms/site/{key}/cta/find-a-shop/click")
         cta = (await ca.get(f"/api/v1/cms/sites/{sid}/ctas")).json()[0]
         assert cta["views"] == 1 and cta["clicks"] == 1
 
         # blog + SEO/AEO audits
-        post = (await ca.post("/api/v1/cms/pages", json={"site_id": sid, "title": "How to store POVU Water", "slug": "store-water", "kind": "POST",
+        post = (await ca.post("/api/v1/cms/pages", json={"site_id": sid, "title": "How to store POVU AllClean", "slug": "store-allclean", "kind": "POST",
                                                          "author": "POVU QA", "category": "Guides", "draft": {
-                                                             "blocks": [{"type": "heading", "level": 1, "text": "How do I store POVU Water?"},
+                                                             "blocks": [{"type": "heading", "level": 1, "text": "How do I store POVU AllClean?"},
                                                                         {"type": "text", "text": "Keep it cool. See [our team](/company/team) and [old](/missing)."},
                                                                         {"type": "faq", "items": [{"q": "How long does it keep?", "a": "Twelve months unopened."}]}],
-                                                             "seo": {"meta_title": "How to store POVU Water", "keywords": ["storage"]}}})).json()
-        assert post["path"] == "/blog/store-water"
+                                                             "seo": {"meta_title": "How to store POVU AllClean", "keywords": ["storage"]}}})).json()
+        assert post["path"] == "/blog/store-allclean"
         audit = (await ca.get(f"/api/v1/cms/pages/{post['id']}/seo-audit")).json()
         codes = {f["code"] for f in audit["findings"]}
         assert {"no_description", "broken_link", "thin", "keyword_missing"} <= codes and audit["search_console"]["status"] == "NOT_CONFIGURED"
@@ -242,8 +242,8 @@ async def test_cms_staging_approval_publish_rollback_seo():
         await ca.post(f"/api/v1/cms/pages/{post['id']}/submit")
         await _publish(cb, post["id"])
         bl = (await pub.get(f"/api/v1/public/cms/site/{key}/blog")).json()
-        assert [x["path"] for x in bl["posts"]] == ["/blog/store-water"] and bl["posts"][0]["author"] == "POVU QA"
-        pp = (await pub.get(f"/api/v1/public/cms/site/{key}/page", params={"path": "/blog/store-water"})).json()
+        assert [x["path"] for x in bl["posts"]] == ["/blog/store-allclean"] and bl["posts"][0]["author"] == "POVU QA"
+        pp = (await pub.get(f"/api/v1/public/cms/site/{key}/page", params={"path": "/blog/store-allclean"})).json()
         types = [x["@type"] for x in pp["json_ld"]]
         assert types == ["BlogPosting", "FAQPage"] and pp["page"]["author"] == "POVU QA"
 
@@ -264,13 +264,13 @@ async def test_cms_staging_approval_publish_rollback_seo():
         await _publish(cb, hid)
         assert (await ca.get(f"/api/v1/cms/pages/{sw}")).json()["translation_state"] == "STALE"   # source changed after review
         sm = (await pub.get(f"/api/v1/public/cms/site/{key}/sitemap.xml")).text
-        assert f"/site/{key}/en</loc>" in sm and 'hreflang="sw"' in sm and "/products/povu-juice-1l" in sm and "/blog/store-water" in sm
+        assert f"/site/{key}/en</loc>" in sm and 'hreflang="sw"' in sm and "/products/povu-whitecare-1kg" in sm and "/blog/store-allclean" in sm
         rb_txt = (await pub.get(f"/api/v1/public/cms/site/{key}/robots.txt")).text
         assert "Sitemap:" in rb_txt and f"/public/cms/site/{key}/sitemap.xml" in rb_txt
 
         # unpublish → gone
         assert (await cb.post(f"/api/v1/cms/pages/{post['id']}/unpublish")).status_code == 200
-        assert (await pub.get(f"/api/v1/public/cms/site/{key}/page", params={"path": "/blog/store-water"})).status_code == 404
+        assert (await pub.get(f"/api/v1/public/cms/site/{key}/page", params={"path": "/blog/store-allclean"})).status_code == 404
 
 
 # ── T004 personalization + experiments ───────────────────────────────────────
@@ -460,7 +460,7 @@ async def test_members_media_captions_timeline_kb(tmp_path, monkeypatch):
         # (review #3) rows of a table behind a members-only dynamic page never show on a public page
         tb = (await ca.post(f"/api/v1/cms/sites/{sid}/tables", json={"key": "member_prices", "name": "Member prices",
                                                                     "columns": [{"key": "name"}, {"key": "price"}]})).json()
-        await ca.put(f"/api/v1/cms/tables/{tb['id']}/rows", json={"rows": [{"slug": "water", "name": "POVU Water", "price": "42"}]})
+        await ca.put(f"/api/v1/cms/tables/{tb['id']}/rows", json={"rows": [{"slug": "allclean", "name": "POVU AllClean", "price": "42"}]})
         await cb.patch(f"/api/v1/cms/tables/{tb['id']}", json={"published": True})
         dyn = (await ca.post("/api/v1/cms/pages", json={"site_id": sid, "title": "Member price", "slug": "member-price", "kind": "DYNAMIC",
                                                         "table_id": tb["id"], "draft": {"blocks": [{"type": "text", "text": "{{row.price}}"}]}})).json()
@@ -472,8 +472,8 @@ async def test_members_media_captions_timeline_kb(tmp_path, monkeypatch):
             await _publish(cb, pid)
         op = await anon.get(url, params={"path": "/open"})
         assert op.status_code == 200 and op.json()["blocks"][0]["rows"] == [] and '"42"' not in op.text   # the quoted price value; ids may contain 42
-        assert (await anon.get(url, params={"path": "/member-price/water"})).status_code == 401
-        assert (await m_in.get(url, params={"path": "/member-price/water"})).json()["blocks"][0]["text"] == "42"
+        assert (await anon.get(url, params={"path": "/member-price/allclean"})).status_code == 401
+        assert (await m_in.get(url, params={"path": "/member-price/allclean"})).json()["blocks"][0]["text"] == "42"
 
         # KB access groups
         async with AsyncSessionLocal() as db:
@@ -498,7 +498,7 @@ async def test_studio_budget_fake_model_review_and_approval(monkeypatch):
     class Fake:
         async def generate_text(self, prompt, system=None):
             calls.append(prompt)
-            return ai_provider.AIResponse(text="POVU Water is bottled in Kenya [E:e1]. Order from your distributor.", provider="fake",
+            return ai_provider.AIResponse(text="POVU AllClean is made in Kenya [E:e1]. Order from your distributor.", provider="fake",
                                           model="fake-1", prompt_tokens=900, completion_tokens=100, latency_ms=1)
     monkeypatch.setattr(ai_provider, "get_ai_provider", lambda: Fake())
     async with _client() as ca, _client() as cb:
@@ -507,20 +507,20 @@ async def test_studio_budget_fake_model_review_and_approval(monkeypatch):
         assert (await ca.post("/api/v1/content-studio/profiles", json={"name": "POVU"})).status_code == 403
         prof = (await cb.post("/api/v1/content-studio/profiles", json={
             "name": f"POVU voice {uuid.uuid4().hex[:4]}", "voice": "Warm, plain, Kenyan English.", "banned_terms": ["miracle"],
-            "terminology": {"soda": "soft drink"}, "claim_terms": ["healthy"], "monthly_budget": 0.03,
-            "evidence": [{"id": "e1", "text": "POVU Water is bottled in Kenya", "source": "Plant QA register"}]})).json()
+            "terminology": {"washpowder": "washing powder"}, "claim_terms": ["healthy"], "monthly_budget": 0.03,
+            "evidence": [{"id": "e1", "text": "POVU AllClean is made in Kenya", "source": "Plant QA register"}]})).json()
         assert (await cb.patch(f"/api/v1/content-studio/profiles/{prof['id']}", json={"asset_ids": [str(uuid.uuid4())]})).status_code == 422
         d1 = (await ca.post("/api/v1/content-studio/drafts", json={"profile_id": prof["id"], "channel": "web", "template": "product_launch",
-                                                                   "brief": "Launch POVU Water 500 ml", "evidence_ids": ["e1"]})).json()
+                                                                   "brief": "Launch POVU AllClean 1 L", "evidence_ids": ["e1"]})).json()
         assert d1["engine"] == "fake" and d1["cost"] > 0 and not [f for f in d1["findings"] if f["level"] == "error"]
         d2 = (await ca.post("/api/v1/content-studio/drafts", json={"profile_id": prof["id"], "channel": "web", "template": "product_launch",
-                                                                   "brief": "Launch POVU Juice 1 L", "evidence_ids": ["e1"]})).json()
+                                                                   "brief": "Launch POVU WhiteCare 1 kg", "evidence_ids": ["e1"]})).json()
         d3 = (await ca.post("/api/v1/content-studio/drafts", json={"profile_id": prof["id"], "channel": "sms", "template": "promotion",
-                                                                   "brief": "POVU soda promo this weekend"})).json()
+                                                                   "brief": "POVU washpowder promo this weekend"})).json()
         assert d2["engine"] == "fake" and d3["engine"] == "rules" and len(calls) == 2              # budget reached: deterministic
-        assert "soft drink" in d3["body"] and len(d3["body"]) <= 160
+        assert "washing powder" in d3["body"] and len(d3["body"]) <= 160
         # an uncited claim blocks approval; the author cannot approve their own draft
-        await ca.patch(f"/api/v1/content-studio/drafts/{d1['id']}", json={"body": "POVU is the healthiest miracle drink, 100% natural."})
+        await ca.patch(f"/api/v1/content-studio/drafts/{d1['id']}", json={"body": "POVU is the healthiest miracle cleaner, 100% natural."})
         await ca.post(f"/api/v1/content-studio/drafts/{d1['id']}/submit")
         r = await cb.post(f"/api/v1/content-studio/drafts/{d1['id']}/decide", json={"ok": True})
         assert r.status_code == 422 and "error findings" in r.text
@@ -534,7 +534,7 @@ async def test_studio_budget_fake_model_review_and_approval(monkeypatch):
                                                                    "brief": "", "source_id": d2["id"]}))
         assert rp.status_code == 201 and rp.json()["source_id"] == d2["id"] and len(rp.json()["body"]) <= 280
         sid = (await cb.post("/api/v1/cms/sites", json={"name": "Studio site", "key": f"st{uuid.uuid4().hex[:5]}"})).json()["id"]
-        pg = (await ca.post("/api/v1/cms/pages", json={"site_id": sid, "title": "Juice", "slug": "juice"})).json()
+        pg = (await ca.post("/api/v1/cms/pages", json={"site_id": sid, "title": "AllClean", "slug": "allclean"})).json()
         assert (await ca.post(f"/api/v1/content-studio/drafts/{d3['id']}/to-page", json={"page_id": pg["id"]})).status_code == 422
         assert (await ca.post(f"/api/v1/content-studio/drafts/{d2['id']}/to-page", json={"page_id": pg["id"]})).status_code == 200
         page = (await ca.get(f"/api/v1/cms/pages/{pg['id']}")).json()

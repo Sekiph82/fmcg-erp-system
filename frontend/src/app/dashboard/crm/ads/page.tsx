@@ -1,6 +1,7 @@
 "use client";
 // M44.S01.T002–T005 ad platforms: connection status, accounts, synced performance, guarded drafts. No live publishing.
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { apiClient } from "@/lib/api";
 
 interface Provider { provider: string; configured: boolean; validate_only: boolean }
@@ -34,8 +35,9 @@ export default function AdsPage() {
   const input = "border rounded px-2 py-1 text-xs";
   return (
     <div className="p-4 space-y-4 text-sm">
-      <h2 className="text-lg font-semibold">Ads</h2>
-      <p className="text-xs text-gray-500">Reporting and campaign drafts for Meta, Google Ads, LinkedIn and TikTok. Live campaign publishing is disabled; drafts are checked (validate-only where the platform supports it) and approved by a second editor.</p>
+      <div className="flex flex-wrap items-center gap-3"><h2 className="text-lg font-semibold">Ads</h2>
+        <Link href="/dashboard/marketing/ads/campaigns" className="text-xs border rounded px-2 py-1">Open campaign builder</Link></div>
+      <p className="text-xs text-gray-500">Reporting for Meta, Google Ads, LinkedIn and TikTok. Quick drafts below are checked and approved but never published; build real campaigns (created paused, approved, SIMULATED until live activation) in the campaign builder.</p>
       {msg && <p role="status" className="text-xs border rounded p-2 bg-gray-50">{msg}</p>}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">{prov.map((p) => (
         <div key={p.provider} className="border rounded p-2 bg-white text-xs"><b>{LABEL[p.provider]}</b>

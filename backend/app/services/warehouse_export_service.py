@@ -1,7 +1,8 @@
 """M45.S01.T020 incremental export of CRM/ERP datasets to object storage and a PostgreSQL warehouse.
 
 Targets: LOCAL_DIR (files), S3 (any S3-compatible store, e.g. MinIO, through boto3), POSTGRES (upsert into a
-warehouse schema). SNOWFLAKE and BIGQUERY adapters exist but stay NOT_CONFIGURED until activation (M47).
+warehouse schema), SNOWFLAKE (SQL API v2) and BIGQUERY (REST v2) through warehouse_cloud_writers (M48.S01.T007/T008);
+those two are NOT_CONFIGURED only while their credential is missing.
 Formats: CSV and JSON Lines; Parquet is NOT_AVAILABLE (pyarrow is not installed).
 
 - Incremental: rows with (updated_at, id) after the job's watermark, in batches; the watermark moves after every
@@ -45,8 +46,8 @@ DATASETS: dict[str, dict] = {
                                                         "probability_pct", "expected_close_date", "assigned_customer_id", "created_at", "updated_at"]},
 }
 BATCH = 1000
-UNCONFIGURED = {"SNOWFLAKE": "Snowflake needs an account, warehouse and key pair (M47).",
-                "BIGQUERY": "BigQuery needs a Google Cloud project and service account (M47)."}
+CLOUD_KINDS = {"SNOWFLAKE": "Snowflake needs the loader user's key-pair private key (PEM).",
+               "BIGQUERY": "BigQuery needs a service-account key (JSON)."}
 
 
 class ExportError(Exception):
@@ -191,8 +192,14 @@ class PostgresWriter(Writer):
 
 
 def writer(t: ExportTarget) -> Writer:
-    if t.kind in UNCONFIGURED:
-        raise ExportError(f"NOT_CONFIGURED: {UNCONFIGURED[t.kind]}")
+    if t.kind in CLOUD_KINDS:
+        if not getattr(t, "secret", None):
+            raise ExportError(f"NOT_CONFIGURED: {CLOUD_KINDS[t.kind]}")
+        from app.services import warehouse_cloud_writers as cw
+        mode = cw._live_gate(t)
+        w = (cw.SnowflakeWriter if t.kind == "SNOWFLAKE" else cw.BigQueryWriter)(t)
+        w.mode = mode
+        return w
     return {"LOCAL_DIR": LocalDirWriter, "S3": S3Writer, "POSTGRES": PostgresWriter}[t.kind](t)
 
 
@@ -221,6 +228,7 @@ async def _run_job_locked(db: AsyncSession, job: ExportJob, fail_after_batches: 
     run_id, job_id = run.id, job.id
     try:
         w = writer(target)
+        run.mode = getattr(w, "mode", None)      # SIMULATED (local simulator) or LIVE, cloud targets only
         if job.file_format not in ("csv", "jsonl"):
             raise ExportError("Parquet is NOT_AVAILABLE: install pyarrow to enable it.")
         cols = list(spec["columns"])
@@ -277,6 +285,7 @@ async def _run_job_locked(db: AsyncSession, job: ExportJob, fail_after_batches: 
         from datetime import timedelta
         job.next_run_at = _now() + timedelta(minutes=job.every_minutes)
     await db.commit()
+    await db.refresh(run)                     # after a rollback some attributes were expired: load them for callers
     return run
 
 

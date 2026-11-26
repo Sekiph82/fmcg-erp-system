@@ -130,7 +130,7 @@ def test_m20_disposable_database_guard_requires_exact_unique_loopback_target():
 def test_virtual_cost_currency_and_ambiguous_campaign_sequence_remain_unknown():
     product_id = uuid4()
     product = SimpleNamespace(
-        id=product_id, sku="SYN-001", category="BEVERAGE",
+        id=product_id, sku="SYN-001", category="PERSONAL_CARE",
         standard_cost=Decimal("12.50"), standard_cost_currency="KES",
     )
     lines = [{
@@ -162,7 +162,7 @@ def test_virtual_cost_currency_and_ambiguous_campaign_sequence_remain_unknown():
         household_id: SimpleNamespace(id=household_id, sku="SYN-002", category="HOUSEHOLD"),
     }
     transition = SimpleNamespace(
-        work_center_id=work_center_id, from_family="BEVERAGE", to_family="HOUSEHOLD",
+        work_center_id=work_center_id, from_family="PERSONAL_CARE", to_family="HOUSEHOLD",
         changeover_minutes=45, cip_minutes=60, is_active=True,
     )
     same_day = _scenario_changeover_hours([first, second], products, [transition])
@@ -661,7 +661,7 @@ async def test_postgres_kenya_fixture_drives_real_mps_material_feasibility_servi
     staffing = fixture["virtual_assumptions"]["staffing_assumption"]
     assert staffing["not_operational_data"] is True
     assert staffing["operators_per_filling_machine"] == len(staffing["employees"]) == 2
-    mango = fixture["products"][0]
+    shampoo = fixture["products"][0]
     suffix = _suffix()
     start_day = date.fromisoformat(fixture["scope"]["horizon"][0])
     end_day = date.fromisoformat(fixture["scope"]["horizon"][1])
@@ -679,15 +679,15 @@ async def test_postgres_kenya_fixture_drives_real_mps_material_feasibility_servi
                     warehouse_type=WarehouseType.FINISHED_GOODS, company_id=company.id,
                 )
                 product = Product(
-                    sku=f"{mango['sku']}-{suffix}", name=mango["name"],
-                    category=ProductCategory[mango["category"]], uom=UnitOfMeasure[mango["uom"]],
-                    minimum_run_qty=mango["minimum_run_qty"], standard_cost=mango["standard_cost"],
-                    standard_cost_currency=mango["standard_cost_currency"],
+                    sku=f"{shampoo['sku']}-{suffix}", name=shampoo["name"],
+                    category=ProductCategory[shampoo["category"]], uom=UnitOfMeasure[shampoo["uom"]],
+                    minimum_run_qty=shampoo["minimum_run_qty"], standard_cost=shampoo["standard_cost"],
+                    standard_cost_currency=shampoo["standard_cost_currency"],
                 )
-                material_record = mango["bom"]["components"][0]
+                material_record = shampoo["bom"]["components"][0]
                 material = Material(
                     code=f"{material_record['material_code']}-{suffix}",
-                    name="Synthetic acceptance sugar", material_type=MaterialType.RAW,
+                    name="Synthetic acceptance SLES", material_type=MaterialType.RAW,
                     uom=UnitOfMeasure[material_record["uom"]],
                 )
                 db.add_all([warehouse, product, material])
@@ -700,11 +700,11 @@ async def test_postgres_kenya_fixture_drives_real_mps_material_feasibility_servi
                 await db.flush()
                 bom = AdvancedBOM(
                     bom_code=f"M20-FIXTURE-BOM-{suffix}",
-                    bom_name=f"{mango['sku']} synthetic approved BOM",
+                    bom_name=f"{shampoo['sku']} synthetic approved BOM",
                     product_id=product.id,
-                    base_qty=mango["bom"]["base_qty"],
-                    base_uom=mango["bom"]["base_uom"],
-                    lifecycle=BOMLifecycle[mango["bom"]["lifecycle"]],
+                    base_qty=shampoo["bom"]["base_qty"],
+                    base_uom=shampoo["bom"]["base_uom"],
+                    lifecycle=BOMLifecycle[shampoo["bom"]["lifecycle"]],
                     is_default=True, effective_from=start_day, effective_to=end_day,
                 )
                 db.add(bom)
@@ -721,17 +721,17 @@ async def test_postgres_kenya_fixture_drives_real_mps_material_feasibility_servi
                     Stock(
                         stock_type=StockType.MATERIAL, warehouse_id=warehouse.id,
                         material_id=material.id,
-                        quantity_on_hand=mango["material_stock"][material_record["material_code"]]["on_hand"],
-                        quantity_reserved=mango["material_stock"][material_record["material_code"]]["reserved"],
+                        quantity_on_hand=shampoo["material_stock"][material_record["material_code"]]["on_hand"],
+                        quantity_reserved=shampoo["material_stock"][material_record["material_code"]]["reserved"],
                         quantity_available=(
-                            Decimal(str(mango["material_stock"][material_record["material_code"]]["on_hand"]))
-                            - Decimal(str(mango["material_stock"][material_record["material_code"]]["reserved"]))
+                            Decimal(str(shampoo["material_stock"][material_record["material_code"]]["on_hand"]))
+                            - Decimal(str(shampoo["material_stock"][material_record["material_code"]]["reserved"]))
                         ),
                     ),
                 ])
                 plan = MPSPlan(
                     plan_no=f"M20-FIXTURE-PLAN-{suffix}",
-                    plan_name=f"{fixture['dataset_id']} {mango['sku']}",
+                    plan_name=f"{fixture['dataset_id']} {shampoo['sku']}",
                     start_date=start_day, end_date=end_day, mrp_run=run,
                 )
                 db.add(plan)
@@ -740,7 +740,7 @@ async def test_postgres_kenya_fixture_drives_real_mps_material_feasibility_servi
                     line_no=f"M20-FIXTURE-LINE-{suffix}", mps_id=plan.id,
                     product_id=product.id, period_start=start_day, period_end=end_day,
                     planned_start_date=start_day, planned_end_date=end_day,
-                    planned_production_qty=mango["planned_qty"],
+                    planned_production_qty=shampoo["planned_qty"],
                 )
                 db.add(line)
                 await db.flush()
@@ -757,14 +757,14 @@ async def test_postgres_kenya_fixture_drives_real_mps_material_feasibility_servi
             assert len(diagnostics) == 1
             issue = diagnostics[0]["diagnostics"]["issues"][0]
             expected_required = (
-                Decimal(str(mango["planned_qty"]))
+                Decimal(str(shampoo["planned_qty"]))
                 * Decimal(str(material_record["required_qty"]))
-                / Decimal(str(mango["bom"]["base_qty"]))
+                / Decimal(str(shampoo["bom"]["base_qty"]))
                 * (Decimal("1") + Decimal(str(material_record["wastage_pct"])) / Decimal("100"))
             ).quantize(Decimal("0.0001"))
             expected_available = (
-                Decimal(str(mango["material_stock"][material_record["material_code"]]["on_hand"]))
-                - Decimal(str(mango["material_stock"][material_record["material_code"]]["reserved"]))
+                Decimal(str(shampoo["material_stock"][material_record["material_code"]]["on_hand"]))
+                - Decimal(str(shampoo["material_stock"][material_record["material_code"]]["reserved"]))
             )
             assert issue["reason_code"] == "MATERIAL_SHORT"
             assert Decimal(issue["required_qty"]) == expected_required == Decimal("16.3200")
@@ -774,10 +774,10 @@ async def test_postgres_kenya_fixture_drives_real_mps_material_feasibility_servi
             assert diagnostics[0]["line_id"] == str(line_id)
             details = diagnostics[0]["diagnostics"]
             assert details["line_no"] == f"M20-FIXTURE-LINE-{suffix}"
-            assert Decimal(details["planned_quantity"]) == Decimal(str(mango["planned_qty"]))
+            assert Decimal(details["planned_quantity"]) == Decimal(str(shampoo["planned_qty"]))
             assert details["required_date"] == start_day.isoformat()
             assert issue["required_date"] == start_day.isoformat()
-            assert Decimal(issue["planned_quantity"]) == Decimal(str(mango["planned_qty"]))
+            assert Decimal(issue["planned_quantity"]) == Decimal(str(shampoo["planned_qty"]))
             assert issue["priority"] == "HIGH"
             assert issue["provenance"] == "warehouse stock; approved effective BOM/recipe"
             api_diagnostic = MPSLineConstraintDiagnosticOut.model_validate(diagnostics[0])
@@ -2454,9 +2454,9 @@ async def test_postgres_virtual_factory_minimum_run_cip_capacity_and_kes_costing
                     code=f"NBO-DEMO-{suffix}", name="Synthetic finished goods warehouse",
                     warehouse_type=WarehouseType.FINISHED_GOODS, company_id=company.id,
                 )
-                beverage = Product(
-                    sku=f"JU-MNG-500-{suffix}", name="Synthetic mango drink 500 ml",
-                    category=ProductCategory.BEVERAGE, uom=UnitOfMeasure.PCS,
+                shampoo = Product(
+                    sku=f"SH-SHY-250-{suffix}", name="Synthetic POVU ShinyHair Shampoo 250 ml",
+                    category=ProductCategory.PERSONAL_CARE, uom=UnitOfMeasure.PCS,
                     minimum_run_qty=250, standard_cost=Decimal("42.5000"), standard_cost_currency="KES",
                 )
                 detergent = Product(
@@ -2473,7 +2473,7 @@ async def test_postgres_virtual_factory_minimum_run_cip_capacity_and_kes_costing
                     email=f"planner-{suffix}@example.invalid", username=f"planner-{suffix}",
                     full_name="Synthetic Planner", hashed_password="synthetic-test-only",
                 )
-                db.add_all([warehouse, beverage, detergent, center, user])
+                db.add_all([warehouse, shampoo, detergent, center, user])
                 await db.flush()
                 machine = Machine(
                     machine_code=f"M20-FILLER-{suffix}", machine_name="Synthetic filling machine",
@@ -2534,7 +2534,7 @@ async def test_postgres_virtual_factory_minimum_run_cip_capacity_and_kes_costing
                 db.add(plan)
                 await db.flush()
                 first = MPSLine(
-                    line_no=f"M20-VIRTUAL-BEV-{suffix}", mps_id=plan.id, product_id=beverage.id,
+                    line_no=f"M20-VIRTUAL-PC-{suffix}", mps_id=plan.id, product_id=shampoo.id,
                     period_start=day_one, period_end=day_one, planned_start_date=day_one,
                     planned_end_date=day_one, planned_production_qty=300,
                     required_hours=Decimal("5"), work_center_id=center.id,
@@ -2556,7 +2556,7 @@ async def test_postgres_virtual_factory_minimum_run_cip_capacity_and_kes_costing
                         shift_1_start="07:00", shift_1_end="15:00",
                     ),
                     ChangeoverMatrix(
-                        work_center_id=center.id, from_family="BEVERAGE", to_family="HOUSEHOLD",
+                        work_center_id=center.id, from_family="PERSONAL_CARE", to_family="HOUSEHOLD",
                         changeover_minutes=45, cip_minutes=60,
                         notes="Synthetic demo assumption only; not factory operating data.",
                     ),
@@ -2564,7 +2564,7 @@ async def test_postgres_virtual_factory_minimum_run_cip_capacity_and_kes_costing
                 await db.flush()
                 company_id, warehouse_id, run_id = company.id, warehouse.id, run.id
                 plan_id, work_center_id = plan.id, center.id
-                product_ids = [beverage.id, detergent.id]
+                product_ids = [shampoo.id, detergent.id]
                 user_id = user.id
                 employee_ids = [employee.id for employee in synthetic_employees]
                 operator_profile_ids = [operator.id for operator in synthetic_operators]
@@ -2643,14 +2643,14 @@ async def test_postgres_virtual_factory_minimum_run_cip_capacity_and_kes_costing
                 async with db.begin_nested():
                     db.add(Product(
                         sku=f"INVALID-MIN-{suffix}", name="Invalid synthetic product",
-                        category=ProductCategory.BEVERAGE, uom=UnitOfMeasure.PCS, minimum_run_qty=0,
+                        category=ProductCategory.PERSONAL_CARE, uom=UnitOfMeasure.PCS, minimum_run_qty=0,
                     ))
                     await db.flush()
             with pytest.raises(IntegrityError):
                 async with db.begin_nested():
                     db.add(Product(
                         sku=f"INVALID-CURRENCY-{suffix}", name="Invalid synthetic product",
-                        category=ProductCategory.BEVERAGE, uom=UnitOfMeasure.PCS,
+                        category=ProductCategory.PERSONAL_CARE, uom=UnitOfMeasure.PCS,
                         standard_cost=Decimal("10"), standard_cost_currency="kes",
                     ))
                     await db.flush()

@@ -691,11 +691,11 @@ async def test_mrp_suggestion_converts_to_a_valid_production_order():
     async with AsyncSessionLocal() as db:
         user_id = await _actor(db)
         wh = Warehouse(code=f"M47-MRPWH-{s}", name="POVU FG Ruiru", warehouse_type=WarehouseType.FINISHED_GOODS)
-        prod = Product(sku=f"POVU-W500-{s}", name=f"POVU Water 500 ml {s}", category=ProductCategory.BEVERAGE, uom=UnitOfMeasure.PCS)
-        bare = Product(sku=f"POVU-J1L-{s}", name=f"POVU Juice 1 L {s}", category=ProductCategory.BEVERAGE, uom=UnitOfMeasure.PCS)
+        prod = Product(sku=f"POVU-ALC-1L-{s}", name=f"POVU AllClean 1 L {s}", category=ProductCategory.HOUSEHOLD, uom=UnitOfMeasure.PCS)
+        bare = Product(sku=f"POVU-WCP-1KG-{s}", name=f"POVU WhiteCare 1 kg {s}", category=ProductCategory.HOUSEHOLD, uom=UnitOfMeasure.PCS)
         db.add_all([wh, prod, bare])
         await db.flush()
-        recipe = Recipe(product_id=prod.id, version="1", name=f"POVU Water recipe {s}", status=RecipeStatus.APPROVED, is_active=True)
+        recipe = Recipe(product_id=prod.id, version="1", name=f"POVU AllClean recipe {s}", status=RecipeStatus.APPROVED, is_active=True)
         run = MRPRun(run_no=f"MRP-M47-{s}", run_date=date.today(), status=MRPRunStatus.COMPLETED, warehouse_id=wh.id)
         db.add_all([recipe, run])
         await db.flush()
@@ -730,9 +730,9 @@ async def test_complaint_recall_refusals():
     s = uuid.uuid4().hex[:8]
     async with AsyncSessionLocal() as db:
         qa_id = await _actor(db, "quality.approve")
-        quality = ConsumerComplaint(complaint_ref=f"CC-M47-Q-{s}", product_name="POVU Water 500 ml", lot_number=f"NOPE-{s}",
+        quality = ConsumerComplaint(complaint_ref=f"CC-M47-Q-{s}", product_name="POVU AllClean 1 L", lot_number=f"NOPE-{s}",
                                     severity=ComplaintSeverity.QUALITY, description="Cap loose")
-        unknown = ConsumerComplaint(complaint_ref=f"CC-M47-S-{s}", product_name="POVU Water 500 ml", lot_number=f"NOPE-{s}",
+        unknown = ConsumerComplaint(complaint_ref=f"CC-M47-S-{s}", product_name="POVU AllClean 1 L", lot_number=f"NOPE-{s}",
                                     severity=ComplaintSeverity.SAFETY, description="Odd smell", recall_triggered_flag=True)
         db.add_all([quality, unknown])
         await db.commit()

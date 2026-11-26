@@ -18,6 +18,7 @@ export default function PayPage() {
   const [phone, setPhone] = useState("");
   const [amount, setAmount] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
   const load = useCallback(() => fetch(url).then(async (r) => {
     const j = await r.json().catch(() => ({}));
     if (!r.ok) setGone(r.status === 404 ? t("public.pay.invalid") : err(r.status)); else { setP(j); setAmount(j.amount_due); }
@@ -29,6 +30,12 @@ export default function PayPage() {
     const j = r?.ok ? await r.json().catch(() => ({})) : {};
     setMsg(r?.ok ? (j.simulated ? t("public.pay.startedSimulated") : t("public.pay.started")) : err(r?.status));
     if (r?.ok) setTimeout(load, 5000);
+  };
+  const payCard = async () => {
+    setMsg(null);
+    const r = await fetch(`${url}/card`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ amount: amount || null, email: email || null, phone: phone || null }) }).catch(() => null);
+    const j = r?.ok ? await r.json().catch(() => ({})) : {};
+    if (r?.ok && j.redirect_url) window.location.href = j.redirect_url; else setMsg(err(r?.status));
   };
   return (
     <main className="min-h-screen bg-gray-50 flex items-start justify-center p-4">
@@ -42,6 +49,10 @@ export default function PayPage() {
             <label className="block text-xs">{t("public.pay.phone")}<input aria-label={t("public.pay.phone")} inputMode="tel" className="border rounded px-2 py-2 w-full" placeholder="07XX XXX XXX" value={phone} onChange={(e) => setPhone(e.target.value)} /></label>
             {p.allow_partial && <label className="block text-xs">{t("common.amount")}<input aria-label={t("common.amount")} inputMode="decimal" className="border rounded px-2 py-2 w-full" value={amount} onChange={(e) => setAmount(e.target.value)} /></label>}
             <button className="w-full bg-green-600 text-white rounded py-2 font-semibold disabled:opacity-50" disabled={phone.length < 9} onClick={pay}>{t("public.pay.payMpesa")}</button>
+            {p.providers.card !== "NOT_CONFIGURED" && <>
+              <label className="block text-xs">{t("public.pay.cardEmail")}<input aria-label={t("public.pay.cardEmail")} type="email" className="border rounded px-2 py-2 w-full" value={email} onChange={(e) => setEmail(e.target.value)} /></label>
+              <button className="w-full bg-blue-600 text-white rounded py-2 font-semibold disabled:opacity-50" disabled={!email && phone.length < 9} onClick={payCard}>{t("public.pay.payCard")}</button>
+            </>}
           </> : <p className="text-green-700 font-semibold">{p.status === "PAID" ? t("public.pay.paid") : p.status === "TEST_PAID" ? t("public.pay.testPaid") : t("public.pay.closed")}</p>}
           {msg && <p role="status" className="text-xs">{msg}</p>}
           {p.receipts.length > 0 && <div className="text-xs"><b>{t("public.pay.receipts")}</b>{p.receipts.map((r, i) => <div key={i}>{r.receipt ?? "—"} · {f.money(r.amount, p.currency)}{r.test ? ` (${t("public.pay.test")})` : ""}</div>)}</div>}

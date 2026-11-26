@@ -10,7 +10,7 @@ This root `TASKS.md` is the single authoritative current project-status tracker 
 
 - Current Milestone: M48 — Critical Software Completion & Evidence Reconciliation
 - Current Sprint: M48.S00 — baseline, owner scope and independent audit preparation
-- Current Task: M48.S00.T001 — synchronize and establish exact source/evidence/capability baseline
+- Current Task: M48.S02.T001 — consolidated M48 gate (implementation rows T001–T019 are [v])
 - Current Task Status: PLANNED (2026-11-26). M43–M47 historical software gate remains accepted at its recorded scope; new owner-directed improvements M48–M52 are open. Do not equate previous [x] with full depth or production readiness.
 - Next Task/Action: Claude autonomously executes all 60 audit recommendations plus mandatory full persona/mobile acceptance, fixes any newly verified software defect and closes M48–M52 only through consolidated milestone gates. No real company accounts or factory needed.
 - Required Actor: CLAUDE (sole active autonomous task runner and tracker writer)
@@ -3099,51 +3099,180 @@ These rows describe commissioning only; they must never stop accountless coding,
 # M48 — Critical Software Completion & Evidence Reconciliation
 
 ## M48.S00 — Baseline and plan
-- [ ] M48.S00.T001 — Safely synchronize existing Desktop C:\\Users\\sekip\\Desktop\\fmcg-erp-system with origin/main; inspect source, evidence and open tasks, preserve owner changes and historical accepted states. Establish exact source SHA, re-count pending [v] and skips, reproduce source findings by inspection, prepare all 60 traceability rows and selected original feature links, update TASKS.md immediately. No per-task tests.
-- [ ] M48.S00.T002 — Create official public API capability/format matrix for Meta Ads, Google Ads, LinkedIn Ads, TikTok Ads, Facebook, Instagram, LinkedIn, TikTok organic, YouTube, X and all relevant mail/calendar/voice/data/signature/payment/search/AI providers. Record version/date/docs, documented read/write, auth/scopes, upload/status/async/reconciliation, limits and unsupported reasons; select maintainable dependencies and Kenya-relevant options without opening accounts. Define local simulator coverage, security and quality rubric before implementation, and review current persona inventory. Update TASKS.md immediately. No per-task tests.
+- [v] M48.S00.T001 — Safely synchronize existing Desktop C:\\Users\\sekip\\Desktop\\fmcg-erp-system with origin/main; inspect source, evidence and open tasks, preserve owner changes and historical accepted states. Establish exact source SHA, re-count pending [v] and skips, reproduce source findings by inspection, prepare all 60 traceability rows and selected original feature links, update TASKS.md immediately. No per-task tests.
+  - Done 2026-11-26 [v], pending the M48 gate. Evidence: coordination/milestones/M48/BASELINE.md.
+    - Source SHA 6ac96f1 (fast-forward; untracked owner files preserved).
+    - Rows: 103 [v], 119 [ ], 32 [D].
+    - All six audit findings were reproduced by file:line.
+    - The 60-row traceability table includes links to the original IDs.
+    - Disposable gate PostgreSQL m48-gate-pg, head template 0077.
+- [v] M48.S00.T002 — Create official public API capability/format matrix for Meta Ads, Google Ads, LinkedIn Ads, TikTok Ads, Facebook, Instagram, LinkedIn, TikTok organic, YouTube, X and all relevant mail/calendar/voice/data/signature/payment/search/AI providers. Record version/date/docs, documented read/write, auth/scopes, upload/status/async/reconciliation, limits and unsupported reasons; select maintainable dependencies and Kenya-relevant options without opening accounts. Define local simulator coverage, security and quality rubric before implementation, and review current persona inventory. Update TASKS.md immediately. No per-task tests.
+  - Done 2026-11-26 [v], pending the M48 gate. Files in coordination/milestones/M48/:
+    - CAPABILITY_MATRIX.md: 28 providers. 137 facts are UNVERIFIED and marked. Pesapal, Daraja and Africa's Talking need a manual browser re-check before their adapters are accepted.
+    - QUALITY_RUBRIC.md: 20 categories, weights 40/20/20/10/10, 112 criteria, 6 hard gates. No scores yet.
+    - PERSONA_INVENTORY.md: 42 seeded roles, plus 50 identities outside them.
 
 ## M48.S01 — Mandatory audit recommendations
-- [ ] M48.S01.T001 — Meta Ads production mutation adapter (audit recommendation 01/60)
+- [v] M48.S01.T001 — Meta Ads production mutation adapter (audit recommendation 01/60)
+  - Implemented 2026-11-26 [v], pending the gate.
+    - Built in backend/app/services/ads_adapters.py (builders), ads_service.py (gate, caps, approvals, claim-first mutation ledger, reconcile, read-back) and endpoints/ads.py.
+    - Models are in models/m48_ads.py (migration 0078).
+    - UI: /dashboard/marketing/ads/campaigns, with the campaign tree, the wizard, approvals, the ledger and the SIMULATED/LIVE badge.
+    - Live mode is fail-closed. It needs PROVIDER_EGRESS=live, ADS_LIVE_MUTATIONS, an admin-activated account and a second-person approval bound to the payload hash.
+    - Everything is created PAUSED, and resuming needs its own approval.
+    - An UNKNOWN write is reconciled by read-back and never blind-retried.
+    - Budgets are versioned, with daily and monthly caps.
+    - Meta: campaigns/adsets/adcreatives/ads edges, special_ad_categories, minor-unit budgets. Graph v27.0 by default.
+    - Builder scope: the Awareness and Traffic objectives.
+    - Tests: test_m48_s01_t001_meta_ads.py.
   - **Implementation:** Extend existing ads_adapters/ads_service with documented campaign/ad set/ad creative/ad create/update, pause/resume, status and reconciliation, paused drafts, budget limits, currency minor units, separate approvals and credential-scoped access. Replace unconditional 403 only with fail-closed runtime activation/authorization; no real spend.
   - **Acceptance at milestone gate:** Local simulator tests actual request payloads, retries, partial failure, unknown result/reconciliation, idempotency, approval version, paused default and unauthorized rejection; manual UI creates/edits/validates/approves/pauses/resumes synthetic campaigns.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [ ] M48.S01.T002 — Google Ads production mutation adapter (audit recommendation 02/60)
+- [v] M48.S01.T002 — Google Ads production mutation adapter (audit recommendation 02/60)
+  - Implemented 2026-11-26 [v], pending the gate.
+    - Built in backend/app/services/ads_adapters.py (builders), ads_service.py (gate, caps, approvals, claim-first mutation ledger, reconcile, read-back) and endpoints/ads.py.
+    - Models are in models/m48_ads.py (migration 0078).
+    - UI: /dashboard/marketing/ads/campaigns, with the campaign tree, the wizard, approvals, the ledger and the SIMULATED/LIVE badge.
+    - Live mode is fail-closed. It needs PROVIDER_EGRESS=live, ADS_LIVE_MUTATIONS, an admin-activated account and a second-person approval bound to the payload hash.
+    - Everything is created PAUSED, and resuming needs its own approval.
+    - An UNKNOWN write is reconciled by read-back and never blind-retried.
+    - Budgets are versioned, with daily and monthly caps.
+    - Google: :mutate for campaignBudgets/campaigns/adGroups/adGroupAds; googleAds:mutate with validateOnly and temporary ids; partialFailure; micros. API v26 by default.
+    - Builder scope: Search campaigns with responsive search ads.
+    - Tests: test_m48_s01_t002_google_ads.py.
   - **Implementation:** Implement documented GAQL and mutate operations for budgets, campaigns, ad groups, ads, supported campaign types, resource names, validateOnly and partial failures; paused default, same controls as Meta. Never enable unsupported formats.
   - **Acceptance at milestone gate:** Manual UI campaign lifecycle via local simulator, validateOnly cannot mutate, micros/currency, resource dependencies, reconciliation and safe timeout.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [ ] M48.S01.T003 — LinkedIn Ads production mutation adapter (audit recommendation 03/60)
+- [v] M48.S01.T003 — LinkedIn Ads production mutation adapter (audit recommendation 03/60)
+  - Implemented 2026-11-26 [v], pending the gate.
+    - Built in backend/app/services/ads_adapters.py (builders), ads_service.py (gate, caps, approvals, claim-first mutation ledger, reconcile, read-back) and endpoints/ads.py.
+    - Models are in models/m48_ads.py (migration 0078).
+    - UI: /dashboard/marketing/ads/campaigns, with the campaign tree, the wizard, approvals, the ledger and the SIMULATED/LIVE badge.
+    - Live mode is fail-closed. It needs PROVIDER_EGRESS=live, ADS_LIVE_MUTATIONS, an admin-activated account and a second-person approval bound to the payload hash.
+    - Everything is created PAUSED, and resuming needs its own approval.
+    - An UNKNOWN write is reconciled by read-back and never blind-retried.
+    - Budgets are versioned, with daily and monthly caps.
+    - LinkedIn: adCampaignGroups/adCampaigns/creatives with LinkedIn-Version 202611 and X-Restli 2.0.0. The Development tier is refused before anything is sent; LinkedIn has no validate-only call, so checks are local.
+    - Tests: test_m48_s01_t003_linkedin_ads.py.
   - **Implementation:** Implement official versioned campaign-group/campaign/creative create/update/status/budget operations for permitted access tiers; real write code behind explicit capability/approval guard, local validation where validate-only unavailable.
   - **Acceptance at milestone gate:** Simulator checks REST.li/version, approval tier refusal, real request construction, read-back and no false publication; manual UI lifecycle.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [ ] M48.S01.T004 — TikTok Ads production mutation adapter (audit recommendation 04/60)
+- [v] M48.S01.T004 — TikTok Ads production mutation adapter (audit recommendation 04/60)
+  - Implemented 2026-11-26 [v], pending the gate.
+    - Built in backend/app/services/ads_adapters.py (builders), ads_service.py (gate, caps, approvals, claim-first mutation ledger, reconcile, read-back) and endpoints/ads.py.
+    - Models are in models/m48_ads.py (migration 0078).
+    - UI: /dashboard/marketing/ads/campaigns, with the campaign tree, the wizard, approvals, the ledger and the SIMULATED/LIVE badge.
+    - Live mode is fail-closed. It needs PROVIDER_EGRESS=live, ADS_LIVE_MUTATIONS, an admin-activated account and a second-person approval bound to the payload hash.
+    - Everything is created PAUSED, and resuming needs its own approval.
+    - An UNKNOWN write is reconciled by read-back and never blind-retried.
+    - Budgets are versioned, with daily and monthly caps.
+    - TikTok Business v1.3: campaign/adgroup/ad create/update/status, paged read-back, asset prerequisites (video_id/identity_id). The 40001/40002 error mapping was corrected. The portal docs could not be fetched, so some fields are UNVERIFIED in the matrix.
+    - Tests: test_m48_s01_t004_tiktok_ads.py. The four new files: 28 passed on a disposable DB.
   - **Implementation:** Implement documented Business API campaign/adgroup/ad create/update/operation status and budget controls, asset prerequisites, API version/permissions and actual provider identifiers. Do not conflate Ads with organic Content Posting.
   - **Acceptance at milestone gate:** Simulator verifies allowed operations, pagination, errors, asynchronous results and budget; manual UI campaign lifecycle without external traffic.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [ ] M48.S01.T005 — TikTok organic posting state machine and correctness (audit recommendation 05/60)
+- [v] M48.S01.T005 — TikTok organic posting state machine and correctness (audit recommendation 05/60)
+  - Implemented 2026-11-26 [v], pending the gate.
+    - The claim is committed before the call: SUBMITTING/SUBMITTED/PROCESSING/PUBLISHED/FAILED/UNKNOWN/CANCELLED.
+    - TikTok:
+      - publish_id is a submission id only;
+      - creator_info and privacy options;
+      - consent required;
+      - SELF_ONLY until the app is audited;
+      - PULL_FROM_URL prefix check;
+      - chunked FILE_UPLOAD;
+      - status polling until PUBLISH_COMPLETE;
+      - signed webhook (HMAC, replay protection) that only triggers a status fetch;
+      - cancel where documented.
+    - Instagram: the container is polled to FINISHED before media_publish.
+    - Facebook and LinkedIn: a lost answer becomes UNKNOWN.
+    - Restart recovery runs in publish_due.
+    - UI: states, SIMULATED/LIVE badge, options panel, submit/refresh/release/cancel.
+    - Tests: backend/tests/test_m48_s01_t005_social_publish_state.py (11 passed on a disposable DB; M44 and M45 social tests pass).
+    - Limit: an UNKNOWN post with no publish_id needs a person to release it.
   - **Implementation:** Fix social_service.py: publish_id is submission identifier, NOT proof of publication. Add durable SUBMITTED/PROCESSING/terminal states, status fetch and webhook where documented, creator-info query and permitted privacy options, explicit user consent, audit restrictions (SELF_ONLY where required), media URL/domain constraints, retries and timeout/unknown reconciliation. Apply equivalent async/error semantics to every social platform; persist claim before external action; no duplicate post on crash. Inspect all social and ad status transitions.
   - **Acceptance at milestone gate:** Manual real app clicks: submit → pending → processing → confirmed publication, rejected/failed, timeout, callback replay, cancel where supported and restart recovery. Local provider fixture must delay completion; no false PUBLISHED, no real posts. Add provider-contract regression tests.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [ ] M48.S01.T006 — Canonical POVU product/brand context; remove beverage placeholders (audit recommendation 06/60)
+- [v] M48.S01.T006 — Canonical POVU product/brand context; remove beverage placeholders (audit recommendation 06/60)
+  - Implemented 2026-11-26 [v], pending the gate.
+    - backend/app/services/brand_context_service.py builds the context from:
+      - active products only;
+      - approved Brand Vault assets;
+      - approved claims from cs_brand_profiles;
+      - the CRM territory and segment.
+    - With an empty catalogue it gives neutral copy.
+    - The prospect draft, the agent templates and the content-studio prompt use this context and cite their sources.
+    - The beverage scan cleaned app code, frontend, seeds and about 35 test files and fixtures.
+    - A regression scan test fails on any new beverage reference.
+    - The data-hub draft preview UI shows the sources.
+    - Tests: test_m48_s01_t006_brand_context.py (6 passed), plus 20+ touched DB files passed.
   - **Implementation:** Audit source, prompts, templates, fixtures, agent defaults, UI, CMS and seed data for incorrect POVU drinks/beverages or unsupported claims. Replace hard-coded sales copy with canonical approved company brand, home/personal care and cleaning product catalogue/category/approved claims, CRM territory/segment and approved template context. Respect draft vs approved catalogues; when empty no invented products or claims. Use exact approved POVU Brand Vault assets; no real customer data.
   - **Acceptance at milestone gate:** Manual empty/new/synthetic product catalogue prospect draft and content generation; all copy grounded in approved records, citations and product categories; regression scans with legitimate generic terms allowlisted.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [ ] M48.S01.T007 — Snowflake writer and sync adapter (audit recommendation 07/60)
+- [v] M48.S01.T007 — Snowflake writer and sync adapter (audit recommendation 07/60)
+  - Implemented 2026-11-26 [v], pending the gate.
+    - backend/app/services/warehouse_cloud_writers.py: SnowflakeWriter on SQL API v2.
+    - Auth: KEYPAIR_JWT with PyJWT and cryptography (already installed).
+    - Requests: requestId with retry=true, async 202 polling, typed bindings.
+    - Writes: TRANSIENT staging table, then BEGIN/MERGE/COMMIT; deletes are allowed as an option.
+    - Admin roles are refused.
+    - Schema drift: additive columns are added; type changes are refused.
+    - The watermark advances only after commit.
+    - UI: wizard, write-only secret, test, two-person approve, dry run, sync, run mode.
+    - Tests: test_m48_s01_t007_snowflake.py.
   - **Implementation:** Implement real documented Snowflake connector/auth configuration, schema/table provisioning, typed mappings, staged/batched upsert/MERGE and deletes where allowed, incremental checkpoints, retry, transactional consistency and least privilege; no credential needed to implement. Use maintainable dependencies and versioned local protocol fixtures.
   - **Acceptance at milestone gate:** Actual adapter exercised by local test double, SQL injection protection, types, schema drift, replay, failure/restore; manual connection wizard/dry-run/sync status/export. NOT_CONFIGURED only for credentials, not stub.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [ ] M48.S01.T008 — BigQuery writer and sync adapter (audit recommendation 08/60)
+- [v] M48.S01.T008 — BigQuery writer and sync adapter (audit recommendation 08/60)
+  - Implemented 2026-11-26 [v], pending the gate.
+    - BigQueryWriter on REST v2.
+    - Auth: service-account JWT exchanged with the jwt-bearer grant.
+    - Datasets and tables are created; tables.patch is additive only.
+    - Loads: multipart load job with a client jobId; a 409 is reconciled.
+    - MERGE and DELETE run through jobs.query with requestId, after a dryRun bytes check against the maximumBytesBilled cap.
+    - Tests: test_m48_s01_t008_bigquery.py. Together with T007: 21 passed with a DB and 19 without.
   - **Implementation:** Implement documented service-account/OAuth config, dataset/table schema, typed batches/load jobs, polling and MERGE/upsert/deletion where supported, checkpoints and costs/quotas; shared writer interface, no real cloud spend.
   - **Acceptance at milestone gate:** Local API/SDK contract tests job submission/poll/failure, retries, typed schema evolution, watermark/idempotency and no duplicate rows; manual UI setup/dry-run/sync.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [ ] M48.S01.T009 — DocuSign and Adobe Acrobat Sign adapters (audit recommendation 09/60)
+- [v] M48.S01.T009 — DocuSign and Adobe Acrobat Sign adapters (audit recommendation 09/60)
+  - Implemented 2026-11-26 [v], pending the gate.
+    - backend/app/services/esign_provider_service.py:
+      - DocuSign: JWT Grant, userinfo, envelope with a snapshot PDF and anchor tabs, status, void, documents and certificate, Connect HMAC.
+      - Adobe Sign v6: refresh token, transientDocuments, agreement, state cancel, combinedDocument and auditTrail, ClientId echo.
+    - Ledger: the claim comes before the call; idempotency key; one open request per document; UNKNOWN is reconciled by our reference.
+    - Changing the approved content after sending gives INVALIDATED and a provider void.
+    - COMPLETED needs both the final state and the downloaded PDFs.
+    - Simulated evidence is never shown as certified.
+    - The local signer-code flow is unchanged.
+    - Tests: test_m48_s01_t009_esign_providers.py (10 passed).
   - **Implementation:** Implement both provider-specific OAuth/auth, envelope/agreement creation from immutable approved quotation/contract snapshot, recipients, status/retrieval, signed callbacks, completed document/evidence import, cancellation/expiry where supported and reconciliation. Preserve local signer-code flow and financial approval rules. No real signing.
   - **Acceptance at milestone gate:** Local provider contract simulator tests signature/identity/status/tamper/replay, rejection/expiry and retrieval; manual quote → sign request → pending → simulated signed → ERP update with exact evidence. No falsely certified signature.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [ ] M48.S01.T010 — Card payment and CPQ settlement adapters (audit recommendation 10/60)
+- [v] M48.S01.T010 — Card payment and CPQ settlement adapters (audit recommendation 10/60)
+  - Implemented 2026-11-26 [v], pending the gate.
+    - backend/app/services/card_payment_service.py, Pesapal API 3.0:
+      - token, RegisterIPN, SubmitOrderRequest (hosted redirect; no PAN or CVV);
+      - GetTransactionStatus, which is the only thing trusted, since the IPN is unsigned;
+      - refund with a two-person approval.
+    - Payments and settlement:
+      - partial payments and currency check;
+      - exactly one CashCollection, then GL posting once;
+      - NEEDS_REVIEW for an over or mismatched amount;
+      - sandbox payments are never booked;
+      - a late callback still settles.
+    - M-Pesa: link and attempt locks hardened (populate_existing), with concurrency tests.
+    - Public pay page: a 'Pay by card' button in EN/SW/TR.
+    - Tests: test_m48_s01_t010_card_payments.py (8 passed).
+    - Limit: card proceeds use the BANK_TRANSFER collection method.
   - **Implementation:** Implement generic payment provider interface and at least one documented Kenya-eligible card provider (e.g. Pesapal/Flutterwave or other verified fit) with hosted checkout, token/reference, callback verification, status inquiry, partial payments, refunds as approved, reconciliation, currency and ledger posting. Never collect raw PAN/CVV or bypass finance. Audit M-Pesa payment link races and CPQ contract lifecycle.
   - **Acceptance at milestone gate:** Manual hosted checkout local simulator success/pending/decline/late callback/refund, payment/invoice reconciliation exactly once, credit limit, currency, no real charge. Test webhook/auth and replay.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
-- [ ] M48.S01.T011 — Reconcile 103 historical [v] entries and acceptance scope (audit recommendation 11/60)
+- [v] M48.S01.T011 — Reconcile 103 historical [v] entries and acceptance scope (audit recommendation 11/60)
+  - Done 2026-11-26 [v], pending the gate. coordination/milestones/M48/V_RECONCILIATION.md covers 104 [v] rows:
+    - 3 accepted by a current gate;
+    - 93 need an M48 gate retest (bundled into T012);
+    - 3 are activation-only;
+    - 5 need remediation, now added as M48.S01.T013–T015.
   - **Implementation:** Recount current rows rather than trust historical count; map each M16/M30/M36–M42 and other [v] to exact source/test/review evidence, separate actual software defects from future activation, reconcile headings and Project Status, preserve historical accepted work. Do not turn all rows [x] blindly; add remediation IDs if evidence insufficient.
   - **Acceptance at milestone gate:** Per-row reconciliation table with ID, evidence SHA, applicable gate and disposition; legacy local software acceptance after full gate; any activation moved to traceable [D], never label missing implementation as activation.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
@@ -3151,6 +3280,38 @@ These rows describe commissioning only; they must never stop accountless coding,
   - **Implementation:** Inventory every backend test and skip reason across M01–M47 plus new M48; run all feasible DB-gated files on fresh disposable PostgreSQL/current candidate, not only M43–M47, with local services; reconcile full suite and test manifests, migration upgrade from populated 0071/0077 and empty, integrity and flaky assertions. Do not silently skip old failures.
   - **Acceptance at milestone gate:** At milestone gate exact-SHA test inventory with all accountless tests executed, no unexplained skips, 0 failed, isolated provider-only skips justified; rerun affected and consolidated checks after repairs. Old and new finance/warehouse/CRM/AI regressions must pass.
   - **Required evidence:** source/migration/API/UI/permissions and docs as applicable, actual local app manual click log with screenshots, tests prepared now/run at major gate, official contracts for external adapters; synthetic data only, future activation separately. Update TASKS.md and Project Status immediately after task, [v] pending gate, then autonomously select next task. Never [x] before PASS.
+
+- [v] M48.S01.T013 — Remediation (from T011): permission tests for the mobile admin endpoints (M37.S03.T002).
+  - Done 2026-11-26 [v], pending the gate. test_m48_s01_t013_mobile_admin_permissions.py: all 42 roles call /mobile/kpis, /devices/stats and /push/send. Roles holding users/company/integrations edit get 200, every other role gets 403, and a request with no cookie gets 401. The endpoints are not company-scoped, so there is no company-isolation case. Passed (4 passed together with T014).
+- [v] M48.S01.T014 — Remediation (from T011): automated tests for barcode scanning in GRN, transfer and cycle count (M37.S04.T008, M40.S01.T003).
+  - Done 2026-11-26 [v], pending the gate. test_m48_s01_t014_scan_flows.py covers GRN, transfer and cycle count through the real /lookup scan resolver, using LABSA/SLES and POVU SKUs. It found and fixed 4 real defects:
+    - The GRN API refused every receipt because the status was unset before the check.
+    - A GRN line for an item not on the PO was posted into stock.
+    - An auto-approved cycle-count adjustment was never committed.
+    - Cycle-count posting ignored the warehouse and accepted the wrong item, negative quantities, duplicates and completed tasks.
+    Regression: 13 related legacy DB files passed.
+- [ ] M48.S01.T015 — Remediation (from T011): independent review evidence for M36.S06.T003 and M38.S00.T001. Run the review at the M48 gate and store its report.
+
+- [v] M48.S01.T016 — Defect found by the T012 runner: migration 20261119_0043 built crm_email_campaigns from the current model, including FKs to tables that only migration 0074 creates. A database downgraded below 0043 could therefore not be upgraded again.
+  - Fixed 2026-11-26 [v], pending the gate: 0043 now leaves out the columns that 0073/0074 add.
+  - Verified: downgrade 0078 → 20261029_0038, then upgrade to head 0078, succeeds.
+- [v] M48.S01.T017 — Defect found by the T012 runner: four M20 test files (auth_transaction_boundary, postgres_scenario_savepoint, strict_findings, s01_t001_v03_mps_remediation) ran whenever DATABASE_URL was PostgreSQL. With the default settings that is the owner's dev DB.
+  - Fixed 2026-11-26 [v], pending the gate: these files now require the explicit M20_DISPOSABLE_TEST_DATABASE=1, and the runner gives them a disposable DB.
+  - Verified without the flag: 4 passed, 6 skipped, with no connection made.
+
+- [v] M48.S01.T018 — Defect from T014: a stock transfer has no idempotency key. A repeated submission with the same reference moves stock again while stock is available. Add a client idempotency key with a unique constraint and return the original result on replay.
+  - Fixed 2026-11-26 [v], pending the gate.
+    - New column stock_movements.idempotency_key VARCHAR(64) UNIQUE (migration 0078). The request field is optional and 8–64 characters.
+    - Replaying the same transfer (same user) returns the original movement. Reusing the key for a different payload, or from a different user, returns 409.
+    - Concurrent duplicates: the loser hits the unique index and gets the winner's movement.
+    - The inventory transfer form keeps one key per open form, kept across retries.
+    - Tests: test_m48_s01_t018_t019_transfer_replay_count_ambiguity.py, including three concurrent requests resulting in one movement.
+- [v] M48.S01.T019 — Defect from T014: the stock movement for a cycle-count adjustment has no warehouse, and _post_stock_adjustment fails when one item has several stock rows (lots or locations) in the warehouse and the count gives neither. Set the warehouse on the movement, and require a lot or location (clear 400) when the stock row is ambiguous.
+  - Fixed 2026-11-26 [v], pending the gate.
+    - The adjustment movement carries the counted warehouse (source for a shortage, destination for a surplus).
+    - An ambiguous stock row (several lots or locations, none given) returns a clear 400, both at entry and at approval.
+    - Extra pre-existing defect fixed: approve/reject adjustments always failed with 500 (lazy load in async code); they now use selectinload.
+    - Also: test_m34_s02_t004 had a race-order-dependent assertion; it now accepts both serialisation orders.
 
 ## M48.S02 — Consolidated milestone gate and synchronization
 - [ ] M48.S02.T001 — Run milestone-only consolidated tests on frozen candidate SHA: full applicable backend, DB-gated integration and legacy regression, migration from empty and prior populated head, local provider contracts, frontend tsc/lint/build, security/roles/company isolation, real local ERP manual UI clicks and screenshots desktop/mobile for every affected persona and feature; evaluate applicable quality categories and original task mappings; add remediation tasks for any gap; independent reviewer on exact source; record commands, counts, skipped-test dispositions, screenshot paths, click logs, reviewer identity and verdict. Fix failures, rerun, [x] only after all applicable checks pass; no account activation needed.

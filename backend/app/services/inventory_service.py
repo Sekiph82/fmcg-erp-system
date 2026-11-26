@@ -249,6 +249,10 @@ async def stock_transfer(
     created_by_id: uuid.UUID,
 ) -> StockMovement:
     """Transfer stock between two warehouses. Validates source quantity."""
+    if req.idempotency_key:
+        done = await transfer_replay(db, req, created_by_id)
+        if done is not None:
+            return done
     if req.from_warehouse_id == req.to_warehouse_id:
         raise HTTPException(status_code=422, detail="Source and destination warehouse must differ")
 
@@ -312,6 +316,7 @@ async def stock_transfer(
         quantity=req.quantity,
         notes=req.notes,
         created_by_id=created_by_id,
+        idempotency_key=req.idempotency_key,
     )
     db.add(movement)
 
@@ -327,6 +332,20 @@ async def stock_transfer(
     await db.flush()
     await db.refresh(movement)
     return movement
+
+
+async def transfer_replay(db: AsyncSession, req: StockTransferRequest, created_by_id: uuid.UUID) -> Optional[StockMovement]:
+    """The movement already made with this idempotency key (a retry or double submit), else None.
+    The key is bound to the user and the transfer it was first used for; reusing it for anything else is a 409."""
+    done = (await db.execute(select(StockMovement).where(StockMovement.idempotency_key == req.idempotency_key))).scalar_one_or_none()
+    if done is None:
+        return None
+    same = (done.movement_type == MovementType.TRANSFER and done.created_by_id == created_by_id
+            and done.product_id == req.product_id and done.source_warehouse_id == req.from_warehouse_id
+            and done.destination_warehouse_id == req.to_warehouse_id and Decimal(done.quantity) == Decimal(req.quantity))
+    if not same:
+        raise HTTPException(status_code=409, detail="This idempotency key was already used for a different transfer.")
+    return done
 
 
 # ── Adjust / Delete stock record ──────────────────────────────────────────────

@@ -139,7 +139,7 @@ async def test_whatsapp_opt_in_stop_and_encrypted_token(monkeypatch):
         listed = (await c.get("/api/v1/whatsapp/configs")).text
         assert "EAAG" not in listed
 
-        send = lambda phone: c.post("/api/v1/whatsapp/send/text", json={"config_id": cfg["id"], "phone": phone, "body": "POVU Water 500 ml offer"})
+        send = lambda phone: c.post("/api/v1/whatsapp/send/text", json={"config_id": cfg["id"], "phone": phone, "body": "POVU AllClean 1 L offer"})
         r = await send(p1)
         assert r.status_code == 422 and "no WhatsApp opt-in" in r.json()["detail"]
         assert (await c.post("/api/v1/whatsapp/consents", json={"phone": p1, "status": "OPTED_IN"})).status_code == 422
@@ -161,7 +161,7 @@ async def test_whatsapp_opt_in_stop_and_encrypted_token(monkeypatch):
         await sim(p2, "Acha")
         await sim(p3, "dur")
         # a customer who just wrote to us can be answered within 24 h without a stored opt-in
-        await sim(p4, "Habari, bei ya POVU Juice 1 L?")
+        await sim(p4, "Habari, bei ya POVU WhiteCare 1 kg?")
         assert (await send(p4)).status_code == 201
         # START lifts the opt-out (customer's own action)
         await sim(p1, "start")
@@ -245,7 +245,7 @@ async def test_calendar_events_scoped_to_owner_and_participants():
         outsider = await _user(db, CRM, "calout")
         admin = await _user(db, ("users.edit", "crm.view"), "caladm")
         start = datetime.utcnow() + timedelta(days=2)
-        ev = CalendarEvent(event_title="POVU Juice 1 L listing at Duka Moja", start_datetime=start, end_datetime=start + timedelta(hours=1),
+        ev = CalendarEvent(event_title="POVU WhiteCare 1 kg listing at Duka Moja", start_datetime=start, end_datetime=start + timedelta(hours=1),
                            created_by=owner.username, description="Private: discount 7%", location="Duka Moja back office")
         db.add(ev)
         await db.flush()
@@ -279,15 +279,15 @@ async def test_meeting_recap_needs_participant_consent_for_ai(monkeypatch):
     from app.services import sales_ai_service as ai
     from app.services import transcription_service as ts
     calls = {"ai": 0, "asr": 0}
-    t = "Amina: We agreed to list POVU Juice 1 L at Duka Moja.\nJuma: I will send the price list tomorrow.\nAmina: Fine."
+    t = "Amina: We agreed to list POVU WhiteCare 1 kg at Duka Moja.\nJuma: I will send the price list tomorrow.\nAmina: Fine."
 
     async def fake_ai(db, prompt, system, schema):
         calls["ai"] += 1
-        return {"decisions": [{"quote": "We agreed to list POVU Juice 1 L at Duka Moja."}], "action_items": []}
+        return {"decisions": [{"quote": "We agreed to list POVU WhiteCare 1 kg at Duka Moja."}], "action_items": []}
 
     async def fake_asr(raw):
         calls["asr"] += 1
-        return {"segments": [{"speaker": "Amina", "text": "We agreed to list POVU Juice 1 L at Duka Moja today."}]}
+        return {"segments": [{"speaker": "Amina", "text": "We agreed to list POVU WhiteCare 1 kg at Duka Moja today."}]}
     monkeypatch.setattr(ai, "structured", fake_ai)
     monkeypatch.setattr(ts, "adapter", lambda: "http")
     monkeypatch.setattr(ts, "_http", fake_asr)

@@ -59,7 +59,7 @@ async def test_supplier_portal_end_to_end(tmp_path, monkeypatch):
         assert engine.url.host in {"127.0.0.1", "localhost", "::1"} and engine.url.password is None
         assert TASK_DB_PATTERN.fullmatch(os.environ.get(TASK_DB_NAME_ENV, ""))
         assert (await db.execute(select(func.current_database()))).scalar_one() == os.environ[TASK_DB_NAME_ENV]
-        ours, theirs = Supplier(code=f"SUP-{s}", name=f"Sugar Co {s}"), Supplier(code=f"OTH-{s}", name=f"Other {s}")
+        ours, theirs = Supplier(code=f"SUP-{s}", name=f"Surfactant Co {s}"), Supplier(code=f"OTH-{s}", name=f"Other {s}")
         db.add_all([ours, theirs])
         await db.flush()
         pos = {}
@@ -68,7 +68,7 @@ async def test_supplier_portal_end_to_end(tmp_path, monkeypatch):
                                expected_delivery_date=date.today() + timedelta(days=7), currency="KES", status=st)
             db.add(po)
             await db.flush()
-            db.add(POLine(po_id=po.id, line_no=1, description="Cane sugar 50kg", ordered_quantity=Decimal("40"),
+            db.add(POLine(po_id=po.id, line_no=1, description="LABSA 50 kg drum", ordered_quantity=Decimal("40"),
                           unit="BAG", unit_price=Decimal("3500")))
             pos[key] = po.id
         acc = SPAccount(supplier_id=ours.id, portal_status=SPAccountStatus.ACTIVE, can_view_payment=True)
@@ -108,7 +108,7 @@ async def test_supplier_portal_end_to_end(tmp_path, monkeypatch):
 
     async with _client(app) as c:
         r = await c.post(f"{API}/auth/login", json={"email": f"SALES-{s}@example.com", "password": PW})
-        assert r.status_code == 200 and r.json()["supplier_name"] == f"Sugar Co {s}" and r.json()["can_respond"]
+        assert r.status_code == 200 and r.json()["supplier_name"] == f"Surfactant Co {s}" and r.json()["can_respond"]
         assert "erp_supplier_token" in c.cookies
         assert (await c.get("/api/v1/supplier-portal/accounts")).status_code == 401              # not a staff session
         assert (await c.get("/api/v1/portal-self/me")).status_code == 401                        # not a distributor session
@@ -117,7 +117,7 @@ async def test_supplier_portal_end_to_end(tmp_path, monkeypatch):
         assert (await c.get(f"{API}/purchase-orders/{pos['draft']}")).status_code == 404
         assert (await c.get(f"{API}/purchase-orders/{pos['other']}")).status_code == 404
         detail = (await c.get(f"{API}/purchase-orders/{pos['open']}")).json()
-        assert detail["lines"][0]["item"] == "Cane sugar 50kg" and detail["acknowledgment"] is None
+        assert detail["lines"][0]["item"] == "LABSA 50 kg drum" and detail["acknowledgment"] is None
         assert (await c.post(f"{API}/purchase-orders/{pos['other']}/acknowledge", json={"response_status": "ACCEPTED"})).status_code == 404
         assert (await c.post(f"{API}/purchase-orders/{pos['open']}/acknowledge", json={"response_status": "REJECTED"})).status_code == 422
         assert (await c.post(f"{API}/purchase-orders/{pos['open']}/acknowledge",

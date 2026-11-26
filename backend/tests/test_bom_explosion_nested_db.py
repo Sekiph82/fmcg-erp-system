@@ -92,8 +92,8 @@ async def test_postgres_explosion_loads_nested_bom_and_aggregates_reused_child()
                         line_no=1,
                         item_type=ItemLinkType.MATERIAL,
                         component_type=ComponentType.RAW,
-                        item_name="Synthetic sugar",
-                        item_code=f"M21-T001-SUGAR-{suffix}",
+                        item_name="Synthetic LABSA",
+                        item_code=f"M21-T001-LABSA-{suffix}",
                         required_qty=3,
                         required_uom="KG",
                         wastage_pct=2,
@@ -107,7 +107,7 @@ async def test_postgres_explosion_loads_nested_bom_and_aggregates_reused_child()
                 assert len(result.nodes) == 2
                 assert all(len(node.children) == 1 for node in result.nodes)
                 assert len(result.flat_requirements) == 1
-                assert result.flat_requirements[0]["item_name"] == "Synthetic sugar"
+                assert result.flat_requirements[0]["item_name"] == "Synthetic LABSA"
                 assert result.flat_requirements[0]["total_qty"] == 15.6
                 assert result.flat_requirements[0]["total_adjusted_qty"] == 15.912
                 raise _RollbackFixture()

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 from typing import Optional
 from decimal import Decimal
 from datetime import date
@@ -132,6 +132,7 @@ class StockTransferRequest(BaseModel):
     lot_number: Optional[str] = None
     reference: str
     notes: Optional[str] = None
+    idempotency_key: Optional[str] = Field(None, min_length=8, max_length=64)   # same key = same transfer, applied once
 
 
 # ── Enriched read schemas ──────────────────────────────────────────────────────

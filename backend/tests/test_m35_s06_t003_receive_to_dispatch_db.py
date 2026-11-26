@@ -124,7 +124,7 @@ async def test_receive_produce_release_dispatch_quality_gates_end_to_end():
         customer = Customer(code=f"M35-C-{s}", name=f"Synthetic customer {s}", channel=CustomerChannel.WHOLESALE)
         raw_wh = Warehouse(code=f"M35-RAW-{s}", name=f"Synthetic raw {s}", warehouse_type=WarehouseType.RAW_MATERIAL)
         fg_wh = Warehouse(code=f"M35-FG-{s}", name=f"Synthetic FG {s}", warehouse_type=WarehouseType.FINISHED_GOODS)
-        material = Material(code=f"M35-MAT-{s}", name=f"Synthetic sugar {s}", material_type=MaterialType.RAW, uom=UnitOfMeasure.KG)
+        material = Material(code=f"M35-MAT-{s}", name=f"Synthetic LABSA {s}", material_type=MaterialType.RAW, uom=UnitOfMeasure.KG)
         product = Product(sku=f"M35-P-{s}", name=f"Synthetic syrup {s}", category=ProductCategory.FOOD, uom=UnitOfMeasure.KG)
         db.add_all([supplier, customer, raw_wh, fg_wh, material, product])
         await db.flush()

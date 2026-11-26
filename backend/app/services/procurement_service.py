@@ -632,6 +632,15 @@ async def post_grn(
         ):
             raise HTTPException(status_code=409, detail="Accepted BPA receipts cannot exceed the agreement commitment.")
 
+    # a receipt only brings in what the order bought: a wrong scan (an item not on this PO) cannot become stock (M48.S01.T014)
+    po_items = {line.id: (line.material_id, line.product_id) for line in po.lines}
+    for line in grn.lines:
+        if line.accepted_quantity <= 0 or not (line.material_id or line.product_id):
+            continue
+        item = (line.material_id, line.product_id)
+        if (po_items.get(line.po_line_id) != item) if line.po_line_id else (item not in po_items.values()):
+            raise HTTPException(status_code=422, detail="A receipt line is for an item that is not on this purchase order line.")
+
     for line in grn.lines:
         if line.accepted_quantity <= 0:
             continue

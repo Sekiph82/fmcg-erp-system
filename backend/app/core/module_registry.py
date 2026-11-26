@@ -577,6 +577,9 @@ ENDPOINT_ROUTE_DEFINITIONS: tuple[EndpointRouteDefinition, ...] = (
     EndpointRouteDefinition(key="crm_channels", route_prefix="/crm-channels", import_path="app.api.v1.endpoints.crm_channels", tags=('crm',)),
     EndpointRouteDefinition(key="crm_channels_public", route_prefix="/public/channels", import_path="app.api.v1.endpoints.messaging_public", tags=('crm',)),
     EndpointRouteDefinition(key="social_webhook_public", route_prefix="/public/social/meta", import_path="app.api.v1.endpoints.social_webhook_public", tags=('marketing',)),
+    EndpointRouteDefinition(key="social_tiktok_webhook_public", route_prefix="/public/social/tiktok", import_path="app.api.v1.endpoints.social_tiktok_webhook_public", tags=('marketing',)),  # M48.S01.T005
+    EndpointRouteDefinition(key="card_payments_public", route_prefix="/public/card-ipn", import_path="app.api.v1.endpoints.card_payments_public", tags=('sales',)),  # M48.S01.T010
+    EndpointRouteDefinition(key="esign_connect_public", route_prefix="/public/esign", import_path="app.api.v1.endpoints.esign_connect_public", tags=('esign',)),  # M48.S01.T009
     EndpointRouteDefinition(key="booking_pages", route_prefix="/booking-pages", import_path="app.api.v1.endpoints.booking_pages", tags=('meetings',)),
     EndpointRouteDefinition(key="booking_public", route_prefix="/public/book", import_path="app.api.v1.endpoints.booking_public", tags=('meetings',)),
     EndpointRouteDefinition(key="oauth_connections", route_prefix="/integrations/oauth", import_path="app.api.v1.endpoints.oauth_connections", tags=('integrations',)),
@@ -756,7 +759,14 @@ PUBLIC_ROUTES: frozenset[tuple[str, str]] = frozenset({
     ("/sso/callback", "GET"),                              # IdP redirect back: state single-use, ID token verified
     ("/public/pay/{token}", "GET"),                        # payment link page (M45.S01.T021): 256-bit token, expiry, revocation
     ("/public/pay/{token}/mpesa", "POST"),                 # STK push; settlement only from the Daraja callback
-    ("/public/pay/{token}/card", "GET"),                   # card provider NOT_CONFIGURED
+    ("/public/pay/{token}/card", "POST"),                  # M48.S01.T010 start hosted card checkout (Pesapal); amount bounded by open balance
+    ("/public/card-ipn/pesapal", "GET"),                   # Pesapal IPN (unsigned): only re-queries GetTransactionStatus for our tracking ids
+    ("/public/card-ipn/pesapal", "POST"),
+    ("/public/card-ipn/return", "GET"),                    # payer return page; same verification
+    ("/public/social/tiktok", "POST"),                     # TikTok-Signature HMAC, 300 s window, replay ignored (M48.S01.T005)
+    ("/public/esign/docusign", "POST"),                    # DocuSign Connect HMAC over raw body, replay-keyed (M48.S01.T009)
+    ("/public/esign/adobe-sign", "GET"),                   # Adobe X-AdobeSign-ClientId intent check/echo
+    ("/public/esign/adobe-sign", "POST"),
     ("/public/docs/{token}", "GET"),                       # shared sales document (M45.S01.T013): token, expiry, revocation
     ("/public/docs/{token}/view", "POST"),
     ("/public/docs/{token}/file", "GET"),                  # only APPROVED + malware-scan CLEAN files

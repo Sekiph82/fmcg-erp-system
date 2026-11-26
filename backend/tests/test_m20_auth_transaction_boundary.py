@@ -1,6 +1,8 @@
 """Authentication transaction isolation and negative regression coverage."""
 from __future__ import annotations
 
+import os
+
 from uuid import uuid4
 
 import pytest
@@ -19,7 +21,7 @@ from app.models.role import Permission, Role
 
 @pytest.mark.asyncio
 async def test_auth_isolated_from_endpoint_commit_and_explicit_transaction():
-    if "postgresql" not in str(settings.DATABASE_URL):
+    if "postgresql" not in str(settings.DATABASE_URL) or os.environ.get("M20_DISPOSABLE_TEST_DATABASE") != "1":  # M48: explicit opt-in, never the dev DB
         pytest.skip("M20 auth transaction regression requires PostgreSQL")
 
     suffix = uuid4().hex[:12]

@@ -115,6 +115,7 @@ class StockMovement(Base, TimestampMixin):
 
     notes = Column(Text, nullable=True)
     created_by_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    idempotency_key = Column(String(64), unique=True, nullable=True)   # client key: a replayed transfer moves stock once (M48.S01.T018)
 
     lot = relationship("Lot", back_populates="movements")
     source_warehouse = relationship("Warehouse", foreign_keys=[source_warehouse_id], back_populates="movements_from")

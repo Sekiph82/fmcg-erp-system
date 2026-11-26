@@ -40,6 +40,10 @@ export default function AdsPage() {
             <h1 className="text-2xl font-bold">Ads Performance</h1>
             <p className="text-slate-400 text-sm mt-1">{records.length} records</p>
           </div>
+          <Link href="/dashboard/marketing/ads/campaigns"
+            className="px-4 py-2 rounded-lg border border-slate-600 text-sm font-medium text-white">
+            Campaign builder
+          </Link>
           <RequirePermission permission="ad_performance.edit">
             <Link href="/dashboard/marketing/ads/new"
               className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-sm font-medium text-white">

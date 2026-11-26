@@ -1370,13 +1370,24 @@ class SocialPost(Base):
     scheduled_at     = Column(DateTime(timezone=True), nullable=True, index=True)
     time_zone        = Column(String(64), nullable=False, default="Africa/Nairobi")
     status           = Column(String(12), nullable=False, default="DRAFT")
-    # DRAFT | PENDING | APPROVED | PUBLISHING | PUBLISHED | FAILED | CANCELLED | EXPORTED
+    # DRAFT | PENDING | APPROVED | SUBMITTING (claimed, provider call in flight) | SUBMITTED | PROCESSING |
+    # PUBLISHED (provider's documented final state only) | FAILED (incl. provider rejection) | UNKNOWN | CANCELLED | EXPORTED
     version          = Column(Integer, nullable=False, default=1)
     approved_version = Column(Integer, nullable=True)
     approved_by      = Column(String(100), nullable=True)
-    external_post_id = Column(String(120), nullable=True)
+    external_post_id = Column(String(120), nullable=True)    # the live post id, set only at PUBLISHED
     error            = Column(String(500), nullable=True)
     published_at     = Column(DateTime(timezone=True), nullable=True)
+    # M48.S01.T005 asynchronous publishing state
+    provider_ref     = Column(String(120), nullable=True, index=True)   # submission id: TikTok publish_id, IG container id
+    provider_status  = Column(String(40), nullable=True)     # raw provider status (PROCESSING_DOWNLOAD, IN_PROGRESS, ...)
+    fail_reason      = Column(String(120), nullable=True)    # provider fail_reason / error code
+    publish_mode     = Column(String(9), nullable=True)      # SIMULATED | LIVE (egress mode at claim time)
+    publish_options  = Column(JSON, nullable=True)           # TikTok privacy/interaction choices + explicit consent
+    claimed_at       = Column(DateTime(timezone=True), nullable=True)
+    submitted_at     = Column(DateTime(timezone=True), nullable=True)
+    next_poll_at     = Column(DateTime(timezone=True), nullable=True)
+    poll_count       = Column(Integer, nullable=False, default=0, server_default="0")
     history          = Column(JSON, nullable=False, default=list)
     created_by       = Column(String(100), nullable=False)
     created_at       = Column(DateTime(timezone=True), nullable=False, server_default=func.now())

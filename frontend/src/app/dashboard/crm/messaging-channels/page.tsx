@@ -66,7 +66,7 @@ export default function MessagingChannelsPage() {
               <summary className="cursor-pointer">API</summary>
               <pre className="whitespace-pre-wrap break-all mt-1">{`POST ${api}/api/v1/public/channels/<key>/messages
 Authorization: Bearer <token>
-{"thread_id": "t1", "message_id": "42", "sender": "Duka Moja", "text": "Need 20 crates of POVU juice"}
+{"thread_id": "t1", "message_id": "42", "sender": "Duka Moja", "text": "Need 20 cartons of POVU AllClean 1 L"}
 → threaded in the Inbox; the same message_id is stored once
 
 GET ${api}/api/v1/public/channels/<key>/outbox

@@ -216,7 +216,7 @@ async def test_whatsapp_simulate_consent_rights_and_compact_signed_webhook(monke
     monkeypatch.setattr(settings, "WHATSAPP_APP_SECRET", "t005-app-secret")
     raw = json.dumps({"entry": [{"changes": [{"value": {"metadata": {"phone_number_id": biz}, "contacts": [],
                       "messages": [{"from": p_new.lstrip("+"), "id": f"wamid.{uuid.uuid4().hex}", "type": "text",
-                                    "text": {"body": "Bei ya POVU Water 500 ml?"}}]}}]}]}, separators=(",", ":")).encode()
+                                    "text": {"body": "Bei ya POVU AllClean 1 L?"}}]}}]}]}, separators=(",", ":")).encode()
     sig = "sha256=" + hmac.new(b"t005-app-secret", raw, hashlib.sha256).hexdigest()
     async with _client() as pub:
         r = await pub.post("/api/v1/whatsapp/webhook", content=raw, headers={"X-Hub-Signature-256": sig, "Content-Type": "application/json"})

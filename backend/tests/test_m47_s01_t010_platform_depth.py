@@ -81,7 +81,7 @@ def test_agent_templates_validate():
     from app.services import agent_service as ags
     for key in ("campaign_planner", "nurture_sequence"):
         v = ags.validate(ags.TEMPLATES[key]["definition"])
-        assert v["order"] == ["s1", "s2", "s3"]
+        assert v["order"] == ["s1", "s2", "s3", "s4"]
     assert ags.TOOLS["draft_campaign"]["draft"] and not ags.TOOLS["draft_campaign"]["write"]
 
 
@@ -144,16 +144,16 @@ async def test_field_permissions_read_and_write():
                                                                               "field_key": key, "access": acc})
             assert r.status_code == 200, r.text
         r = await ca.post("/api/v1/crm-contacts", json={"full_name": "Amina POVU", "email": f"amina-{uuid.uuid4().hex[:5]}@example.com",
-                                                         "phone": "+254700111222", "notes": "Prefers POVU Water 500 ml"})
+                                                         "phone": "+254700111222", "notes": "Prefers POVU AllClean 1 L"})
         assert r.status_code == 201, r.text
         cid = r.json()["id"]
         # read: hidden key removed for the rep (detail and list), visible for the exempt admin
         d = (await cr.get(f"/api/v1/crm-contacts/{cid}")).json()
-        assert "phone" not in d and d["notes"] == "Prefers POVU Water 500 ml" and d["hidden_fields"] == ["phone"]
+        assert "phone" not in d and d["notes"] == "Prefers POVU AllClean 1 L" and d["hidden_fields"] == ["phone"]
         assert all("phone" not in x for x in (await cr.get("/api/v1/crm-contacts")).json())
         assert (await ca.get(f"/api/v1/crm-contacts/{cid}")).json()["phone"] == "+254700111222"
         # write: hidden / read-only changes refused; unchanged / left-out restricted fields keep their stored value
-        base = {"full_name": "Amina POVU", "email": d["email"], "notes": "Prefers POVU Water 500 ml"}
+        base = {"full_name": "Amina POVU", "email": d["email"], "notes": "Prefers POVU AllClean 1 L"}
         assert (await cr.put(f"/api/v1/crm-contacts/{cid}", json={**base, "phone": "+254700999999"})).status_code == 403
         assert (await cr.put(f"/api/v1/crm-contacts/{cid}", json={**base, "notes": "changed"})).status_code == 403
         r = await cr.put(f"/api/v1/crm-contacts/{cid}", json={**base, "job_title": "Buyer"})
@@ -252,7 +252,7 @@ async def test_form_shortening_and_smart_properties():
         for t in (CRMActivityType.CALL, CRMActivityType.CALL, CRMActivityType.EMAIL):
             db.add(CRMActivity(crm_record_id=rec.id, activity_type=t, subject="Follow-up", result_status=CRMActivityResult.COMPLETED))
         db.add(CRMActivity(crm_record_id=rec.id, activity_type=CRMActivityType.NOTE, subject="Visit note",
-                           notes="Shop owner: #objection: shelf price of POVU Juice 1 L too high", result_status=CRMActivityResult.COMPLETED))
+                           notes="Shop owner: #objection: shelf price of POVU WhiteCare 1 kg too high", result_status=CRMActivityResult.COMPLETED))
         db.add(SalesOrder(order_no=f"SO-{uuid.uuid4().hex[:6]}", customer_id=cust.id, order_date=date(2026, 11, 20),
                           requested_delivery_date=date(2026, 11, 22)))
         await db.commit()
@@ -261,7 +261,7 @@ async def test_form_shortening_and_smart_properties():
         props = {p.key: (p.value, p.source) for p in (await db.execute(select(CRMContactProperty).where(
             CRMContactProperty.contact_id == c.id))).scalars()}
         assert props == {"last_order_date": ("2026-11-20", "SMART"), "preferred_channel": ("CALL", "SMART"),
-                         "last_objection": ("shelf price of POVU Juice 1 L too high", "SMART")}
+                         "last_objection": ("shelf price of POVU WhiteCare 1 kg too high", "SMART")}
         assert await cs.recompute_smart_properties(db, [c.id]) == 0                 # idempotent
         _ = now
 
@@ -283,7 +283,7 @@ async def test_ticket_pipelines():
     async with _client() as cl, _client() as ca:
         await _login(cl, ln)
         await _login(ca, an)
-        t = await ca.post("/api/v1/helpdesk/", json={"subject": "POVU Water 500 ml crate short", "category": "DELIVERY", "priority": "HIGH"})
+        t = await ca.post("/api/v1/helpdesk/", json={"subject": "POVU AllClean 1 L carton short", "category": "DELIVERY", "priority": "HIGH"})
         assert t.status_code == 201, t.text
         tid = t.json()["id"]
         ps = (await ca.get("/api/v1/helpdesk/pipelines")).json()
@@ -428,7 +428,7 @@ async def test_campaign_and_nurture_templates_draft_only():
         await db.commit()
         user = await _loaded(db, owner.id)
         cfg = await ags.settings_get(db)
-        inputs = {"goal": "Launch POVU Juice 1 L in Nairobi", "audience": aud.name}
+        inputs = {"goal": "Launch POVU WhiteCare 1 kg in Nairobi", "audience": aud.name}
         agent = SimpleNamespace(name="Campaign planner")
         sim = await ags.run(db, agent, ags.TEMPLATES["campaign_planner"]["definition"], user, inputs, simulate=True,
                             job_ref="sim", cfg=cfg, budget_tokens=20000)

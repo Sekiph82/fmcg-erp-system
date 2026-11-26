@@ -59,7 +59,7 @@ async def test_segment_campaign_consent_company_dedupe_cancel_and_attribution(mo
             if key not in ("noconsent",):
                 await outbound.record_consent(db, email, "SUBSCRIBED", "form:test", "ok")
         await outbound.record_consent(db, f"quit-{s}@example.com", "UNSUBSCRIBED", "unsubscribe-link")
-        camp = CRMEmailCampaign(name=f"Launch {s}", subject="New juice for {company_name}", body="Hi {contact_name}",
+        camp = CRMEmailCampaign(name=f"Launch {s}", subject="New POVU AllClean for {company_name}", body="Hi {contact_name}",
                                 segment_id=seg.id, company_id=ours.id, status="SCHEDULED",
                                 scheduled_at=datetime.now(timezone.utc) - timedelta(minutes=1))
         later = CRMEmailCampaign(name=f"Later {s}", subject="x", body="y", segment_id=seg.id, company_id=ours.id,
@@ -76,7 +76,7 @@ async def test_segment_campaign_consent_company_dedupe_cancel_and_attribution(mo
         msgs = {m.to_email: m for m in (await db.execute(select(CRMOutboundMessage).where(
             CRMOutboundMessage.dedupe_key.like(f"camp:{camp.id}:%")))).scalars()}
         assert set(msgs) == {f"{k}-{s}@example.com" for k in ("a", "b", "noconsent", "quit")}
-        assert msgs[f"a-{s}@example.com"].subject in {"New juice for A Kiosk", "New juice for Dup Kiosk"}
+        assert msgs[f"a-{s}@example.com"].subject in {"New POVU AllClean for A Kiosk", "New POVU AllClean for Dup Kiosk"}
         assert (msgs[f"noconsent-{s}@example.com"].status, msgs[f"quit-{s}@example.com"].status) == ("SUPPRESSED", "SUPPRESSED")
 
     host, port = SMTP.split(":")

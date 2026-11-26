@@ -71,8 +71,8 @@ async def test_scoring_forecast_and_funnel_against_source_records():
         assert {b["rule"]: b["points"] for b in history[0]["breakdown"]}["Completed activities"] == 30
 
         # configured rules replace defaults; history explains the change
-        db.add(CRMScoreRule(name="Beverage segment", category="FIT", field="industry_segment", operator="eq",
-                            value="beverage", points=40))
+        db.add(CRMScoreRule(name="Supermarket segment", category="FIT", field="industry_segment", operator="eq",
+                            value="supermarket", points=40))
         await db.commit()
         rec = await intel.rescore_record(db, str(lead_id), "tester")
         assert (rec.lead_score, rec.temperature.value) == (0, "COLD")  # segment unset -> rule does not apply

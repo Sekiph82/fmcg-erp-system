@@ -35,7 +35,9 @@ def _edit(u):
 
 @router.get("/settings")
 async def get_settings(db: AsyncSession = Depends(get_db)):
-    return {**await cpq.settings_get(db), "signature_providers": cpq.SIGNATURE_PROVIDERS}
+    from app.services import esign_provider_service as esp
+    return {**await cpq.settings_get(db), "signature_providers": {p["provider"]: ("READY" if p["ready"] else "NOT_READY") + (f" ({p['mode']})" if p["mode"] != "LOCAL" else "")
+                                                                  for p in await esp.readiness(db)}}
 
 
 @router.put("/settings")

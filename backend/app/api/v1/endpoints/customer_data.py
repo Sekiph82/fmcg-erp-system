@@ -111,7 +111,7 @@ async def outreach_draft(rid: uuid.UUID, body: OutreachIn, db: AsyncSession = De
     res = next((r for r in (run.results if run else []) if r["id"] == body.result_id), None)
     if res is None:
         raise HTTPException(404, "Result not found")
-    return cds.draft(res, current_user.full_name or current_user.username)
+    return await cds.draft(db, res, current_user.full_name or current_user.username)
 
 
 @router.post("/prospect/runs/{rid}/outreach", status_code=201)
@@ -124,7 +124,7 @@ async def outreach(rid: uuid.UUID, body: OutreachIn, db: AsyncSession = Depends(
         raise HTTPException(404, "Result not found")
     if not res["can_email"]:
         raise HTTPException(409, "No valid e-mail for this prospect; call or visit instead.")
-    d = cds.draft(res, current_user.full_name or current_user.username)
+    d = await cds.draft(db, res, current_user.full_name or current_user.username)
     req = await pats.propose(db, source="PROSPECT", source_ref=f"{rid}:{res['id']}", user=current_user, action="send_email",
                              arguments={"to_email": res["email"], "subject": body.subject or d["subject"], "body": body.body or d["body"]},
                              summary=f"First contact: {res['company_name']}")

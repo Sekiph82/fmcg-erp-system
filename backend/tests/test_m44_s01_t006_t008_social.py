@@ -21,16 +21,16 @@ import pytest
 from app.core import provider_http
 from app.core.config import settings
 from app.services import social_service as ss
-from tests.provider_sim.ads_app import create_ads_app, social_sim_settings
+from tests.provider_sim.social_app import apply_sim_settings, create_social_app   # M48.S01.T005 async-aware simulator
 
 BASE = "http://ads.test"
-IMG = [{"url": "https://cdn.povu-demo.test/juice.jpg", "kind": "image"}]
-VID = [{"url": "https://cdn.povu-demo.test/juice.mp4", "kind": "video"}]
+IMG = [{"url": "https://cdn.povu-demo.test/allclean.jpg", "kind": "image"}]
+VID = [{"url": "https://cdn.povu-demo.test/allclean.mp4", "kind": "video"}]
 
 
 def test_constraints_and_route(monkeypatch):
-    assert ss.problems("instagram", "POVU juice", [], None)                        # needs one image
-    assert not ss.problems("instagram", "POVU juice", IMG, None)
+    assert ss.problems("instagram", "POVU AllClean", [], None)                        # needs one image
+    assert not ss.problems("instagram", "POVU AllClean", IMG, None)
     assert ss.problems("instagram", " ".join(f"#t{i}" for i in range(31)), IMG, None)
     assert ss.problems("tiktok", "x", IMG, None) and not ss.problems("tiktok", "x", VID, None)
     assert ss.problems("linkedin", "x", IMG, None) and not ss.problems("linkedin", "x", [], "https://povu-demo.test")
@@ -46,7 +46,7 @@ def test_constraints_and_route(monkeypatch):
 def test_tags_have_evidence_and_replies_are_drafts():
     s, topics, ev = ss.tag("Delivery was late and the bottle was leaking, terrible")
     assert s == "NEGATIVE" and {"delivery", "packaging", "quality"} <= set(topics) and "late" in ev["negative"]
-    assert ss.tag("POVU juice is delicious, asante!")[0] == "POSITIVE"
+    assert ss.tag("POVU AllClean is great, asante!")[0] == "POSITIVE"
     assert ss.tag("Where can I buy it?")[0] == "NEUTRAL"
     item = SimpleNamespace(author="Asha Buyer", sentiment="NEGATIVE", topics=["delivery"])
     assert "sorry" in ss.suggest_reply(item) and "delivery" in ss.suggest_reply(item)
@@ -66,31 +66,29 @@ def test_meta_signature(monkeypatch):
 
 @pytest.fixture
 def sim(monkeypatch):
-    app = create_ads_app()
-    monkeypatch.setattr(settings, "PROVIDER_EGRESS", "local")
-    for k, v in social_sim_settings(BASE).items():
-        monkeypatch.setattr(settings, k, v)
+    app = create_social_app()
+    apply_sim_settings(monkeypatch, BASE)
     provider_http.set_test_transport(httpx.ASGITransport(app=app))
     yield app
     provider_http.set_test_transport(None)
 
 
-def _p(text="POVU juice is back", media=None, link=None):
+def _p(text="POVU AllClean is back", media=None, link=None):
     return SimpleNamespace(text=text, media=media or [], link=link)
 
 
 @pytest.mark.asyncio
 async def test_adapters_against_simulator(sim):
+    # M48.S01.T005: only synchronous creators (Facebook, LinkedIn) return the live post here; Instagram containers and
+    # TikTok publish_ids are submission ids reconciled by status polling (tests/test_m48_s01_t005_social_publish_state.py).
     ch = lambda net, ext="123": SimpleNamespace(network=net, external_id=ext)  # noqa: E731
-    assert await ss._post_api(ch("facebook"), _p(link="https://povu-demo.test")) == "123_1"
-    assert await ss._post_api(ch("facebook"), _p(media=IMG)) == "123_ph1"
-    assert await ss._post_api(ch("instagram", "17841"), _p(media=IMG)) == "ig-media-1"
-    assert await ss._post_api(ch("linkedin", "555"), _p(link="https://povu-demo.test")) == "urn:li:share:9001"
-    assert await ss._post_api(ch("tiktok", "tt"), _p(media=VID)) == "v_pub_url~1"
-    async with httpx.AsyncClient(transport=provider_http._test_transport, base_url=BASE) as c:
-        await c.post("/_control", json={"faults": {"social": ["perm"]}})
-    with pytest.raises(ss.SocialError, match="pages_manage_posts"):
-        await ss._post_api(ch("facebook"), _p())
+    async with provider_http.provider_client() as c:
+        assert await ss._post_direct(c, ch("facebook"), _p(link="https://povu-demo.test")) == "123_1"
+        assert await ss._post_direct(c, ch("facebook"), _p(media=IMG)) == "123_ph1"
+        assert (await ss._post_direct(c, ch("linkedin", "555"), _p(link="https://povu-demo.test"))).startswith("urn:li:share:")
+        await c.post(f"{BASE}/_control", json={"faults": {"social": ["perm"]}})
+        with pytest.raises(ss.SocialError, match="pages_manage_posts"):
+            await ss._post_direct(c, ch("facebook"), _p())
 
 
 DB = pytest.mark.skipif(os.environ.get("M44_DB") != "1", reason="requires the task-owned disposable PostgreSQL")
@@ -117,7 +115,7 @@ async def test_post_lifecycle_and_publishing(sim):
     async with AsyncSessionLocal() as db:
         fb = await ep.add_channel(ep.ChannelIn(network="facebook", external_id=f"pg{tag}", name="POVU Page"), db, alice)
         xx = await ep.add_channel(ep.ChannelIn(network="x", external_id=f"x{tag}", name="POVU X"), db, alice)
-        body = ep.PostIn(channel_id=fb["id"], idempotency_key=f"k-{tag}-1", text="POVU juice is back",
+        body = ep.PostIn(channel_id=fb["id"], idempotency_key=f"k-{tag}-1", text="POVU AllClean is back",
                          scheduled_at=datetime.now(timezone.utc) - timedelta(minutes=1))
         p = await ep.create_post(body, db, alice)
         assert (await ep.create_post(body, db, alice))["id"] == p["id"]                 # idempotent
@@ -129,7 +127,7 @@ async def test_post_lifecycle_and_publishing(sim):
         # reschedule keeps approval, content change does not
         later = body.model_copy(update={"scheduled_at": datetime.now(timezone.utc) - timedelta(seconds=30)})
         assert (await ep.edit_post(pid, later, db, alice))["approved"]
-        changed = later.model_copy(update={"text": "POVU juice is back — now in 1L"})
+        changed = later.model_copy(update={"text": "POVU AllClean is back — now in 1 L"})
         out = await ep.edit_post(pid, changed, db, alice)
         assert not out["approved"] and out["version"] == 2 and out["status"] == "DRAFT"
         await ep.post_action(pid, "request", db, alice)

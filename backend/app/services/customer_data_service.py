@@ -201,13 +201,23 @@ async def prospect(db: AsyncSession, criteria: dict, user: str, limit: int = 50)
     return run
 
 
-def draft(result: dict, sender: str) -> dict:
-    """Outreach text built only from evidence; nothing about the prospect is invented."""
+async def draft(db: AsyncSession, result: dict, sender: str) -> dict:
+    """Outreach text built only from evidence and the active catalogue (brand_context_service); nothing about the
+    prospect or the range is invented. `sources` lists every record the text used."""
+    from app.services import brand_context_service as bcs
+    return compose(result, sender, await bcs.context(db, target_kind=result.get("kind"), target_id=result.get("id")))
+
+
+def compose(result: dict, sender: str, ctx: dict) -> dict:
+    from app.services import brand_context_service as bcs
     why = "; ".join(f"{e['criterion']} {e['value']}" for e in result["evidence"]) or "your business profile"
-    return {"subject": "POVU products for " + result["company_name"],
-            "body": (f"Hello {result['company_name']} team,\n\nWe supply POVU drinks to outlets like yours ({why}). "
+    return {"subject": f"{ctx['brand']} products for " + result["company_name"],
+            "body": (f"Hello {result['company_name']} team,\n\nWe supply {ctx['brand']} {bcs.range_text(ctx)} "
+                     f"to outlets like yours ({why}). "
                      "Would you like our price list and delivery days for your area?\n\n"
-                     f"Kind regards,\n{sender}\nReply STOP and we will not contact you again.")}
+                     f"Kind regards,\n{sender}\nReply STOP and we will not contact you again."),
+            "sources": bcs.citations(ctx) + [e["citation"] for e in result["evidence"]],
+            "catalogue_empty": not ctx["lines"], "target": ctx["target"]}
 
 
 # ── T002 research / T003 enrichment ──────────────────────────────────────────

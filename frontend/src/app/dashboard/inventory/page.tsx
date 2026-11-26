@@ -4,6 +4,8 @@ import { EntityPicker } from "@/components/EntityPicker";
 import dynamic from "next/dynamic";
 import { ModuleWorkspace } from "@/components/workspace";
 import { useState } from "react";
+
+const newIdemKey = () => (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   inventoryApi,
@@ -121,7 +123,9 @@ function InventoryContent() {
   });
 
   // ── Stock Transfer ───────────────────────────────────────────────────────────
-  const [transfer, setTransfer] = useState<Partial<StockTransferRequest>>({ reference: `TRF-${today}` });
+  // a fresh idempotency key per transfer form; kept across retries/double clicks, renewed after a success (M48.S01.T018)
+  const newTransfer = (): Partial<StockTransferRequest> => ({ reference: `TRF-${today}`, idempotency_key: newIdemKey() });
+  const [transfer, setTransfer] = useState<Partial<StockTransferRequest>>(newTransfer);
   const setT = (k: keyof StockTransferRequest, v: unknown) => setTransfer((f) => ({ ...f, [k]: v }));
 
   const canReceiveTarget = !entry.warehouse_id
@@ -142,7 +146,7 @@ function InventoryContent() {
     mutationFn: (d: StockTransferRequest) => inventoryApi.stockTransfer(d),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["stock-summary"] });
-      setTransfer({ reference: `TRF-${today}` });
+      setTransfer(newTransfer());
       toast("success", "Transfer complete", "Stock moved between warehouses.");
       setTab("stock");
     },

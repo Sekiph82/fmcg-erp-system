@@ -143,7 +143,7 @@ def test_qc_plan_activation_and_coverage(env):
     db, c = env
     order = uuid.uuid4()
     plan = c.as_(AUTHOR).post("/qe/qc-plans", json={
-        "plan_code": "PLAN-1", "name": "Juice", "product_id": str(uuid.uuid4()),
+        "plan_code": "PLAN-1", "name": "AllClean", "product_id": str(uuid.uuid4()),
         "steps": [{"sequence": 1, "qc_type": "IN_PROCESS"}, {"sequence": 2, "qc_type": "FINISHED_GOODS"}]}).json()
     assert c.as_(AUTHOR).post(f"/qe/qc-plans/{plan['id']}/activate").status_code == 409
     assert c.as_(APPROVER).post(f"/qe/qc-plans/{plan['id']}/activate").json()["status"] == "ACTIVE"
@@ -391,7 +391,7 @@ def test_complaint_capa_is_created_once_and_recall_close_waits_for_it(env):
     from app.services import recall_service
 
     db, c = env
-    comp = db.add(ConsumerComplaint(id=uuid.uuid4(), complaint_ref="CC-1", product_name="Juice",
+    comp = db.add(ConsumerComplaint(id=uuid.uuid4(), complaint_ref="CC-1", product_name="POVU AllClean 1 L",
                                     severity=ComplaintSeverity.SAFETY, description="Glass found"))
     first = c.as_(AUTHOR).post(f"/qe/complaints/{comp.id}/capa").json()
     second = c.as_(AUTHOR).post(f"/qe/complaints/{comp.id}/capa").json()

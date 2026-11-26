@@ -138,15 +138,15 @@ class Settings(BaseSettings):
     # M44.S01.T002–T005 ad platforms: blank token = NOT_CONFIGURED. Live campaign publishing is never enabled by config.
     ADS_MAX_DAILY_BUDGET: float = 50.0      # guardrail per draft, account currency
     META_ADS_API_URL: str = "https://graph.facebook.com"
-    META_ADS_API_VERSION: str = "v21.0"
+    META_ADS_API_VERSION: str = "v27.0"     # current Graph version 2026-11 (M48 capability matrix)
     META_ADS_ACCESS_TOKEN: str = ""
     GOOGLE_ADS_API_URL: str = "https://googleads.googleapis.com"
-    GOOGLE_ADS_API_VERSION: str = "v18"
+    GOOGLE_ADS_API_VERSION: str = "v26"       # Google Ads API v26 (2026-11)
     GOOGLE_ADS_DEVELOPER_TOKEN: str = ""
     GOOGLE_ADS_ACCESS_TOKEN: str = ""
     GOOGLE_ADS_LOGIN_CUSTOMER_ID: str = ""
     LINKEDIN_ADS_API_URL: str = "https://api.linkedin.com"
-    LINKEDIN_ADS_VERSION: str = "202410"     # YYYYMM, sent as LinkedIn-Version
+    LINKEDIN_ADS_VERSION: str = "202611"     # YYYYMM, sent as LinkedIn-Version (each version supported ~1 year)
     LINKEDIN_ADS_ACCESS_TOKEN: str = ""
     LINKEDIN_ADS_ACCESS_TIER: str = "development"   # development | standard
     TIKTOK_ADS_API_URL: str = "https://business-api.tiktok.com"
@@ -154,6 +154,17 @@ class Settings(BaseSettings):
     TIKTOK_ADS_APP_SECRET: str = ""
     # M44.S01.T006–T008 social: publishing stays off until the owner enables it; tokens per network (blank = manual export)
     SOCIAL_PUBLISHING_ENABLED: bool = False
+    # M48: live provider actions stay off until owner activation (each also needs credentials + approval)
+    TIKTOK_APP_AUDITED: bool = False             # unaudited TikTok apps may only post SELF_ONLY
+    TIKTOK_VERIFIED_URL_PREFIXES: str = ""       # comma list of verified PULL_FROM_URL prefixes/domains
+    TIKTOK_CLIENT_SECRET: str = ""               # signs TikTok webhooks (TikTok-Signature)
+    SOCIAL_PUBLISH_TIMEOUT_MINUTES: int = 30
+    SOCIAL_STATUS_POLL_SECONDS: int = 15
+    SOCIAL_STATUS_BACKOFF_SECONDS: float = 1.0
+    ADS_LIVE_MUTATIONS: bool = False             # M48.S01.T001–T004 live ad mutations
+    CARD_PAYMENTS_LIVE_ENABLED: bool = False     # M48.S01.T010 Pesapal live money
+    WAREHOUSE_LIVE_ENABLED: bool = False         # M48.S01.T007/T008 Snowflake/BigQuery live sync
+    ESIGN_LIVE_ENABLED: bool = False             # M48.S01.T009 DocuSign/Adobe Sign live sending
     META_PAGE_ACCESS_TOKEN: str = ""             # Facebook Page + Instagram professional account (Graph API)
     META_APP_SECRET: str = ""                    # signs Meta webhooks (X-Hub-Signature-256)
     META_WEBHOOK_VERIFY_TOKEN: str = ""

@@ -193,7 +193,7 @@ test.describe("M35 QA governance UI (mocked API)", () => {
     const calls = await installApi(page);
     await open(page, "QC plans");
     await page.getByLabel("Plan code").fill("PLAN-SYN");
-    await page.getByLabel("Plan name").fill("Synthetic juice plan");
+    await page.getByLabel("Plan name").fill("Synthetic AllClean plan");
     await page.getByLabel("Item ID").fill(ID(5));
     await page.getByRole("button", { name: "Add step" }).click();
     await page.getByRole("button", { name: "Save draft plan" }).click();

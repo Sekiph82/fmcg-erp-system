@@ -76,9 +76,9 @@ async def test_field_app_end_to_end(tmp_path, monkeypatch):
         await db.flush()
         for n, (k, route) in enumerate((("c1", route_a), ("c2", route_a), ("c3", route_b)), start=1):
             db.add(RouteStop(route_id=route.id, customer_id=cust[k].id, stop_sequence=n))
-        soda = Product(sku=f"SODA-{s}", name=f"Soda {s}", category=ProductCategory.BEVERAGE, selling_price=Decimal("50"))
+        floorfresh = Product(sku=f"FLF-{s}", name=f"POVU FloorFresh 1 L {s}", category=ProductCategory.HOUSEHOLD, selling_price=Decimal("50"))
         wh = Warehouse(code=f"WH-{s}", name="Main", warehouse_type=list(WarehouseType)[0])
-        db.add_all([soda, wh])
+        db.add_all([floorfresh, wh])
         await db.flush()
         so = SalesOrder(order_no=f"SO-{s}", customer_id=cust["c1"].id, order_date=date.today(),
                         requested_delivery_date=date.today(), currency="KES", status=SOStatus.CONFIRMED)
@@ -113,7 +113,7 @@ async def test_field_app_end_to_end(tmp_path, monkeypatch):
         stop = TripOrder(trip_id=trip.id, shipment_id=ship.id, delivery_sequence=1)
         db.add(stop)
         await db.commit()
-        ids = SimpleNamespace(**{k: c.id for k, c in cust.items()}, soda=soda.id, inv=inv.id, trip=trip.id, stop=stop.id,
+        ids = SimpleNamespace(**{k: c.id for k, c in cust.items()}, floorfresh=floorfresh.id, inv=inv.id, trip=trip.id, stop=stop.id,
                               ship=ship.id, rep_a=rep_a.id)
         U = {k: _as(u) for k, u in users.items()}
         U["ctl"] = _as(users["ctl"], "field.audit")
@@ -144,7 +144,7 @@ async def test_field_app_end_to_end(tmp_path, monkeypatch):
             cat = (await c.get(f"{F}/catalog", params={"customer_id": str(ids.c1), "search": s})).json()
             assert cat["items"][0]["unit_price"] == 50.0
             order = {"client_ref": f"o-{s}", "customer_id": str(ids.c1), "requested_delivery_date": tomorrow, "visit_id": first["id"],
-                     "lines": [{"product_id": str(ids.soda), "quantity": "24", "unit_price": "1"}]}
+                     "lines": [{"product_id": str(ids.floorfresh), "quantity": "24", "unit_price": "1"}]}
             o1 = await c.post(f"{F}/orders", json=order)
             assert o1.status_code == 201 and o1.json()["total"] == 1200.0
             assert (await c.post(f"{F}/orders", json=order)).json()["id"] == o1.json()["id"]

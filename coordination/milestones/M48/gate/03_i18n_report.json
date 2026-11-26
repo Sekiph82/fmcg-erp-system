@@ -1,0 +1,44 @@
+{
+  "catalogs": {
+    "common.json": {
+      "keys": 39,
+      "missing_sw": [],
+      "extra_sw": [],
+      "missing_tr": [],
+      "extra_tr": []
+    },
+    "docs.json": {
+      "keys": 39,
+      "missing_sw": [],
+      "extra_sw": [],
+      "missing_tr": [],
+      "extra_tr": []
+    },
+    "portal.json": {
+      "keys": 186,
+      "missing_sw": [],
+      "extra_sw": [],
+      "missing_tr": [],
+      "extra_tr": []
+    },
+    "public.json": {
+      "keys": 91,
+      "missing_sw": [],
+      "extra_sw": [],
+      "missing_tr": [],
+      "extra_tr": []
+    },
+    "staff.json": {
+      "keys": 119,
+      "missing_sw": [],
+      "extra_sw": [],
+      "missing_tr": [],
+      "extra_tr": []
+    }
+  },
+  "missing_in_catalog": [],
+  "unknown_keys_in_code": [],
+  "hardcoded_formatting": [],
+  "files_checked": 24,
+  "ok": true
+}

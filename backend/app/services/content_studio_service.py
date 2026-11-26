@@ -120,8 +120,11 @@ async def generate(db: AsyncSession, profile: CsBrandProfile, channel: str, temp
         name = type(provider).__name__.replace("Provider", "").lower()
         est = PRICE_PER_1K * 2          # ~2k tokens per draft, reserved before the call
         if name != "mock" and await _reserve(db, profile, est, budget):
+            from app.services import brand_context_service as bcs
             facts = "\n".join(f'[E:{e["id"]}] {e["text"]}' for e in profile.evidence or [] if str(e.get("id")) in evidence_ids)
+            rng = bcs.range_text(await bcs.context(db), per_line=3, max_lines=40)    # M48.S01.T006: active catalogue only
             system = (f"You write marketing copy for {profile.name}. Voice: {profile.voice}\nNever use: {', '.join(profile.banned_terms or [])}.\n"
+                      f"Product range (name no other products): {rng}.\n"
                       f"Only state facts from the evidence list and cite them as [E:id]. Max {CHANNELS[channel]} characters. Draft only.")
             try:
                 r = await provider.generate_text(f"Task: {TEMPLATES[template]}\nChannel: {channel}\nBrief: {brief}\nEvidence:\n{facts or '(none)'}", system=system)

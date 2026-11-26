@@ -2,7 +2,7 @@
 
 - The link carries a 256-bit random token (only its SHA-256 is stored); unknown tokens are 404, expired/revoked 410.
 - The customer page shows invoice number, customer and the open balance; payment by M-Pesa STK push through the
-  existing Daraja service; card payment is a provider adapter that stays NOT_CONFIGURED.
+  existing Daraja service; card payment through the Pesapal hosted checkout (card_payment_service, M48.S01.T010).
 - Settlement happens only from the provider callback, once per transaction (unique attempt per M-Pesa transaction):
   a real payment becomes a PENDING cash collection (MPESA, receipt as code), which finance confirms into the ledger
   through the existing collections flow. Without Daraja credentials the push is simulated: the attempt and link are
@@ -48,7 +48,9 @@ async def open_balance(db: AsyncSession, inv) -> Decimal:
                                 .join(PaymentLink, PaymentLink.id == PaymentLinkAttempt.link_id)
                                 .where(PaymentLink.invoice_id == inv.id, PaymentLinkAttempt.status == "PENDING",
                                        PaymentLinkAttempt.created_at >= _now() - PENDING_TTL))).scalar_one()
-    return max(Decimal("0"), Decimal(await open_to_collect(db, inv)) - Decimal(pending)).quantize(Decimal("0.01"))
+    from app.services.card_payment_service import pending_reserved
+    pending = Decimal(pending) + await pending_reserved(db, inv.id)    # unpaid hosted card checkouts reserve too
+    return max(Decimal("0"), Decimal(await open_to_collect(db, inv)) - pending).quantize(Decimal("0.01"))
 
 
 async def create(db: AsyncSession, invoice_id, user_id, days: int, allow_partial: bool) -> tuple[PaymentLink, str]:
@@ -83,6 +85,7 @@ async def resolve(db: AsyncSession, token: str, lock: bool = False) -> PaymentLi
 async def public_view(db: AsyncSession, link: PaymentLink) -> dict:
     from app.core.config import settings
     from app.models.sales import Customer, Invoice
+    from app.services import card_payment_service as cards
     inv = await db.get(Invoice, link.invoice_id)
     cust = await db.get(Customer, inv.customer_id)
     receipts = list((await db.execute(select(PaymentLinkAttempt.receipt, PaymentLinkAttempt.amount, PaymentLinkAttempt.status)
@@ -91,7 +94,7 @@ async def public_view(db: AsyncSession, link: PaymentLink) -> dict:
     return {"invoice_no": inv.invoice_no, "customer": cust.name if cust else None, "currency": link.currency,
             "amount_due": str(await open_balance(db, inv)), "status": link.status, "allow_partial": link.allow_partial,
             "expires_at": link.expires_at.isoformat(),
-            "providers": {"mpesa": "LIVE" if settings.MPESA_CONFIGURED else "SIMULATED (no real money)", "card": "NOT_CONFIGURED"},
+            "providers": {"mpesa": "LIVE" if settings.MPESA_CONFIGURED else "SIMULATED (no real money)", "card": cards.mode(await cards.config(db))},
             "receipts": [{"receipt": r, "amount": str(a), "test": s == "TEST_SETTLED"} for r, a, s in receipts]}
 
 
@@ -105,7 +108,7 @@ async def pay_mpesa(db: AsyncSession, token: str, phone: str, amount: Optional[D
         PaymentLinkAttempt.link_id == link.id, PaymentLinkAttempt.created_at >= _now() - timedelta(hours=1)))).scalar_one()
     if recent >= 5:
         raise LinkError(429, "Too many payment attempts on this link; try again in an hour.")
-    inv = await db.get(Invoice, link.invoice_id, with_for_update=True)
+    inv = await db.get(Invoice, link.invoice_id, with_for_update=True, populate_existing=True)
     due = await open_balance(db, inv)
     amount = due if amount is None else Decimal(amount)
     if amount != amount.quantize(Decimal("1")):
@@ -133,11 +136,14 @@ async def on_mpesa_callback(db: AsyncSession, tx) -> Optional[PaymentLinkAttempt
     from app.models.sales import Invoice
     if tx is None or tx.related_entity_type != "payment_link":
         return None
-    a = (await db.execute(select(PaymentLinkAttempt).where(PaymentLinkAttempt.mpesa_tx_id == tx.id).with_for_update())).scalar_one_or_none()
+    # M48.S01.T010 race audit: concurrent/duplicate callbacks serialise on the attempt row; populate_existing makes the
+    # second one see the first one's SETTLED status (never a stale identity-map copy), so it books nothing.
+    a = (await db.execute(select(PaymentLinkAttempt).where(PaymentLinkAttempt.mpesa_tx_id == tx.id).with_for_update()
+                          .execution_options(populate_existing=True))).scalar_one_or_none()
     if a is None or a.status not in ("PENDING", "EXPIRED"):
         return a                                   # unknown or already settled: replays change nothing
                                                    # (a late success after expiry still settles: the money moved)
-    link = await db.get(PaymentLink, a.link_id, with_for_update=True)
+    link = await db.get(PaymentLink, a.link_id, with_for_update=True, populate_existing=True)
     if tx.status != MpesaTxStatus.SUCCESS:
         a.status = "FAILED"
         return a
@@ -168,7 +174,8 @@ async def expire_stale(db: AsyncSession, now: Optional[datetime] = None) -> int:
     """Mark pushes with no callback after PENDING_TTL as EXPIRED, releasing the balance they reserved."""
     from sqlalchemy import update
     now = now or _now()
+    from app.services import card_payment_service as cards
     res = await db.execute(update(PaymentLinkAttempt).where(PaymentLinkAttempt.status == "PENDING",
                                                             PaymentLinkAttempt.created_at < now - PENDING_TTL)
                            .values(status="EXPIRED"))
-    return res.rowcount or 0
+    return (res.rowcount or 0) + await cards.expire_stale(db, now)

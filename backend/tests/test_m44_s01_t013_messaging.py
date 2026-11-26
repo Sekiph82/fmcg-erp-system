@@ -115,7 +115,7 @@ async def test_meta_dms_into_inbox_and_reply(sim):
                     SocialChannel(network="instagram", external_id=ig, name="POVU IG")])
         await db.commit()
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
-        raw, h = _signed(_dm("page", page, psid, f"m1{tag}", "Is POVU mango available in 1L?"))
+        raw, h = _signed(_dm("page", page, psid, f"m1{tag}", "Is POVU AllClean available in 1L?"))
         assert (await c.post("/api/v1/public/social/meta", content=raw, headers=h)).json()["messages"] == 1
         assert (await c.post("/api/v1/public/social/meta", content=raw, headers=h)).json()["messages"] == 0   # replay
         assert (await c.post("/api/v1/public/social/meta", content=raw,
@@ -177,7 +177,7 @@ async def test_custom_channel_and_slack(sim):
     async with AsyncSessionLocal() as db:
         ch = await ep.create_custom(ep.CustomIn(key=f"partner-{tag}", name="POVU partner app"), db, admin)
     key, token = ch["key"], ch["token"]
-    msg = {"thread_id": "t1", "message_id": "1", "sender": "Duka Moja", "text": "Need 20 crates of POVU juice"}
+    msg = {"thread_id": "t1", "message_id": "1", "sender": "Duka Moja", "text": "Need 20 cartons of POVU AllClean 1 L"}
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         url = f"/api/v1/public/channels/{key}"
         assert (await c.post(f"{url}/messages", json=msg, headers={"Authorization": "Bearer wrong"})).status_code == 401

@@ -7,6 +7,7 @@ from uuid import UUID
 
 from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.cycle_count import (
     ABCClass, ABCClassification, AdjustmentStatus, CountAdjustment,
@@ -214,6 +215,21 @@ async def update_task(db: AsyncSession, task_id: UUID, data: TaskUpdate) -> Opti
 
 # ── Count entries ─────────────────────────────────────────────────────────────
 
+AMBIGUOUS_COUNT = ("This item has several stock rows (lots or locations) in this warehouse. "
+                   "Scan or choose the lot or location you counted.")
+
+
+async def _count_stock_rows(db: AsyncSession, warehouse_id, product_id, material_id, lot_id, location_id) -> list:
+    """Stock rows a count adjusts: the item in the counted warehouse, narrowed by lot/location when given (T019)."""
+    q = select(Stock).where(Stock.warehouse_id == warehouse_id,
+                            Stock.product_id == product_id if product_id else Stock.material_id == material_id)
+    if location_id:
+        q = q.where(Stock.location_id == location_id)
+    if lot_id:
+        q = q.where(Stock.lot_id == lot_id)
+    return list((await db.execute(q)).scalars().all())
+
+
 async def _get_system_qty(
     db: AsyncSession,
     warehouse_id: UUID,
@@ -248,6 +264,26 @@ async def create_count_entry(
     task = await get_task(db, data.task_id)
     if not task:
         raise ValueError("Task not found")
+    # scan checks (M48.S01.T014): the scanned item must be the task's item, a closed task takes no counts,
+    # and the same item is counted once per task (a rejected count may be counted again)
+    if task.status in (TaskStatus.COMPLETED, TaskStatus.APPROVED):
+        raise ValueError("This count task is already closed.")
+    if (task.product_id and data.product_id and data.product_id != task.product_id) or \
+            (task.material_id and data.material_id and data.material_id != task.material_id):
+        raise ValueError("The scanned item is not the item of this count task.")
+    if data.counted_qty < 0:
+        raise ValueError("Counted quantity cannot be negative.")
+    keys = dict(product_id=data.product_id or task.product_id, material_id=data.material_id or task.material_id,
+                lot_id=data.lot_id, location_id=data.location_id or task.location_id)
+    earlier = await db.execute(
+        select(CountEntry.id).join(CountAdjustment, CountAdjustment.entry_id == CountEntry.id, isouter=True)
+        .where(CountEntry.task_id == task.id,
+               *[(getattr(CountEntry, k) == v) if v else getattr(CountEntry, k).is_(None) for k, v in keys.items()],
+               (CountAdjustment.status.is_(None)) | (CountAdjustment.status != AdjustmentStatus.REJECTED)).limit(1))
+    if earlier.scalar_one_or_none():
+        raise ValueError("This item was already counted on this task.")
+    if len(await _count_stock_rows(db, task.warehouse_id, **keys)) > 1:   # refuse before anything is stored (T019)
+        raise ValueError(AMBIGUOUS_COUNT)
 
     system_qty = await _get_system_qty(
         db,
@@ -307,6 +343,8 @@ async def create_count_entry(
     # Post adjustment immediately if auto-approved
     if adj_status == AdjustmentStatus.APPROVED and variance_qty != 0:
         await _post_stock_adjustment(db, entry, adjustment)
+        await db.commit()          # the posting was flushed only and rolled back when the request ended (M48.S01.T014)
+        await db.refresh(entry)
 
     return entry
 
@@ -336,7 +374,7 @@ async def approve_adjustments(
 ) -> int:
     count = 0
     for entry_id in data.entry_ids:
-        entry_r = await db.execute(select(CountEntry).where(CountEntry.id == entry_id))
+        entry_r = await db.execute(select(CountEntry).options(selectinload(CountEntry.adjustment)).where(CountEntry.id == entry_id))
         entry = entry_r.scalar_one_or_none()
         if not entry or not entry.adjustment:
             continue
@@ -362,7 +400,7 @@ async def reject_adjustments(
 ) -> int:
     count = 0
     for entry_id in data.entry_ids:
-        entry_r = await db.execute(select(CountEntry).where(CountEntry.id == entry_id))
+        entry_r = await db.execute(select(CountEntry).options(selectinload(CountEntry.adjustment)).where(CountEntry.id == entry_id))
         entry = entry_r.scalar_one_or_none()
         if not entry or not entry.adjustment:
             continue
@@ -394,19 +432,13 @@ async def _post_stock_adjustment(
     # Determine stock_type
     stock_type = StockType.PRODUCT if entry.product_id else StockType.MATERIAL
 
-    # Update Stock record
-    q = select(Stock).where(
-        and_(
-            Stock.product_id == entry.product_id if entry.product_id else Stock.material_id == entry.material_id,
-        )
-    )
-    if entry.location_id:
-        q = q.where(Stock.location_id == entry.location_id)
-    if entry.lot_id:
-        q = q.where(Stock.lot_id == entry.lot_id)
-
-    stock_r = await db.execute(q)
-    stock = stock_r.scalar_one_or_none()
+    # Update Stock record — in the counted warehouse only (M48.S01.T014: the same item in another warehouse was hit)
+    warehouse_id = (await db.execute(select(CycleCountTask.warehouse_id).where(CycleCountTask.id == entry.task_id))).scalar_one()
+    rows = await _count_stock_rows(db, warehouse_id, entry.product_id, entry.material_id, entry.lot_id, entry.location_id)
+    if len(rows) > 1:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail=AMBIGUOUS_COUNT)
+    stock = rows[0] if rows else None
     if stock:
         stock.quantity_on_hand = stock.quantity_on_hand + adjustment.adjustment_qty
         stock.quantity_available = stock.quantity_available + adjustment.adjustment_qty
@@ -420,8 +452,8 @@ async def _post_stock_adjustment(
         product_id=entry.product_id,
         material_id=entry.material_id,
         lot_id=entry.lot_id,
-        source_warehouse_id=None,
-        destination_warehouse_id=None,
+        source_warehouse_id=warehouse_id if adjustment.adjustment_qty < 0 else None,       # same convention as
+        destination_warehouse_id=warehouse_id if adjustment.adjustment_qty > 0 else None,  # manual adjustments (T019)
         quantity=adjustment.adjustment_qty,
         unit_cost=entry.unit_cost,
         total_cost=adjustment.adjustment_value,

@@ -54,10 +54,10 @@ async def test_distributor_portal_end_to_end():
         assert (await db.execute(select(func.current_database()))).scalar_one() == os.environ[TASK_DB_NAME_ENV]
         cust_a = Customer(code=f"A-{s}", name=f"Alpha Dist {s}", channel=CustomerChannel.DISTRIBUTOR, currency="KES")
         cust_b = Customer(code=f"B-{s}", name=f"Beta Dist {s}", channel=CustomerChannel.DISTRIBUTOR, currency="KES")
-        juice = Product(sku=f"JUICE-{s}", name=f"Mango Juice {s}", category=ProductCategory.BEVERAGE, selling_price=Decimal("120"),
+        allclean = Product(sku=f"ALC-{s}", name=f"POVU AllClean 1 L {s}", category=ProductCategory.HOUSEHOLD, selling_price=Decimal("120"),
                         standard_cost=Decimal("70"))
-        unpriced = Product(sku=f"NOPRICE-{s}", name=f"Unpriced {s}", category=ProductCategory.BEVERAGE)
-        db.add_all([cust_a, cust_b, juice, unpriced])
+        unpriced = Product(sku=f"NOPRICE-{s}", name=f"Unpriced {s}", category=ProductCategory.HOUSEHOLD)
+        db.add_all([cust_a, cust_b, allclean, unpriced])
         await db.flush()
         accounts = {}
         for key, cust in (("a", cust_a), ("b", cust_b), ("unlinked", None)):
@@ -83,7 +83,7 @@ async def test_distributor_portal_end_to_end():
                            requested_delivery_date=date.today(), currency="KES")
         db.add(other)
         await db.commit()
-        ids = SimpleNamespace(juice=juice.id, unpriced=unpriced.id, other=other.id, a_user=users["a"].id,
+        ids = SimpleNamespace(allclean=allclean.id, unpriced=unpriced.id, other=other.id, a_user=users["a"].id,
                               b_cust=cust_b.id, a_cust=cust_a.id)
 
     async def login(c, email, pw=PW):
@@ -104,10 +104,10 @@ async def test_distributor_portal_end_to_end():
 
         cat = (await a.get(f"{API}/catalog", params={"search": s})).json()
         skus = {i["sku"]: i for i in cat["items"]}
-        assert f"JUICE-{s}" in skus and f"NOPRICE-{s}" not in skus and skus[f"JUICE-{s}"]["unit_price"] == 120.0
+        assert f"ALC-{s}" in skus and f"NOPRICE-{s}" not in skus and skus[f"ALC-{s}"]["unit_price"] == 120.0
 
         order = {"client_ref": f"ref-{s}", "requested_delivery_date": tomorrow, "notes": "Gate 3",
-                 "lines": [{"product_id": str(ids.juice), "quantity": "10", "unit_price": "0.01"}]}  # client price ignored
+                 "lines": [{"product_id": str(ids.allclean), "quantity": "10", "unit_price": "0.01"}]}  # client price ignored
         first = await a.post(f"{API}/orders", json=order)
         assert first.status_code == 201, first.text
         again = await a.post(f"{API}/orders", json=order)                         # retry/double click
@@ -122,7 +122,7 @@ async def test_distributor_portal_end_to_end():
         assert [o["id"] for o in listed] == [first.json()["id"]]                 # B's order never listed
         assert (await a.get(f"{API}/orders/{ids.other}")).status_code == 404
         detail = (await a.get(f"{API}/orders/{first.json()['id']}")).json()
-        assert detail["lines"][0]["product_name"] == f"Mango Juice {s}"
+        assert detail["lines"][0]["product_name"] == f"POVU AllClean 1 L {s}"
         claim = {"claim_type": "SHORTAGE_CLAIM", "reason": "2 missing", "linked_order_id": str(ids.other)}
         r = await a.post(f"{API}/claims", json=claim)
         assert r.status_code == 422 and "not one of your orders" in r.text        # cannot reference B's order

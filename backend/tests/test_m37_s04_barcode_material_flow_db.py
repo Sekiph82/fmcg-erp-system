@@ -88,12 +88,12 @@ async def test_dispense_label_scan_consume_and_scan_log():
     line = f"M37-LINE-{sfx}"
     async with AsyncSessionLocal() as db:
         user = User(email=f"m37-{sfx}@example.invalid", username=f"m37op{sfx}", full_name="Synthetic operator", hashed_password="test-only")
-        sugar = Material(code=f"SUGAR-{sfx}", name="Synthetic sugar", material_type=MaterialType.RAW, uom=UnitOfMeasure.KG)
+        labsa = Material(code=f"LABSA-{sfx}", name="Synthetic LABSA", material_type=MaterialType.RAW, uom=UnitOfMeasure.KG)
         salt = Material(code=f"SALT-{sfx}", name="Synthetic salt", material_type=MaterialType.RAW, uom=UnitOfMeasure.KG)
-        db.add_all([user, sugar, salt])
+        db.add_all([user, labsa, salt])
         await db.flush()
-        good_lot = Lot(lot_number=f"SUG-{sfx}", material_id=sugar.id, expiry_date=date.today() + timedelta(days=90))
-        quarantine_lot = Lot(lot_number=f"SUGQ-{sfx}", material_id=sugar.id, is_quarantine=True)
+        good_lot = Lot(lot_number=f"LAB-{sfx}", material_id=labsa.id, expiry_date=date.today() + timedelta(days=90))
+        quarantine_lot = Lot(lot_number=f"LABQ-{sfx}", material_id=labsa.id, is_quarantine=True)
         salt_lot = Lot(lot_number=f"SAL-{sfx}", material_id=salt.id)
         parent = ProdExecOrder(order_no=f"M37-PO-{sfx}", planned_qty=Decimal("10"), uom="KG", status="IN_PROGRESS", line_id=line)
         db.add_all([good_lot, quarantine_lot, salt_lot, parent])
@@ -106,19 +106,19 @@ async def test_dispense_label_scan_consume_and_scan_log():
         session = SFSession(session_code=f"M37-{sfx}", authenticated_user_id=user.id, operator_name="Synthetic operator",
                             line_id=line, machine_id=machine_id, current_work_order_id=wo.id, status="ACTIVE")
         mat_line = ExecOrderMaterial(production_order_id=parent.id, work_order_id=wo.id, item_type="MATERIAL",
-                                     item_id=sugar.id, item_name="Synthetic sugar", item_code=sugar.code,
+                                     item_id=labsa.id, item_name="Synthetic LABSA", item_code=labsa.code,
                                      required_qty=Decimal("5"), uom="KG", status="RESERVED")
         db.add_all([session, mat_line])
         await db.commit()
         ids = SimpleNamespace(user=user.id, wo=wo.id, session=session.id, line=mat_line.id, good_lot=good_lot.lot_number)
 
         # Warehouse: wrong material and quarantined lots are refused; good lot is weighed + issued.
-        with pytest.raises(ValueError, match="not Synthetic sugar"):
+        with pytest.raises(ValueError, match="not Synthetic LABSA"):
             await flow.dispense_prepared_lot(db, exec_material_id=ids.line, source_lot_code=salt_lot.lot_number,
                                              actual_quantity=Decimal("3"), tolerance_pct=None, actor_user_id=ids.user)
         await db.rollback()
         with pytest.raises(ValueError, match="quarantine"):
-            await flow.dispense_prepared_lot(db, exec_material_id=ids.line, source_lot_code=f"SUGQ-{sfx}",
+            await flow.dispense_prepared_lot(db, exec_material_id=ids.line, source_lot_code=f"LABQ-{sfx}",
                                              actual_quantity=Decimal("3"), tolerance_pct=None, actor_user_id=ids.user)
         await db.rollback()
         with pytest.raises(ValueError, match="re-weigh"):
@@ -135,7 +135,7 @@ async def test_dispense_label_scan_consume_and_scan_log():
 
         # The label resolves to everything the floor needs.
         info = await flow.resolve_code(db, label_no)
-        assert info["type"] == "PREPARED_LOT" and info["material_name"] == "Synthetic sugar"
+        assert info["type"] == "PREPARED_LOT" and info["material_name"] == "Synthetic LABSA"
         assert info["lot_number"] == ids.good_lot and Decimal(info["quantity"]) == Decimal("3")
         label = flow.prepared_lot_label(prepared, info)
         assert label["code128_svg_b64"] and label["qr_png_b64"]

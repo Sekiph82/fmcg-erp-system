@@ -29,7 +29,7 @@ class MarketObservation(Base):
     outlet_name = Column(String(300), nullable=False)
     outlet_type = Column(Enum(OutletType), nullable=False, default=OutletType.SUPERMARKET)
     location = Column(String(300), nullable=True)
-    category = Column(String(200), nullable=False)         # e.g. Juices | Cooking Oil
+    category = Column(String(200), nullable=False)         # e.g. Laundry Detergent | Dishwashing Liquid
     observation_date = Column(Date, nullable=False)
 
     # Shelf share

@@ -144,12 +144,12 @@ def test_approved_bom_scales_batch_loss_and_optional_lines():
         output_uom="KG",
         bom={"base_qty": 1000, "base_uom": "KG", "output_uom": "KG", "lifecycle": "APPROVED"},
         lines=[
-            {"item_id": "sugar", "item_type": "MATERIAL", "required_qty": 100, "required_uom": "KG", "basis_type": "PER_BATCH", "wastage_pct": 2, "process_loss_pct": 1},
+            {"item_id": "sles", "item_type": "MATERIAL", "required_qty": 100, "required_uom": "KG", "basis_type": "PER_BATCH", "wastage_pct": 2, "process_loss_pct": 1},
             {"item_id": "optional", "item_type": "MATERIAL", "required_qty": 10, "required_uom": "KG", "basis_type": "PER_BATCH", "is_optional": True},
         ],
     )
     assert rows == [{
-        "material_id": "sugar", "required_qty": Decimal("257.5000"),
+        "material_id": "sles", "required_qty": Decimal("257.5000"),
         "uom": "KG", "basis_type": "PER_BATCH", "substitution_policy": "NO_SUB",
         "substitute_group_id": None,
     }]
@@ -164,7 +164,7 @@ def test_approved_bom_grosses_up_input_for_configured_percent_of_input_yield_los
             "yield_loss_pct": Decimal("10"),
         },
         lines=[{
-            "item_id": "sugar", "item_type": "MATERIAL", "required_qty": 100,
+            "item_id": "sles", "item_type": "MATERIAL", "required_qty": 100,
             "required_uom": "KG", "basis_type": "PER_BATCH",
         }],
     )
@@ -181,7 +181,7 @@ def test_approved_bom_rejects_unsupported_yield_basis_fail_closed():
                 "yield_config_error": "unsupported BOM yield-loss basis: PCT_OF_OUTPUT",
             },
             lines=[{
-                "item_id": "sugar", "item_type": "MATERIAL", "required_qty": 100,
+                "item_id": "sles", "item_type": "MATERIAL", "required_qty": 100,
                 "required_uom": "KG", "basis_type": "PER_BATCH",
             }],
         )
@@ -200,14 +200,14 @@ def test_nested_approved_bom_explodes_to_leaf_material_with_each_level_loss():
         child_boms={child_id: {
             "bom": {"id": child_id, "base_qty": 10, "base_uom": "KG", "lifecycle": "RELEASED"},
             "lines": [{
-                "item_id": "sugar", "item_type": "MATERIAL", "required_qty": 3,
+                "item_id": "sles", "item_type": "MATERIAL", "required_qty": 3,
                 "required_uom": "KG", "basis_type": "PER_BATCH", "wastage_pct": 2,
             }],
         }},
         as_of=date(2026, 1, 1),
     )
     assert len(rows) == 1
-    assert rows[0]["material_id"] == "sugar"
+    assert rows[0]["material_id"] == "sles"
     assert rows[0]["required_qty"] == Decimal("15.9120")
 
 
@@ -287,30 +287,30 @@ def test_scenario_kpis_disclose_unknown_cost_and_units():
 def test_kenya_fmcg_acceptance_fixture_replays_supply_bom_and_capacity_edges():
     fixture = json.loads((Path(__file__).parent / "fixtures" / "m20_acceptance_dataset.json").read_text(encoding="utf-8"))
     assert fixture["classification"].startswith("synthetic test fixture")
-    mango = fixture["products"][0]
+    shampoo = fixture["products"][0]
     net = net_finished_goods_requirement(
-        confirmed=mango["confirmed_demand"], forecast=mango["forecast_demand"],
-        safety_stock=mango["safety_stock"], on_hand=mango["on_hand"],
-        reserved=mango["reserved"], incoming=mango["incoming_po"],
-        wip=mango["wip"], other_planned=mango["other_approved_plan"],
+        confirmed=shampoo["confirmed_demand"], forecast=shampoo["forecast_demand"],
+        safety_stock=shampoo["safety_stock"], on_hand=shampoo["on_hand"],
+        reserved=shampoo["reserved"], incoming=shampoo["incoming_po"],
+        wip=shampoo["wip"], other_planned=shampoo["other_approved_plan"],
     )
     assert net["net_requirement"] == Decimal("320.000")
     requirements = explode_approved_bom(
-        output_qty=mango["planned_qty"], output_uom="PCS",
+        output_qty=shampoo["planned_qty"], output_uom="PCS",
         bom={"base_qty": 1000, "base_uom": "PCS", "output_uom": "PCS", "lifecycle": "APPROVED"},
         lines=[{
-            "item_id": "SUGAR-01", "item_type": "MATERIAL", "required_qty": 50,
+            "item_id": "SLES-01", "item_type": "MATERIAL", "required_qty": 50,
             "required_uom": "KG", "basis_type": "PER_BATCH", "wastage_pct": 2,
             "process_loss_pct": 0,
         }],
     )
     assert requirements[0]["required_qty"] == Decimal("16.3200")
-    assert Decimal(mango["material_stock"]["SUGAR-01"]["on_hand"]) - Decimal(mango["material_stock"]["SUGAR-01"]["reserved"]) < requirements[0]["required_qty"]
-    assert Decimal(mango["planned_qty"]) / Decimal(mango["work_center"]["rate"]) == Decimal("4")
-    assert mango["work_center"]["shifts"] == [{"start": "07:00", "end": "15:00"}]
+    assert Decimal(shampoo["material_stock"]["SLES-01"]["on_hand"]) - Decimal(shampoo["material_stock"]["SLES-01"]["reserved"]) < requirements[0]["required_qty"]
+    assert Decimal(shampoo["planned_qty"]) / Decimal(shampoo["work_center"]["rate"]) == Decimal("4")
+    assert shampoo["work_center"]["shifts"] == [{"start": "07:00", "end": "15:00"}]
     assert fixture["approval_release_contract"]["idempotent_retry"]
     assert capacity_result(4, 8, 1.5)["status"] == "FEASIBLE"
-    overload = mango["overload_case"]
+    overload = shampoo["overload_case"]
     assert capacity_result(overload["required_hours"], overload["calendar_hours"], overload["downtime_hours"])["overload_hours"] == Decimal(str(overload["expected_overload_hours"]))
 
 
@@ -449,7 +449,7 @@ def test_whatif_changeover_uses_configured_transition_and_reports_missing_transi
     product_a, product_b = uuid4(), uuid4()
     products = {
         product_a: SimpleNamespace(category="FOOD"),
-        product_b: SimpleNamespace(category="BEVERAGE"),
+        product_b: SimpleNamespace(category="PERSONAL_CARE"),
     }
     lines = [
         {"id": "a", "work_center_id": str(wc_id), "product_id": str(product_a),
@@ -458,7 +458,7 @@ def test_whatif_changeover_uses_configured_transition_and_reports_missing_transi
          "period_start": "2026-01-02", "period_end": "2026-01-02"},
     ]
     configured = SimpleNamespace(
-        work_center_id=wc_id, from_family="FOOD", to_family="BEVERAGE",
+        work_center_id=wc_id, from_family="FOOD", to_family="PERSONAL_CARE",
         changeover_minutes=30, cip_minutes=None, is_active=True,
     )
     result = _scenario_changeover_hours(lines, products, [configured])
@@ -466,9 +466,9 @@ def test_whatif_changeover_uses_configured_transition_and_reports_missing_transi
     assert result["status"] == "COMPLETE"
     assert result["transition_count"] == 1
     assert result["cip_status"] == "PARTIAL_INPUTS"
-    assert result["cip_unknown_reasons"] == ["CIP_NOT_CONFIGURED:FOOD->BEVERAGE"]
+    assert result["cip_unknown_reasons"] == ["CIP_NOT_CONFIGURED:FOOD->PERSONAL_CARE"]
     missing = _scenario_changeover_hours(lines, products, [])
     assert missing["status"] == "PARTIAL_INPUTS"
     assert missing["hours"] == 0.0
-    assert "CHANGEOVER_NOT_CONFIGURED:FOOD->BEVERAGE" in missing["unknown_reasons"]
-    assert "CIP_NOT_CONFIGURED:FOOD->BEVERAGE" in missing["unknown_reasons"]
+    assert "CHANGEOVER_NOT_CONFIGURED:FOOD->PERSONAL_CARE" in missing["unknown_reasons"]
+    assert "CIP_NOT_CONFIGURED:FOOD->PERSONAL_CARE" in missing["unknown_reasons"]

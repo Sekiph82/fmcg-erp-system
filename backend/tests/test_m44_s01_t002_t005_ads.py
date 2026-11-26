@@ -166,7 +166,7 @@ async def test_sync_idempotent_and_draft_rules(sim):
         assert n == 2
         await db.commit()
         alice, bob = SimpleNamespace(username="alice", is_superuser=True), SimpleNamespace(username="bob", is_superuser=True)
-        body = ep.DraftIn(account_id=a.id, idempotency_key=f"k-{uuid.uuid4().hex[:12]}", name="POVU Juice",
+        body = ep.DraftIn(account_id=a.id, idempotency_key=f"k-{uuid.uuid4().hex[:12]}", name="POVU AllClean",
                           objective="SEARCH", daily_budget=Decimal("20"))
         d1 = await ep.create_draft(body, db, alice)
         assert (await ep.create_draft(body, db, alice))["id"] == d1["id"]

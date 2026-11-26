@@ -1,12 +1,34 @@
-"""Organic social publishing, content calendar and listening (M44.S01.T006–T008).
+"""Organic social publishing, content calendar and listening (M44.S01.T006–T008; asynchronous state machine M48.S01.T005).
 
 Publishing (documented APIs only):
-- Facebook Page: Graph POST /{page}/feed (text + link) or /{page}/photos (one image by URL).
-- Instagram professional account: Graph POST /{ig}/media (one image + caption) then /{ig}/media_publish.
-- LinkedIn organisation: POST /rest/posts (text; link appended). Images need LinkedIn's upload flow → manual.
-- TikTok: Content Posting API /v2/post/publish/video/init/ with PULL_FROM_URL, privacy SELF_ONLY (unaudited apps
-  may only post privately; public posting needs TikTok's app audit).
+- Facebook Page: Graph POST /{page}/feed (text + link) or /{page}/photos (one image by URL). The response id IS the post.
+- LinkedIn organisation: POST /rest/posts (text; link appended); 201 + x-restli-id header is the created post.
+- Instagram professional account (Content Publishing): POST /{ig}/media creates a container; GET /{container}?fields=
+  status_code,status is polled (IN_PROGRESS → FINISHED | ERROR | EXPIRED | PUBLISHED) and POST /{ig}/media_publish is
+  called only when the container is FINISHED. PUBLISHED only when media_publish returns an id, or the container itself
+  reports PUBLISHED (answer of a timed-out publish call was lost).
+  https://developers.facebook.com/docs/instagram-platform/instagram-graph-api/reference/ig-container (Graph version from META_ADS_API_VERSION)
+- TikTok Content Posting API v2 (Direct Post), https://developers.tiktok.com/doc/content-posting-api-get-started :
+  * POST /v2/post/publish/creator_info/query/ first; the user picks a privacy_level from privacy_level_options
+    (…-reference-query-creator-info). Unaudited clients may only post SELF_ONLY (…-reference-direct-post,
+    error unaudited_client_can_only_post_to_private_accounts) → TIKTOK_APP_AUDITED=false forces SELF_ONLY.
+  * Explicit user consent is stored with the choices; without it nothing is submitted.
+  * POST /v2/post/publish/video/init/ with source PULL_FROM_URL (URL must be under a verified domain / URL prefix:
+    url_ownership_unverified) or FILE_UPLOAD (chunks 5–64 MB, last ≤128 MB, < 5 MB whole, ≤1000 chunks, sequential PUT
+    with Content-Range; 206 partial, 201 done) — …-media-transfer-guide.
+  * publish_id is only a submission id. POST /v2/post/publish/status/fetch/ is polled (…-reference-get-video-status):
+    PROCESSING_UPLOAD / PROCESSING_DOWNLOAD → PROCESSING; PUBLISH_COMPLETE → PUBLISHED (publicaly_available_post_id
+    when TikTok gives one); FAILED → FAILED with fail_reason (publish_cancelled → CANCELLED).
+  * POST /v2/post/publish/cancel/ (best effort, PULL_FROM_URL downloads; publish_not_cancellable otherwise).
+  * Webhooks post.publish.* signed with TikTok-Signature t=..,s=HMAC-SHA256(client_secret, "t.body")
+    (https://developers.tiktok.com/doc/webhooks-verification); a webhook only triggers a status fetch, never PUBLISHED.
 - X and YouTube, and any format above that a network does not take this way → manual export.
+
+State machine: APPROVED → SUBMITTING (claim committed BEFORE any provider call) → SUBMITTED → PROCESSING → PUBLISHED |
+FAILED | CANCELLED; no answer / 5xx on a mutating call → UNKNOWN (never resubmitted automatically). A SUBMITTING row left
+by a crash becomes UNKNOWN; rows with a provider_ref are reconciled by status polling (reads retried with backoff).
+A post still not final after SOCIAL_PUBLISH_TIMEOUT_MINUTES becomes UNKNOWN and keeps being reconciled.
+publish_mode records SIMULATED (local simulators) or LIVE (PROVIDER_EGRESS=live) for every submission.
 Nothing is posted unless SOCIAL_PUBLISHING_ENABLED and the network's token are set. A post needs approval by a second
 editor for its current version; editing the content after approval starts a new version that needs approval again.
 
@@ -16,13 +38,17 @@ a small keyword lexicon, and every tag lists the words that caused it; it is an 
 """
 from __future__ import annotations
 
+import asyncio
 import csv
 import hashlib
 import hmac
 import io
+import json
 import re
+import time
 from datetime import datetime, timedelta, timezone
 from typing import Optional
+from urllib.parse import urlsplit
 
 import httpx
 from sqlalchemy import select
@@ -30,7 +56,7 @@ from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
-from app.core.provider_http import EgressBlocked, provider_client
+from app.core.provider_http import EgressBlocked, egress_mode, provider_client
 from app.models.crm import SocialChannel, SocialItem, SocialPost
 
 NETWORKS = ("facebook", "instagram", "linkedin", "tiktok", "x", "youtube")
@@ -40,10 +66,18 @@ LIMITS = {   # max text, media rule
 }
 API_PUBLISHABLE = {"facebook", "instagram", "linkedin", "tiktok"}
 CONFLICT_MINUTES = 30
+IN_FLIGHT = ("SUBMITTED", "PROCESSING", "UNKNOWN")
+TT_PRIVACY = ("PUBLIC_TO_EVERYONE", "MUTUAL_FOLLOW_FRIENDS", "FOLLOWER_OF_CREATOR", "SELF_ONLY")
+MB = 1024 * 1024
+CHUNK_MIN, CHUNK_MAX, MAX_CHUNKS = 5 * MB, 64 * MB, 1000
+CLAIM_STALE = timedelta(minutes=5)
+WEBHOOK_WINDOW = 300     # seconds; TikTok leaves the tolerance to the receiver
 
 
 class SocialError(Exception):
-    pass
+    def __init__(self, msg: str, code: Optional[str] = None, retryable: bool = False):
+        super().__init__(msg)
+        self.code, self.retryable = code, retryable
 
 
 # ── validation ───────────────────────────────────────────────────────────
@@ -82,15 +116,67 @@ def publish_route(network: str) -> str:
     return "API" if network in API_PUBLISHABLE and token and settings.SOCIAL_PUBLISHING_ENABLED else "MANUAL"
 
 
+def publish_mode() -> str:
+    return "LIVE" if egress_mode() == "live" else "SIMULATED"
+
+
+def tiktok_audited() -> bool:
+    return bool(getattr(settings, "TIKTOK_APP_AUDITED", False))
+
+
+def url_verified(url: str) -> bool:
+    """TikTok PULL_FROM_URL ownership: a verified URL prefix (https://host/path/) or a verified domain (and its subdomains)."""
+    raw = getattr(settings, "TIKTOK_VERIFIED_URL_PREFIXES", "") or ""
+    entries = [e.strip() for e in (raw.split(",") if isinstance(raw, str) else raw) if e and e.strip()]
+    host = (urlsplit(url).hostname or "").lower()
+    for e in entries:
+        if e.startswith("https://"):
+            if e.endswith("/") and url.startswith(e):
+                return True
+        elif host == e.lower() or host.endswith("." + e.lower()):
+            return True
+    return False
+
+
+def chunk_plan(size: int) -> tuple[int, int]:
+    """(chunk_size, total_chunk_count) per the media transfer guide; the last chunk takes the remainder."""
+    if size <= 0:
+        raise SocialError("The video is empty.", "invalid_param")
+    if size < CHUNK_MIN or size <= CHUNK_MAX:
+        return size, 1
+    count = size // CHUNK_MAX
+    if count > MAX_CHUNKS:
+        raise SocialError("The video is too large for TikTok's upload (more than 1000 chunks).", "invalid_param")
+    return CHUNK_MAX, count
+
+
+def tiktok_issues(post: SocialPost) -> list[str]:
+    o = post.publish_options or {}
+    out = []
+    if not o.get("consent"):
+        out.append("TikTok needs the poster's explicit consent and a privacy choice (set TikTok options).")
+    elif o.get("privacy_level") not in TT_PRIVACY:
+        out.append("Choose a TikTok privacy level.")
+    elif not tiktok_audited() and o["privacy_level"] != "SELF_ONLY":
+        out.append("This TikTok app is not audited: only SELF_ONLY (private) posts are allowed.")
+    if o.get("source", "PULL_FROM_URL") == "PULL_FROM_URL" and post.media and not url_verified(post.media[0]["url"]):
+        out.append("The video URL is not under a TikTok-verified domain or URL prefix (use FILE_UPLOAD or verify it).")
+    return out
+
+
 def log(post: SocialPost, event: str, detail: str = "") -> None:
     post.history = [*(post.history or []), {"at": datetime.now(timezone.utc).isoformat(), "event": event,
                                             "version": post.version, "detail": detail[:300]}]
 
 
-# ── adapters ───────────────────────────────────────────────────────────
+# ── provider calls ─────────────────────────────────────────────────────
 
 def _graph(path: str) -> str:
     return f"{settings.META_ADS_API_URL.rstrip('/')}/{settings.META_ADS_API_VERSION}/{path}"
+
+
+def _meta_h() -> dict:
+    return {"Authorization": f"Bearer {settings.META_PAGE_ACCESS_TOKEN}"}
 
 
 def _ok(r: httpx.Response, network: str) -> dict:
@@ -101,75 +187,272 @@ def _ok(r: httpx.Response, network: str) -> dict:
     err = body.get("error") if isinstance(body, dict) else None
     if r.status_code >= 400 or (err and not (isinstance(err, dict) and err.get("code") == "ok")):
         msg = (err or {}).get("message") if isinstance(err, dict) else None
-        raise SocialError(f"{network}: {msg or body.get('message') or f'HTTP {r.status_code}'}")
+        code = str((err or {}).get("code")) if isinstance(err, dict) and err.get("code") is not None else f"http_{r.status_code}"
+        raise SocialError(f"{network}: {msg or body.get('message') or f'HTTP {r.status_code}'}", code,
+                          r.status_code >= 500 or r.status_code == 429)
     return body
 
 
-async def _post_api(ch: SocialChannel, post: SocialPost) -> str:
-    h = {"Authorization": f"Bearer {settings.META_PAGE_ACCESS_TOKEN}"}
-    async with provider_client() as c:
-        if ch.network == "facebook":
-            img = next((m for m in post.media if m["kind"] == "image"), None)
-            if img:
-                b = _ok(await c.post(_graph(f"{ch.external_id}/photos"), data={"url": img["url"], "caption": post.text}, headers=h), "facebook")
-                return b.get("post_id") or b["id"]
-            data = {"message": post.text, **({"link": post.link} if post.link else {})}
-            return _ok(await c.post(_graph(f"{ch.external_id}/feed"), data=data, headers=h), "facebook")["id"]
-        if ch.network == "instagram":
-            created = _ok(await c.post(_graph(f"{ch.external_id}/media"),
-                                       data={"image_url": post.media[0]["url"], "caption": post.text}, headers=h), "instagram")
-            return _ok(await c.post(_graph(f"{ch.external_id}/media_publish"), data={"creation_id": created["id"]},
-                                    headers=h), "instagram")["id"]
-        if ch.network == "linkedin":
-            body = {"author": f"urn:li:organization:{ch.external_id}",
-                    "commentary": post.text + (f"\n{post.link}" if post.link else ""), "visibility": "PUBLIC",
-                    "distribution": {"feedDistribution": "MAIN_FEED", "targetEntities": [], "thirdPartyDistributionChannels": []},
-                    "lifecycleState": "PUBLISHED", "isReshareDisabledByAuthor": False}
-            r = await c.post(f"{settings.LINKEDIN_ADS_API_URL.rstrip('/')}/rest/posts", json=body,
-                             headers={"Authorization": f"Bearer {settings.LINKEDIN_SOCIAL_ACCESS_TOKEN}",
-                                      "LinkedIn-Version": settings.LINKEDIN_ADS_VERSION, "X-Restli-Protocol-Version": "2.0.0"})
-            if r.status_code >= 400:
-                _ok(r, "linkedin")          # raises with LinkedIn's message
-            return r.headers.get("x-restli-id") or ""
-        if ch.network == "tiktok":
-            body = {"post_info": {"title": post.text, "privacy_level": "SELF_ONLY", "disable_comment": False},
-                    "source_info": {"source": "PULL_FROM_URL", "video_url": post.media[0]["url"]}}
-            b = _ok(await c.post(f"{settings.TIKTOK_SOCIAL_API_URL.rstrip('/')}/v2/post/publish/video/init/", json=body,
-                                 headers={"Authorization": f"Bearer {settings.TIKTOK_SOCIAL_ACCESS_TOKEN}"}), "tiktok")
-            return b["data"]["publish_id"]
-    raise SocialError(f"{ch.network} has no publishing adapter")
+async def _tt(c: httpx.AsyncClient, path: str, body: Optional[dict]) -> dict:
+    r = await c.post(f"{settings.TIKTOK_SOCIAL_API_URL.rstrip('/')}{path}", json=body,
+                     headers={"Authorization": f"Bearer {settings.TIKTOK_SOCIAL_ACCESS_TOKEN}",
+                              "Content-Type": "application/json; charset=UTF-8"})
+    return _ok(r, "tiktok").get("data") or {}
+
+
+async def _read(fn):
+    """Status reads only: retried with exponential backoff on 429/5xx/transport errors."""
+    backoff = float(getattr(settings, "SOCIAL_STATUS_BACKOFF_SECONDS", 1.0))
+    for i in range(3):
+        try:
+            async with provider_client() as c:
+                return await fn(c)
+        except (httpx.TransportError, SocialError) as e:
+            if i == 2 or (isinstance(e, SocialError) and not e.retryable):
+                raise
+            await asyncio.sleep(backoff * 2 ** i)
+
+
+async def tiktok_creator_info(c: Optional[httpx.AsyncClient] = None) -> dict:
+    """creator_info, with the privacy options this app may actually use (unaudited → SELF_ONLY only)."""
+    if c is None:
+        return await _read(tiktok_creator_info)
+    d = await _tt(c, "/v2/post/publish/creator_info/query/", None)
+    opts = [o for o in d.get("privacy_level_options") or [] if o in TT_PRIVACY]
+    return {"creator_username": d.get("creator_username"), "creator_nickname": d.get("creator_nickname"),
+            "provider_privacy_level_options": opts, "audited": tiktok_audited(),
+            "privacy_level_options": opts if tiktok_audited() else [o for o in opts if o == "SELF_ONLY"],
+            "comment_disabled": bool(d.get("comment_disabled")), "duet_disabled": bool(d.get("duet_disabled")),
+            "stitch_disabled": bool(d.get("stitch_disabled")),
+            "max_video_post_duration_sec": d.get("max_video_post_duration_sec")}
+
+
+async def _post_direct(c: httpx.AsyncClient, ch: SocialChannel, post: SocialPost) -> str:
+    """Facebook and LinkedIn create the post synchronously: the returned id is the live post."""
+    if ch.network == "facebook":
+        img = next((m for m in post.media if m["kind"] == "image"), None)
+        if img:
+            b = _ok(await c.post(_graph(f"{ch.external_id}/photos"), data={"url": img["url"], "caption": post.text},
+                                 headers=_meta_h()), "facebook")
+            return b.get("post_id") or b["id"]
+        data = {"message": post.text, **({"link": post.link} if post.link else {})}
+        return _ok(await c.post(_graph(f"{ch.external_id}/feed"), data=data, headers=_meta_h()), "facebook")["id"]
+    body = {"author": f"urn:li:organization:{ch.external_id}",
+            "commentary": post.text + (f"\n{post.link}" if post.link else ""), "visibility": "PUBLIC",
+            "distribution": {"feedDistribution": "MAIN_FEED", "targetEntities": [], "thirdPartyDistributionChannels": []},
+            "lifecycleState": "PUBLISHED", "isReshareDisabledByAuthor": False}
+    r = await c.post(f"{settings.LINKEDIN_ADS_API_URL.rstrip('/')}/rest/posts", json=body,
+                     headers={"Authorization": f"Bearer {settings.LINKEDIN_SOCIAL_ACCESS_TOKEN}",
+                              "LinkedIn-Version": settings.LINKEDIN_ADS_VERSION, "X-Restli-Protocol-Version": "2.0.0"})
+    if r.status_code >= 400:
+        _ok(r, "linkedin")          # raises with LinkedIn's message
+    if not r.headers.get("x-restli-id"):
+        raise SocialError("linkedin: created without a post id", "no_id", retryable=True)
+    return r.headers["x-restli-id"]
+
+
+def _tt_post_info(post: SocialPost, info: dict) -> dict:
+    o = post.publish_options or {}
+    return {"title": post.text, "privacy_level": o["privacy_level"],
+            "disable_comment": bool(o.get("disable_comment")) or info["comment_disabled"],
+            "disable_duet": bool(o.get("disable_duet")) or info["duet_disabled"],
+            "disable_stitch": bool(o.get("disable_stitch")) or info["stitch_disabled"]}
+
+
+async def _tt_upload(c: httpx.AsyncClient, url: str, blob: bytes, chunk: int, count: int) -> None:
+    total = len(blob)
+    for i in range(count):
+        first = i * chunk
+        last = total - 1 if i == count - 1 else first + chunk - 1
+        r = await c.put(url, content=blob[first:last + 1],
+                        headers={"Content-Type": "video/mp4", "Content-Range": f"bytes {first}-{last}/{total}"})
+        if r.status_code not in (201, 206):
+            raise SocialError(f"tiktok: chunk upload answered HTTP {r.status_code}", f"upload_{r.status_code}",
+                              r.status_code >= 500)
+
+
+# ── state machine ──────────────────────────────────────────────────────
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _schedule(post: SocialPost) -> None:
+    base = int(getattr(settings, "SOCIAL_STATUS_POLL_SECONDS", 15))
+    post.next_poll_at = _now() + timedelta(seconds=min(base * 2 ** min(post.poll_count or 0, 6), 900))
+
+
+def _published(post: SocialPost, post_id: Optional[str], detail: str) -> None:
+    post.status, post.published_at, post.error, post.next_poll_at = "PUBLISHED", _now(), None, None
+    post.external_post_id = (post_id or "")[:120] or None
+    log(post, "PUBLISHED", f"{detail}; post id {post.external_post_id or 'not given by the provider'}")
+
+
+def _failed(post: SocialPost, reason: Optional[str], msg: str) -> None:
+    post.status, post.fail_reason, post.error, post.next_poll_at = "FAILED", (reason or "")[:120] or None, msg[:500], None
+    log(post, "FAILED", msg)
+
+
+def _unknown(post: SocialPost, msg: str) -> None:
+    post.status, post.error = "UNKNOWN", msg[:500]
+    if post.provider_ref:
+        _schedule(post)
+    log(post, "UNKNOWN", msg)
+
+
+def _submitted(post: SocialPost, ref: str, status: str) -> None:
+    post.provider_ref, post.status, post.submitted_at = str(ref)[:120], status, _now()
+    post.next_poll_at = _now()
+    log(post, status, f"provider ref {post.provider_ref} (a submission id, not a publication)")
 
 
 async def publish(db: AsyncSession, post: SocialPost) -> SocialPost:
-    """Publish one approved, due post. Called by the worker; never twice (status claim + external id)."""
+    """Submit one approved post. The claim is committed before any provider call, so a crash can never post twice."""
     ch = await db.get(SocialChannel, post.channel_id)
-    if post.external_post_id:
-        post.status = "PUBLISHED"
-        return post
     issues = problems(ch.network, post.text, post.media or [], post.link)
+    if ch.network == "tiktok" and not issues:
+        issues = tiktok_issues(post)
     if publish_route(ch.network) != "API" or issues:
         post.status, post.error = "FAILED", ("; ".join(issues) or
                                              "Publishing is not enabled for this channel. Export the post and publish it manually.")
         log(post, "NOT_PUBLISHED", post.error)
         return post
-    post.status = "PUBLISHING"
-    await db.flush()
+    post.status, post.claimed_at, post.publish_mode, post.poll_count = "SUBMITTING", _now(), publish_mode(), 0
+    post.provider_ref = post.provider_status = post.fail_reason = post.error = post.submitted_at = None
+    log(post, "CLAIMED", f"idempotency key {post.idempotency_key} v{post.version} ({post.publish_mode})")
+    await db.commit()
     try:
-        post.external_post_id = (await _post_api(ch, post))[:120] or None
-        post.status, post.published_at, post.error = "PUBLISHED", datetime.now(timezone.utc), None
-        log(post, "PUBLISHED", post.external_post_id or "")
-    except (SocialError, EgressBlocked) as e:
-        post.status, post.error = "FAILED", str(e)[:500]
-        log(post, "FAILED", post.error)
+        async with provider_client() as c:
+            if ch.network in ("facebook", "linkedin"):
+                _published(post, await _post_direct(c, ch, post), f"{ch.network} returned the created post")
+            elif ch.network == "instagram":
+                b = _ok(await c.post(_graph(f"{ch.external_id}/media"), data={"image_url": post.media[0]["url"],
+                                                                              "caption": post.text}, headers=_meta_h()), "instagram")
+                _submitted(post, b["id"], "PROCESSING")
+            else:
+                await _submit_tiktok(db, c, post)
+    except EgressBlocked as e:                       # refused before a socket was opened: nothing was sent
+        if post.provider_ref:
+            log(post, "UPLOAD_ERROR", str(e))
+        else:
+            _failed(post, "egress_blocked", str(e))
+    except SocialError as e:
+        if post.provider_ref:                        # accepted by the provider; its status decides the outcome
+            log(post, "UPLOAD_ERROR", str(e))
+        elif e.retryable:
+            _unknown(post, f"{e} — the network may have accepted it; check the channel before retrying.")
+        else:
+            _failed(post, e.code, str(e))
     except httpx.HTTPError as e:
-        post.status = "FAILED"
-        post.error = f"No answer from {ch.network} ({type(e).__name__}); check the channel before retrying — it may have posted."
-        log(post, "FAILED_UNKNOWN", post.error)
+        if post.provider_ref:
+            log(post, "UPLOAD_ERROR", type(e).__name__)
+        else:
+            _unknown(post, f"No answer from {ch.network} ({type(e).__name__}); check the channel before retrying — it may have posted.")
+    await db.commit()
+    if post.status in IN_FLIGHT and post.provider_ref:
+        await refresh(db, post, ch)
+        await db.commit()
     return post
 
 
+async def _submit_tiktok(db: AsyncSession, c: httpx.AsyncClient, post: SocialPost) -> None:
+    info = await tiktok_creator_info(c)
+    o = post.publish_options or {}
+    if o.get("privacy_level") not in info["privacy_level_options"]:
+        raise SocialError(f"tiktok: privacy {o.get('privacy_level')} is not offered for this creator "
+                          f"({', '.join(info['privacy_level_options']) or 'none'})", "privacy_level_option_mismatch")
+    url = post.media[0]["url"]
+    if o.get("source") == "FILE_UPLOAD":
+        r = await c.get(url)
+        if r.status_code != 200:
+            raise SocialError(f"tiktok: could not read the video file (HTTP {r.status_code})", "file_unreadable")
+        blob = r.content
+        chunk, count = chunk_plan(len(blob))
+        source = {"source": "FILE_UPLOAD", "video_size": len(blob), "chunk_size": chunk, "total_chunk_count": count}
+    else:
+        blob, source = None, {"source": "PULL_FROM_URL", "video_url": url}
+    d = await _tt(c, "/v2/post/publish/video/init/", {"post_info": _tt_post_info(post, info), "source_info": source})
+    _submitted(post, d["publish_id"], "SUBMITTED")
+    await db.commit()                                # publish_id is durable before the upload starts
+    if blob is not None:
+        await _tt_upload(c, d["upload_url"], blob, chunk, count)
+        log(post, "UPLOADED", f"{count} chunk(s), {len(blob)} bytes")
+
+
+async def refresh(db: AsyncSession, post: SocialPost, ch: Optional[SocialChannel] = None) -> SocialPost:
+    """Reconcile one in-flight post with the provider's status. Only a documented final state ends it."""
+    ch = ch or await db.get(SocialChannel, post.channel_id)
+    if post.status not in IN_FLIGHT or not post.provider_ref:
+        return post
+    post.poll_count = (post.poll_count or 0) + 1
+    try:
+        if ch.network == "tiktok":
+            d = await _read(lambda c: _tt(c, "/v2/post/publish/status/fetch/", {"publish_id": post.provider_ref}))
+            s = post.provider_status = str(d.get("status") or "")[:40]
+            if s == "PUBLISH_COMPLETE":
+                ids = d.get("publicaly_available_post_id") or []      # spelling as documented
+                _published(post, str(ids[0]) if ids else None, "TikTok status PUBLISH_COMPLETE")
+            elif s == "FAILED" and d.get("fail_reason") == "publish_cancelled":
+                post.status, post.fail_reason, post.next_poll_at = "CANCELLED", "publish_cancelled", None
+                log(post, "CANCELLED", "TikTok confirmed the cancellation")
+            elif s == "FAILED":
+                _failed(post, d.get("fail_reason"), f"TikTok rejected the post: {d.get('fail_reason') or 'no reason given'}")
+            elif post.status != "UNKNOWN":
+                post.status = "PROCESSING"
+        elif ch.network == "instagram":
+            async def container(c):
+                return _ok(await c.get(_graph(post.provider_ref), params={"fields": "status_code,status"},
+                                       headers=_meta_h()), "instagram")
+            d = await _read(container)
+            s = post.provider_status = str(d.get("status_code") or "")[:40]
+            if s == "FINISHED":                      # ready: publish now (a container publishes at most once)
+                async with provider_client() as c:
+                    b = _ok(await c.post(_graph(f"{ch.external_id}/media_publish"), data={"creation_id": post.provider_ref},
+                                         headers=_meta_h()), "instagram")
+                _published(post, b["id"], "Instagram media_publish returned the media id")
+            elif s == "PUBLISHED":
+                _published(post, None, "Instagram container status PUBLISHED")
+            elif s in ("ERROR", "EXPIRED"):
+                _failed(post, s, f"Instagram container {s.lower()}: {d.get('status') or ''}".strip())
+            elif post.status != "UNKNOWN":
+                post.status = "PROCESSING"
+        else:
+            return post
+    except (SocialError, httpx.HTTPError, EgressBlocked) as e:
+        code = getattr(e, "code", None)
+        if code in ("invalid_publish_id", "token_not_authorized_for_specified_publish_id"):
+            _unknown(post, f"Status not readable: {e}")
+        else:
+            log(post, "PROVIDER_CALL_FAILED", str(e) or type(e).__name__)
+    if post.status in IN_FLIGHT:
+        limit = timedelta(minutes=int(getattr(settings, "SOCIAL_PUBLISH_TIMEOUT_MINUTES", 30)))
+        if post.status != "UNKNOWN" and post.submitted_at and _now() - post.submitted_at > limit:
+            _unknown(post, f"Not final after {limit}; still reconciling with {ch.network}.")
+        _schedule(post)
+    return post
+
+
+async def cancel_at_provider(db: AsyncSession, post: SocialPost) -> str:
+    """Cancel an in-flight post where the network allows it. Returns the resulting status."""
+    ch = await db.get(SocialChannel, post.channel_id)
+    if ch.network == "instagram" and post.status in ("SUBMITTED", "PROCESSING"):
+        post.status, post.next_poll_at = "CANCELLED", None    # never publish the container; it expires after 24 h
+        log(post, "CANCELLED", "container will not be published")
+        return post.status
+    if ch.network != "tiktok" or post.status not in ("SUBMITTED", "PROCESSING") or not post.provider_ref:
+        raise SocialError(f"A {post.status.lower()} {ch.network} post cannot be cancelled here.", "not_cancellable")
+    if (post.publish_options or {}).get("source") == "FILE_UPLOAD":
+        raise SocialError("TikTok cancels only PULL_FROM_URL downloads.", "publish_not_cancellable")
+    async with provider_client() as c:
+        await _tt(c, "/v2/post/publish/cancel/", {"publish_id": post.provider_ref})
+    log(post, "CANCEL_REQUESTED", "TikTok accepted the cancel request")
+    await refresh(db, post, ch)
+    return post.status
+
+
 async def publish_due(db: AsyncSession, now: Optional[datetime] = None) -> int:
-    now = now or datetime.now(timezone.utc)
+    """Worker tick (crm_automation_service): submit due posts, then recover/reconcile in-flight ones."""
+    now = now or _now()
     done = 0
     for _ in range(20):   # one post per transaction: the row lock is held until its own commit (M44 review)
         p = (await db.execute(select(SocialPost).where(SocialPost.status == "APPROVED", SocialPost.scheduled_at <= now,
@@ -180,7 +463,77 @@ async def publish_due(db: AsyncSession, now: Optional[datetime] = None) -> int:
         await publish(db, p)
         await db.commit()
         done += 1
+    await reconcile_due(db, now)
     return done
+
+
+async def reconcile_due(db: AsyncSession, now: Optional[datetime] = None) -> int:
+    """Restart recovery: a stale claim becomes UNKNOWN (never resubmitted); SUBMITTED/PROCESSING/UNKNOWN are polled."""
+    now = now or _now()
+    stale = (await db.execute(select(SocialPost).where(SocialPost.status == "SUBMITTING",
+                                                       SocialPost.claimed_at < now - CLAIM_STALE)
+                              .with_for_update(skip_locked=True))).scalars().all()
+    for p in stale:
+        _unknown(p, "Interrupted between claim and the provider's answer; it may have posted. "
+                    "Check the channel — this post is never resubmitted automatically.")
+    await db.commit()
+    n = 0
+    for _ in range(20):
+        p = (await db.execute(select(SocialPost).where(SocialPost.status.in_(IN_FLIGHT), SocialPost.provider_ref.isnot(None),
+                                                       (SocialPost.next_poll_at.is_(None)) | (SocialPost.next_poll_at <= now))
+                              .order_by(SocialPost.next_poll_at.asc().nullsfirst())
+                              .with_for_update(skip_locked=True).limit(1))).scalars().first()
+        if p is None:
+            break
+        await refresh(db, p)
+        if p.status in IN_FLIGHT and p.next_poll_at and p.next_poll_at <= now:
+            p.next_poll_at = now + timedelta(seconds=1)     # do not spin within one tick
+        await db.commit()
+        n += 1
+    return n
+
+
+# ── TikTok webhooks ────────────────────────────────────────────────────
+
+def verify_tiktok(raw: bytes, header: str, now: Optional[float] = None) -> str:
+    """TikTok-Signature: t=<unix>,s=<hex HMAC-SHA256(client_secret, "<t>.<raw body>")>. Returns the signature."""
+    secret = getattr(settings, "TIKTOK_CLIENT_SECRET", "") or ""
+    if not secret:
+        raise SocialError("not configured")
+    parts = dict(p.split("=", 1) for p in (header or "").split(",") if "=" in p)
+    t, s = parts.get("t", ""), parts.get("s", "")
+    if not t.isdigit():
+        raise SocialError("bad signature")
+    want = hmac.new(secret.encode(), t.encode() + b"." + raw, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(want, s):
+        raise SocialError("bad signature")
+    if abs((now or time.time()) - int(t)) > WEBHOOK_WINDOW:
+        raise SocialError("stale")
+    return s
+
+
+async def ingest_tiktok(db: AsyncSession, payload: dict, signature: str) -> dict:
+    """post.publish.* events only trigger a status fetch; a replayed delivery (same signature) is ignored."""
+    event = str(payload.get("event") or "")
+    if not event.startswith("post.publish."):
+        return {"result": "ignored"}
+    content = payload.get("content")
+    try:
+        content = json.loads(content) if isinstance(content, str) else (content or {})
+    except ValueError:
+        return {"result": "ignored"}
+    pid = str(content.get("publish_id") or "")
+    post = (await db.execute(select(SocialPost).join(SocialChannel, SocialChannel.id == SocialPost.channel_id)
+                             .where(SocialChannel.network == "tiktok", SocialPost.provider_ref == pid)
+                             .with_for_update())).scalars().first() if pid else None
+    if post is None:
+        return {"result": "ignored"}
+    digest = hashlib.sha256(signature.encode()).hexdigest()[:32]
+    if any(h.get("event") == "WEBHOOK" and h.get("detail", "").endswith(digest) for h in post.history or []):
+        return {"result": "replay"}
+    log(post, "WEBHOOK", f"{event} {digest}")
+    await refresh(db, post)
+    return {"result": "processed", "status": post.status}
 
 
 async def conflicts(db: AsyncSession, post: SocialPost) -> list[str]:

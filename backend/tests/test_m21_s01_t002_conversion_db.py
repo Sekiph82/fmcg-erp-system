@@ -35,13 +35,13 @@ async def test_conversion_profile_uses_density_and_direct_inverse_uom_rules():
             bulk = Product(
                 sku=f"M21-T002-BULK-{suffix}",
                 name="Synthetic bulk product",
-                category=ProductCategory.BEVERAGE,
+                category=ProductCategory.HOUSEHOLD,
                 uom=UnitOfMeasure.KG,
             )
             carton = Product(
                 sku=f"M21-T002-CARTON-{suffix}",
                 name="Synthetic carton product",
-                category=ProductCategory.BEVERAGE,
+                category=ProductCategory.HOUSEHOLD,
                 uom=UnitOfMeasure.CARTON,
             )
             db.add_all([bulk, carton])

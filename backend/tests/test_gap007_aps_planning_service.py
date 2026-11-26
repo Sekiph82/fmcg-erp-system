@@ -11,9 +11,9 @@ from app.schemas.planning import AIRecAction
 
 
 def test_aps_product_display_uses_existing_product_fields():
-    product = SimpleNamespace(name="Mango Juice 250ml", sku="SKU-MANGO-250")
+    product = SimpleNamespace(name="POVU AllClean 1 L", sku="POVU-ALC-1L")
 
-    assert svc._product_display(product) == ("Mango Juice 250ml", "SKU-MANGO-250")
+    assert svc._product_display(product) == ("POVU AllClean 1 L", "POVU-ALC-1L")
 
 
 def test_aps_work_center_rate_uses_capacity_with_default_fallback():

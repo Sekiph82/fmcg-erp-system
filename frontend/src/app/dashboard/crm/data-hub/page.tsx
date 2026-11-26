@@ -25,6 +25,7 @@ export default function DataHubPage() {
   const [card, setCard] = useState("");
   const [cardFields, setCardFields] = useState<Record<string, string> | null>(null);
   const [confirmed, setConfirmed] = useState(false);
+  const [preview, setPreview] = useState<{ id: string; subject: string; body: string; sources: string[]; catalogue_empty: boolean } | null>(null);
   const load = useCallback(() => {
     apiClient.get("/api/v1/customer-data/sources").then((r) => setSources(r.data)).catch(() => setSources([]));
     apiClient.get("/api/v1/customer-data/provider").then((r) => setProvider(r.data)).catch(() => setProvider(null));
@@ -43,6 +44,7 @@ export default function DataHubPage() {
     go(apiClient.post("/api/v1/customer-data/prospect", body).then((r) => setRun(r.data)));
   };
   const outreach = (r: Result) => go(apiClient.post(`/api/v1/customer-data/prospect/runs/${run!.run_id}/outreach`, { result_id: r.id }), "E-mail proposed: a colleague approves it under CRM → Add-ins & AI access.");
+  const showDraft = (r: Result) => go(apiClient.post(`/api/v1/customer-data/prospect/runs/${run!.run_id}/draft`, { result_id: r.id }).then((x) => setPreview({ id: r.id, ...x.data })));
   const findCust = () => apiClient.get("/api/v1/customer-intel/customers", { params: { q, limit: 10 } }).then((r) => setCusts(r.data)).catch((e) => setMsg(err(e)));
   const doResearch = (id: string) => go(apiClient.post(`/api/v1/customer-data/research/${id}`).then((r) => setResearch(r.data)));
   const apply = (c: Cand, overwrite = false) => apiClient.post(`/api/v1/customer-data/facts/${c.id}/apply`, { overwrite }).then(() => { setMsg("Applied."); doResearch(research!.customer_id); })
@@ -78,7 +80,12 @@ export default function DataHubPage() {
             <div className="flex flex-wrap justify-between gap-2"><b>{r.company_name}</b><span>match {Math.round(r.score * 100)}% · known data {Math.round(r.confidence * 100)}%</span></div>
             <div className="text-gray-600">{r.evidence.map((e) => `${e.criterion}: ${e.value} (${e.citation})`).join(" · ")}</div>
             {r.unknown.length > 0 && <div className="text-gray-400">unknown: {r.unknown.join(", ")}</div>}
-            {r.can_email ? <button className="underline" onClick={() => outreach(r)}>Propose first e-mail</button> : <span className="text-gray-400">no e-mail on file</span>}</li>)}</ul>)}
+            <div className="flex gap-3"><button className="underline" onClick={() => showDraft(r)}>Preview draft</button>
+              {r.can_email ? <button className="underline" onClick={() => outreach(r)}>Propose first e-mail</button> : <span className="text-gray-400">no e-mail on file</span>}</div>
+            {preview?.id === r.id && <div className="border rounded p-2 bg-gray-50 space-y-1" data-testid="draft-preview">
+              <div><b>{preview.subject}</b></div><pre className="whitespace-pre-wrap font-sans">{preview.body}</pre>
+              <div className="text-gray-600">Sources: {preview.sources.length ? preview.sources.join(" · ") : "none"}</div>
+              {preview.catalogue_empty && <div className="text-amber-700">No active products in the catalogue: the draft names no products.</div>}</div>}</li>)}</ul>)}
       </section>
 
       <section className={box}>

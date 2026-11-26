@@ -67,12 +67,12 @@ def test_adapters_default_to_not_available(monkeypatch):
 
 def test_translatable_walk_order():
     from app.services import cms_service as cms
-    doc, _ = cms.validate_doc({"blocks": [{"type": "hero", "title": "POVU Water 500 ml", "subtitle": "Fresh"},
+    doc, _ = cms.validate_doc({"blocks": [{"type": "hero", "title": "POVU AllClean 1 L", "subtitle": "Fresh"},
                                           {"type": "faq", "items": [{"q": "Where?", "a": "At [Duka Moja](/shops)"}]},
                                           {"type": "button", "label": "Buy", "href": "/buy"}], "seo": {"meta_title": "POVU"}})
     seen = []
     cms._walk_texts(doc, lambda s: seen.append(s) or s.upper())
-    assert seen == ["POVU Water 500 ml", "Fresh", "Where?", "At [Duka Moja](/shops)", "Buy", "POVU"]
+    assert seen == ["POVU AllClean 1 L", "Fresh", "Where?", "At [Duka Moja](/shops)", "Buy", "POVU"]
     assert doc["blocks"][2]["label"] == "BUY" and doc["blocks"][2]["href"] == "/buy"
 
 
@@ -98,24 +98,24 @@ async def test_ai_translation_within_budget_and_copy_fallback(monkeypatch):
         rich = (await cb.post("/api/v1/content-studio/profiles", json={"name": f"POVU tr {uuid.uuid4().hex[:4]}", "monthly_budget": 0.05})).json()
         poor = (await cb.post("/api/v1/content-studio/profiles", json={"name": f"POVU zero {uuid.uuid4().hex[:4]}", "monthly_budget": 0})).json()
         sid = (await cb.post("/api/v1/cms/sites", json={"name": "POVU tr", "key": f"tr{uuid.uuid4().hex[:5]}", "locales": ["en", "sw", "tr"]})).json()["id"]
-        pg = (await ca.post("/api/v1/cms/pages", json={"site_id": sid, "title": "POVU Juice 1 L", "slug": "juice", "draft": {
-            "blocks": [{"type": "heading", "level": 1, "text": "POVU Juice 1 L"}, {"type": "text", "text": "Ask at [Duka Moja](/shops)."},
+        pg = (await ca.post("/api/v1/cms/pages", json={"site_id": sid, "title": "POVU WhiteCare 1 kg", "slug": "whitecare", "draft": {
+            "blocks": [{"type": "heading", "level": 1, "text": "POVU WhiteCare 1 kg"}, {"type": "text", "text": "Ask at [Duka Moja](/shops)."},
                        {"type": "button", "label": "Order", "href": "/order"}],
-            "seo": {"meta_title": "POVU Juice", "meta_description": "Juice from POVU"}}})).json()
+            "seo": {"meta_title": "POVU WhiteCare", "meta_description": "Laundry care from POVU"}}})).json()
         r = await ca.post(f"/api/v1/cms/pages/{pg['id']}/translate", json={"locale": "sw", "ai": True, "profile_id": rich["id"]})
         assert r.status_code == 201, r.text
         sw = r.json()
         assert sw["engine"] == "fake" and sw["cost"] > 0 and sw["translation_state"] == "NEEDS_REVIEW" and sw["status"] == "DRAFT"
         d = (await ca.get(f"/api/v1/cms/pages/{sw['id']}")).json()
         blocks = d["draft"]["blocks"]
-        assert blocks[0]["text"] == "SW POVU Juice 1 L" and blocks[1]["text"] == "SW Ask at [Duka Moja](/shops)." and blocks[2]["label"] == "SW Order"
-        assert blocks[2]["href"] == "/order" and d["draft"]["seo"]["meta_title"] == "SW POVU Juice" and d["live_version"] is None
+        assert blocks[0]["text"] == "SW POVU WhiteCare 1 kg" and blocks[1]["text"] == "SW Ask at [Duka Moja](/shops)." and blocks[2]["label"] == "SW Order"
+        assert blocks[2]["href"] == "/order" and d["draft"]["seo"]["meta_title"] == "SW POVU WhiteCare" and d["live_version"] is None
         prof = [p for p in (await cb.get("/api/v1/content-studio/profiles")).json() if p["id"] == rich["id"]][0]
         assert prof["calls_this_month"] == 1 and prof["spent_this_month"] > 0                     # the atomic reservation was used
         # no budget → the plain copy, still a draft for review
         tr = (await ca.post(f"/api/v1/cms/pages/{pg['id']}/translate", json={"locale": "tr", "ai": True, "profile_id": poor["id"]})).json()
         assert tr["engine"] == "copy" and tr["cost"] == 0 and tr["translation_state"] == "NEEDS_REVIEW"
-        assert (await ca.get(f"/api/v1/cms/pages/{tr['id']}")).json()["draft"]["blocks"][0]["text"] == "POVU Juice 1 L"
+        assert (await ca.get(f"/api/v1/cms/pages/{tr['id']}")).json()["draft"]["blocks"][0]["text"] == "POVU WhiteCare 1 kg"
     async with AsyncSessionLocal() as db:
         logs = {x.target_id: x.details for x in (await db.execute(select(AuditLog).where(
             AuditLog.event_type == "cms.page.translation_started", AuditLog.target_id.in_([sw["id"], tr["id"]])))).scalars()}
@@ -136,8 +136,8 @@ async def test_narration_not_available_and_fake_engine(tmp_path, monkeypatch):
         await _login(ca, a)
         await _login(cb, b)
         sid = (await cb.post("/api/v1/cms/sites", json={"name": "POVU blog", "key": f"nb{uuid.uuid4().hex[:5]}"})).json()["id"]
-        pg = (await ca.post("/api/v1/cms/pages", json={"site_id": sid, "kind": "POST", "title": "Storing POVU Water", "slug": "storing",
-                                                       "draft": {"blocks": [{"type": "text", "text": "Keep crates out of the sun."}]}})).json()
+        pg = (await ca.post("/api/v1/cms/pages", json={"site_id": sid, "kind": "POST", "title": "Storing POVU AllClean", "slug": "storing",
+                                                       "draft": {"blocks": [{"type": "text", "text": "Keep cartons out of the sun."}]}})).json()
         r = await ca.post(f"/api/v1/cms/pages/{pg['id']}/narrate")
         assert r.status_code == 409 and "NOT_AVAILABLE" in r.text
         assert (await ca.get("/api/v1/cms/tools")).json()["tts"]["status"] == "NOT_AVAILABLE"
@@ -152,7 +152,7 @@ async def test_narration_not_available_and_fake_engine(tmp_path, monkeypatch):
         assert r.status_code == 201, r.text
         m = r.json()
         assert m["kind"] == "AUDIO" and m["mime"] == "audio/wav" and m["page_id"] == pg["id"] and m["public"] is False and m["access_list_id"] is None
-        assert said == [("Storing POVU Water. Keep crates out of the sun.", "en")]
+        assert said == [("Storing POVU AllClean. Keep cartons out of the sun.", "en")]
         assert (await ca.get(f"/api/v1/cms/media/{m['id']}/file")).content[:4] == b"RIFF"
         assert (await anon.get(f"/api/v1/public/cms/media/{m['id']}/file")).status_code == 401    # staff-only until an approver decides
         assert (await ca.patch(f"/api/v1/cms/media/{m['id']}", json={"public": True})).status_code == 403
@@ -174,7 +174,7 @@ async def test_image_generation_not_configured_and_draft_creative(tmp_path, monk
     a, _, _ = await _people()
     async with _client() as ca:
         await _login(ca, a)
-        body = {"prompt": "POVU Water 500 ml bottle on a shop counter", "title": "POVU Water counter visual"}
+        body = {"prompt": "POVU AllClean 1 L bottle on a shop counter", "title": "POVU AllClean counter visual"}
         r = await ca.post("/api/v1/content-studio/images", json=body)
         assert r.status_code == 409 and "NOT_CONFIGURED" in r.text
 
@@ -210,7 +210,7 @@ async def test_remix_one_draft_per_channel_within_budget(monkeypatch):
 
     class Fake:
         async def generate_text(self, prompt, system=None):
-            return ai_provider.AIResponse(text="POVU Water is bottled in Kenya [E:e1].", provider="fake", model="f",
+            return ai_provider.AIResponse(text="POVU AllClean is made in Kenya [E:e1].", provider="fake", model="f",
                                           prompt_tokens=1500, completion_tokens=500)       # 0.02 per call = the reservation
     monkeypatch.setattr(ai_provider, "get_ai_provider", lambda: Fake())
     a, b, _ = await _people()
@@ -219,9 +219,9 @@ async def test_remix_one_draft_per_channel_within_budget(monkeypatch):
         await _login(cb, b)
         prof = (await cb.post("/api/v1/content-studio/profiles", json={
             "name": f"POVU remix {uuid.uuid4().hex[:4]}", "monthly_budget": 0.05,
-            "evidence": [{"id": "e1", "text": "POVU Water is bottled in Kenya", "source": "Plant QA register"}]})).json()
+            "evidence": [{"id": "e1", "text": "POVU AllClean is made in Kenya", "source": "Plant QA register"}]})).json()
         src = (await ca.post("/api/v1/content-studio/drafts", json={"profile_id": prof["id"], "channel": "blog", "template": "product_launch",
-                                                                    "brief": "Launch POVU Water 500 ml", "evidence_ids": ["e1"]})).json()
+                                                                    "brief": "Launch POVU AllClean 1 L", "evidence_ids": ["e1"]})).json()
         assert src["engine"] == "fake"                                        # spent 0.02 of 0.05
         assert (await ca.post(f"/api/v1/content-studio/drafts/{src['id']}/remix", json={"channels": ["fax"]})).status_code == 422
         r = await ca.post(f"/api/v1/content-studio/drafts/{src['id']}/remix", json={"channels": ["social", "sms", "email", "sms"]})
@@ -255,7 +255,7 @@ async def test_cms_bundle_round_trip_into_another_site_key():
         await _login(cadm, adm)
         sid = (await cb.post("/api/v1/cms/sites", json={"name": "POVU sync", "key": src_key, "locales": ["en", "sw"]})).json()["id"]
         home = (await ca.post("/api/v1/cms/pages", json={"site_id": sid, "title": "POVU home", "slug": "home", "draft": {
-            "blocks": [{"type": "heading", "level": 1, "text": "POVU Water 500 ml"}, {"type": "video", "media_id": ghost, "title": "Clip"}]}})).json()
+            "blocks": [{"type": "heading", "level": 1, "text": "POVU AllClean 1 L"}, {"type": "video", "media_id": ghost, "title": "Clip"}]}})).json()
         await ca.post(f"/api/v1/cms/pages/{home['id']}/submit")
         await _publish(cb, home["id"])
         await ca.patch(f"/api/v1/cms/pages/{home['id']}", json={"draft": {"blocks": [{"type": "text", "text": "unpublished edit"}]}})
@@ -275,7 +275,7 @@ async def test_cms_bundle_round_trip_into_another_site_key():
         mine = [p for p in cmsb["pages"] if p["site"] == src_key]
         assert sorted((p["locale"], p["path"]) for p in mine) == [("en", "/"), ("sw", "/")]          # live pages only
         en = next(p for p in mine if p["locale"] == "en")
-        assert en["content"]["blocks"][0]["text"] == "POVU Water 500 ml" and en["media_refs"] == [ghost]   # the LIVE version, media by reference
+        assert en["content"]["blocks"][0]["text"] == "POVU AllClean 1 L" and en["media_refs"] == [ghost]   # the LIVE version, media by reference
         assert "domain" not in json.dumps([s for s in cmsb["sites"] if s["key"] == src_key])
 
         body = {"bundle": bundle, "site_keys": {src_key: dst_key}}
@@ -295,7 +295,7 @@ async def test_cms_bundle_round_trip_into_another_site_key():
             assert len({p.translation_group for p in pages}) == 1                # hreflang link kept
             assert {p.locale: p.translation_state for p in pages} == {"en": "SOURCE", "sw": "NEEDS_REVIEW"}
             en_page = next(p for p in pages if p.locale == "en")
-            assert en_page.draft["blocks"][0]["text"] == "POVU Water 500 ml" and dst.domain is None and dst.domain_status == "LOCAL_ONLY"
+            assert en_page.draft["blocks"][0]["text"] == "POVU AllClean 1 L" and dst.domain is None and dst.domain_status == "LOCAL_ONLY"
             tb = (await db.execute(select(CmsTable).where(CmsTable.site_id == dst.id))).scalar_one()
             assert tb.published is False and (await db.execute(select(CmsTableRow.slug).where(CmsTableRow.table_id == tb.id))).scalar_one() == "duka-moja"
             assert (await db.execute(select(CmsRedirect.to_path).where(CmsRedirect.site_id == dst.id))).scalar_one() == "/"
@@ -308,7 +308,7 @@ async def test_cms_bundle_round_trip_into_another_site_key():
         assert upd[0]["action"] == "update" and upd[0]["changed"] == ["draft"]
         assert (await cadm.post("/api/v1/config-bundles/apply", json=body)).json()["updated"] >= 1
         d = (await ca.get(f"/api/v1/cms/pages/{en_id}")).json()
-        assert d["draft"]["blocks"][0]["text"] == "POVU Water 500 ml" and d["status"] == "DRAFT" and d["live_version"] is None   # never published
+        assert d["draft"]["blocks"][0]["text"] == "POVU AllClean 1 L" and d["status"] == "DRAFT" and d["live_version"] is None   # never published
 
 
 # ── 6. video poster + trim ────────────────────────────────────────────────────

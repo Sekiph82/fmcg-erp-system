@@ -2,6 +2,7 @@
 // M45.S01.T014 CPQ panel for one quotation: price book, promotions, multi-step approval, readiness, contract.
 import { useCallback, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
+import { ProviderSignaturePanel } from "@/components/esign/ProviderSignature";
 
 type Approvals = { discount_pct: string; complete: boolean; levels: { level: number; above_pct: number; permission: string; approved_by: string | null }[] };
 type Ready = { ready: boolean; credit: { limit: string | null; open_invoices: string; after_order: string; ok: boolean }; stock: { line_no: number; needed: string; available: string; ok: boolean }[] };
@@ -36,6 +37,8 @@ export function CPQPanel({ quoteId, status, onChanged }: { quoteId: string; stat
       {ready && <p>Credit: {ready.credit.ok ? "OK" : "over limit"} (open {ready.credit.open_invoices}, after this {ready.credit.after_order}{ready.credit.limit ? ` of ${ready.credit.limit}` : ""}) · Stock: {ready.stock.every((s) => s.ok) ? "available" : `short on ${ready.stock.filter((s) => !s.ok).map((s) => `line ${s.line_no}`).join(", ")}`}</p>}
       {["ACCEPTED", "CONVERTED"].includes(status) && templates.length > 0 && <div className="flex gap-2 items-center">Contract:
         {templates.map((t) => <button key={t.id} className="border rounded px-2 py-1" onClick={() => act(apiClient.post(`/api/v1/cpq/quotes/${quoteId}/contract`, { template_id: t.id }), "Contract created.")}>{t.name}</button>)}</div>}
+      {/* M48.S01.T009 DocuSign / Adobe Acrobat Sign for the approved (sent) quotation */}
+      <ProviderSignaturePanel sourceType="QUOTATION" sourceId={quoteId} sourceStatus={status} />
     </div>
   );
 }

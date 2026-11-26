@@ -49,7 +49,7 @@ async def test_public_form_creates_attributed_leads_without_login():
 
     base = {"company_name": f"Duka {s}", "contact_person_name": "Wanjiru", "contact_email": f"Buyer-{s}@Example.com",
             "message": "<script>alert(1)</script> need 200 crates", "consent": True,
-            "utm_source": "google", "utm_medium": "cpc", "utm_campaign": "launch", "landing_page": "https://example.invalid/juice"}
+            "utm_source": "google", "utm_medium": "cpc", "utm_campaign": "launch", "landing_page": "https://example.invalid/allclean"}
     async with client("198.51.100.7") as c:
         assert (await c.get(f"/api/v1/public/lead-forms/{slug}")).json()["require_consent"] is True
         assert (await c.get("/api/v1/crm/lead-forms")).status_code == 401           # admin side still needs login

@@ -124,6 +124,47 @@ export const esignApi = {
     apiClient.delete(`${BASE}/signatures/${userId}`, { params: { reason } }).then(res => res.data),
 };
 
+// ── M48.S01.T009 provider e-signature (DocuSign / Adobe Acrobat Sign) ─────────
+export type ProviderCode = "LOCAL" | "DOCUSIGN" | "ADOBE_SIGN";
+export interface ProviderReadiness {
+  provider: ProviderCode; label: string; mode: "LOCAL" | "SIMULATED" | "LIVE"; ready: boolean; reasons: string[];
+  live_enabled: boolean; settings: Record<string, string | null>; secrets_set: Record<string, boolean>; updated_by: string | null;
+}
+export interface ProviderEnvelope {
+  id: string; provider: "DOCUSIGN" | "ADOBE_SIGN"; provider_label: string; mode: "SIMULATED" | "LIVE";
+  source_type: "QUOTATION" | "CONTRACT"; source_id: string; source_ref: string; status: string;
+  provider_ref: string | null; provider_status: string | null; signer_name: string; signer_email: string; expire_days: number;
+  snapshot_sha256: string; source_fingerprint: string; signed_sha256: string | null; evidence_sha256: string | null;
+  provider_certified: boolean; evidence_label: string | null; erp_applied: string | null; error: string | null;
+  timeline: { at: string; status: string; via: string; note: string | null; provider_status: string | null }[];
+  completed_at: string | null; created_at: string | null; last_checked_at: string | null; can_cancel: boolean; can_reconcile: boolean;
+}
+export interface ProviderSendBody {
+  provider: "DOCUSIGN" | "ADOBE_SIGN"; source_type: "QUOTATION" | "CONTRACT"; source_id: string;
+  signer_name: string; signer_email: string; expire_days: number;
+}
+
+export const providerSignApi = {
+  readiness: () => apiClient.get<ProviderReadiness[]>(`${BASE}/providers`).then(r => r.data),
+  configure: (provider: string, body: { settings: Record<string, string>; secrets: Record<string, string>; live_enabled?: boolean }) =>
+    apiClient.put<ProviderReadiness>(`${BASE}/providers/${provider}`, body).then(r => r.data),
+  send: (body: ProviderSendBody, idempotencyKey: string) =>
+    apiClient.post<ProviderEnvelope>(`${BASE}/providers/send`, body, { headers: { "Idempotency-Key": idempotencyKey } }).then(r => r.data),
+  list: (sourceType?: string, sourceId?: string) =>
+    apiClient.get<ProviderEnvelope[]>(`${BASE}/providers/envelopes`, { params: { source_type: sourceType, source_id: sourceId } }).then(r => r.data),
+  reconcile: (id: string) => apiClient.post<ProviderEnvelope>(`${BASE}/providers/envelopes/${id}/reconcile`).then(r => r.data),
+  cancel: (id: string, reason: string) => apiClient.post<ProviderEnvelope>(`${BASE}/providers/envelopes/${id}/cancel`, { reason }).then(r => r.data),
+  /** snapshot | signed | evidence: the server checks the stored SHA-256 before serving. */
+  download: async (id: string, kind: "snapshot" | "signed" | "evidence", fileName: string) => {
+    const r = await apiClient.get(`${BASE}/providers/envelopes/${id}/files/${kind}`, { responseType: "blob" });
+    const url = URL.createObjectURL(r.data as Blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = fileName; a.click();
+    URL.revokeObjectURL(url);
+    return { sha256: r.headers["x-content-sha256"] as string, evidence: r.headers["x-evidence-status"] as string };
+  },
+};
+
 export interface MySignature { has_signature: boolean; signature_image?: string; image_sha256?: string; registered_at?: string }
 export interface RegisteredSignature {
   user_id: string; username: string; full_name: string | null; has_signature: boolean;

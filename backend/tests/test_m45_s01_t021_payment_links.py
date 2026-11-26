@@ -81,7 +81,7 @@ async def test_payment_link_flow(monkeypatch):
         assert (await c.get(f"/api/v1/public/pay/{'x' * 43}")).status_code == 404
         page = (await c.get(f"/api/v1/public/pay/{token}")).json()
         assert page["amount_due"] == "1000.00" and page["providers"]["card"] == "NOT_CONFIGURED"
-        assert (await c.get(f"/api/v1/public/pay/{token}/card")).status_code == 503
+        assert (await c.post(f"/api/v1/public/pay/{token}/card", json={})).status_code == 503
         assert (await c.post(f"/api/v1/public/pay/{token}/mpesa", json={"phone": "0712345678", "amount": "5000"})).status_code == 422
         r = await c.post(f"/api/v1/public/pay/{token}/mpesa", json={"phone": "0712345678", "amount": "400"})
         assert r.status_code == 200 and r.json()["simulated"] is False

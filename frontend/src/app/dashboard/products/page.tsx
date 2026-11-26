@@ -18,11 +18,12 @@ import { ToastContainer } from "@/components/ui/Toast";
 import { useToast } from "@/hooks/useToast";
 import { ImportModal } from "@/components/import/ImportModal";
 
+// POVU's range is HOUSEHOLD (home care, laundry, cleaning) and PERSONAL_CARE; the rest are generic industry categories.
 const CATEGORIES: { value: string; label: string }[] = [
+  { value: "HOUSEHOLD", label: "Household" },
+  { value: "PERSONAL_CARE", label: "Personal Care" },
   { value: "FOOD", label: "Food" },
   { value: "BEVERAGE", label: "Beverage" },
-  { value: "PERSONAL_CARE", label: "Personal Care" },
-  { value: "HOUSEHOLD", label: "Household" },
   { value: "OTHER", label: "Other" },
 ];
 
@@ -33,7 +34,7 @@ const UOMS: { value: string; label: string }[] = [
   { value: "CARTON", label: "CARTON" }, { value: "PALLET", label: "PALLET" },
 ];
 
-const empty: ProductCreate = { sku: "", name: "", category: "FOOD", uom: "PCS", units_per_carton: 1, reorder_point: 0, is_active: true };
+const empty: ProductCreate = { sku: "", name: "", category: "HOUSEHOLD", uom: "PCS", units_per_carton: 1, reorder_point: 0, is_active: true };
 
 const DELETE_BLOCKERS = [
   { module: "Inventory", detail: "Stock entries, stock lots, and stock movement records for this product." },

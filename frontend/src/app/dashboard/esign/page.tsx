@@ -14,6 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/Button";
 import { PermissionGuard, RequirePermission } from "@/components/PermissionGuard";
 import { PageHelpTooltip } from "@/components/help/PageHelpTooltip";
+import { ProviderSignaturesTab } from "@/components/esign/ProviderSignature";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -498,7 +499,7 @@ function SignersPopover({ req }: { req: SignatureRequest }) {
 
 function ESignPageInner() {
   const { user } = useAuth();
-  const [tab, setTab] = useState<"all" | "mine">("mine");
+  const [tab, setTab] = useState<"all" | "mine" | "providers">("mine");
   const [statusFilter, setStatusFilter] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [signTarget, setSignTarget] = useState<SignatureRequest | null>(null);
@@ -560,7 +561,7 @@ function ESignPageInner() {
       {/* Tabs + Filter */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex gap-0.5 bg-gray-100 rounded-lg p-0.5">
-          {(["mine", "all"] as const).map((t) => (
+          {(["mine", "all", "providers"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -568,7 +569,7 @@ function ESignPageInner() {
                 tab === t ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              {t === "mine" ? "Pending for Me" : "All Requests"}
+              {t === "mine" ? "Pending for Me" : t === "all" ? "All Requests" : "DocuSign / Adobe Sign"}
             </button>
           ))}
         </div>
@@ -587,8 +588,10 @@ function ESignPageInner() {
         )}
       </div>
 
+      {tab === "providers" && <ProviderSignaturesTab />}
+
       {/* Requests Table */}
-      <div className="bg-white rounded-xl border overflow-x-auto">
+      <div hidden={tab === "providers"} className="bg-white rounded-xl border overflow-x-auto">
         {loading ? (
           <div className="p-8 text-center text-gray-400 text-sm">Loading…</div>
         ) : requests.length === 0 ? (

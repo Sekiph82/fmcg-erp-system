@@ -135,7 +135,7 @@ async def _seed() -> None:
             warehouse_type=WarehouseType.FINISHED_GOODS, company_id=company.id,
         )
         product = Product(
-            sku=f"M20-SKU-{suffix}", name="Synthetic Beverage", category=ProductCategory.BEVERAGE,
+            sku=f"M20-SKU-{suffix}", name="Synthetic POVU AllClean", category=ProductCategory.HOUSEHOLD,
             uom=UnitOfMeasure.KG, standard_cost=Decimal("12.5000"), standard_cost_currency="KES",
         )
         work_center = WorkCenter(

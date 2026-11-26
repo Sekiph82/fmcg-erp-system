@@ -51,7 +51,7 @@ def _bom(name, *, base_qty=Decimal("100"), base_uom="KG", lines=None):
 @pytest.mark.asyncio
 async def test_nested_explosion_scales_and_applies_losses_at_each_level(monkeypatch):
     root_id, child_id = uuid4(), uuid4()
-    leaf = _line(item_name="Sugar", required_qty=3, wastage_pct=2)
+    leaf = _line(item_name="LABSA", required_qty=3, wastage_pct=2)
     child = _bom("Intermediate", base_qty=10, lines=[leaf])
     child.id = child_id
     parent_line = _line(
@@ -69,7 +69,7 @@ async def test_nested_explosion_scales_and_applies_losses_at_each_level(monkeypa
     result = await explosion.explode_bom(None, root_id, Decimal("100"))
 
     assert result.total_levels == 2
-    assert result.nodes[0].children[0].item_name == "Sugar"
+    assert result.nodes[0].children[0].item_name == "LABSA"
     assert result.flat_requirements[0]["total_qty"] == 7.8
     assert result.flat_requirements[0]["total_adjusted_qty"] == 7.956
 
@@ -77,7 +77,7 @@ async def test_nested_explosion_scales_and_applies_losses_at_each_level(monkeypa
 @pytest.mark.asyncio
 async def test_repeated_intermediate_bom_branches_are_both_aggregated(monkeypatch):
     child_id = uuid4()
-    child = _bom("Intermediate", base_qty=10, lines=[_line(item_name="Sugar", required_qty=3)])
+    child = _bom("Intermediate", base_qty=10, lines=[_line(item_name="LABSA", required_qty=3)])
     child.id = child_id
     root = _bom("Finished", lines=[
         _line(item_name="Premix A", required_qty=10, child_bom_id=child_id),
@@ -174,7 +174,7 @@ async def test_child_uom_mismatch_fails_closed(monkeypatch):
 @pytest.mark.asyncio
 async def test_zero_base_quantity_on_nested_bom_fails_closed(monkeypatch):
     child_id = uuid4()
-    child = _bom("Intermediate", base_qty=0, lines=[_line(item_name="Sugar", required_qty=3)])
+    child = _bom("Intermediate", base_qty=0, lines=[_line(item_name="LABSA", required_qty=3)])
     child.id = child_id
     root = _bom("Finished", lines=[
         _line(item_name="Premix", required_qty=10, child_bom_id=child_id)

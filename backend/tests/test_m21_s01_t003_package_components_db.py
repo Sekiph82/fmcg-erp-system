@@ -43,7 +43,7 @@ async def test_profile_returns_component_quantities_for_its_exact_packaging_sku(
             target = Product(
                 sku=f"M21-T003-SKU-500ML-{suffix}",
                 name="Synthetic 500 ml packaged SKU",
-                category=ProductCategory.BEVERAGE,
+                category=ProductCategory.HOUSEHOLD,
                 uom=UnitOfMeasure.PCS,
             )
             db.add(target)

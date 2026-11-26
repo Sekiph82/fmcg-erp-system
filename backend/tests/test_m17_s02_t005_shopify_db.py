@@ -54,7 +54,7 @@ async def test_orders_import_once_as_draft_sales_orders_and_stock_is_pushed(monk
         user = User(email=f"shop-{s}@example.invalid", username=f"shop{s}", full_name="Synthetic", hashed_password="x")
         customer = Customer(code=f"WEB-{s}", name="Synthetic web store", channel=CustomerChannel.WHOLESALE, currency="KES")
         warehouse = Warehouse(code=f"WEB-W-{s}", name="Synthetic web warehouse", warehouse_type=WarehouseType.FINISHED_GOODS)
-        product = Product(sku=sku, name="Synthetic juice", category=ProductCategory.BEVERAGE, uom=UnitOfMeasure.PCS)
+        product = Product(sku=sku, name="Synthetic AllClean", category=ProductCategory.HOUSEHOLD, uom=UnitOfMeasure.PCS)
         db.add_all([user, customer, warehouse, product])
         await db.flush()
         quarantined = Lot(lot_number=f"Q-{s}", product_id=product.id, is_quarantine=True)
@@ -156,7 +156,7 @@ async def test_orders_import_once_as_draft_sales_orders_and_stock_is_pushed(monk
         assert (again.imported, again.skipped) == (0, 3)  # synced orders and the cancelled one are not re-imported
         assert await so_for(unknown) is None
 
-        db.add(Product(sku=late_sku, name="Late SKU", category=ProductCategory.BEVERAGE, uom=UnitOfMeasure.PCS))
+        db.add(Product(sku=late_sku, name="Late SKU", category=ProductCategory.HOUSEHOLD, uom=UnitOfMeasure.PCS))
         await db.commit()
         retry = await run(shopify_service.import_orders, None, ids[0])
         assert retry.imported == 1  # the FAILED order is retried in place once its SKU exists

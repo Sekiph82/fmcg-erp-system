@@ -33,7 +33,8 @@ def test_normalization_and_scoring():
     s, ev, conf, unknown = cds.score(p, {"city": "nakuru", "channel": "RETAIL", "keywords": ["bus"]})
     assert 0 < s < 1 and unknown == ["channel"] and conf == round(2 / 3, 2)
     assert {e["criterion"] for e in ev} == {"city", "keywords"} and all("Fair 2026, row 3" in e["citation"] for e in ev)
-    d = cds.draft({"company_name": "Kibanda Fresh", "evidence": ev}, "Rep")
+    empty = {"brand": "POVU", "lines": [], "assets": [], "claims": [], "target": None}
+    d = cds.compose({"company_name": "Kibanda Fresh", "evidence": ev}, "Rep", empty)
     assert "Kibanda Fresh" in d["body"] and "city Nakuru" in d["body"] and "STOP" in d["body"]
 
 
@@ -78,7 +79,7 @@ async def test_prospect_research_enrich():
         top = run.results[0]
         assert top["score"] == 1.0 and top["can_email"] and all(f"Fair {s}, row 2" in e["citation"] for e in top["evidence"])
         req = await pats.propose(db, source="PROSPECT", source_ref="t", user=user, action="send_email",
-                                 arguments={"to_email": top["email"], **cds.draft(top, "Rep")}, summary="x")
+                                 arguments={"to_email": top["email"], **{k: v for k, v in (await cds.draft(db, top, "Rep")).items() if k in ("subject", "body")}}, summary="x")
         assert req.status == "PENDING"
         # research: cited facts, then a second source disagreeing → conflict
         view = await cds.research(db, cust.id)

@@ -27,19 +27,19 @@
     "changeover_rules": [
       {
         "work_center": "FILL-01",
-        "from_family": "BEVERAGE",
+        "from_family": "PERSONAL_CARE",
         "to_family": "HOUSEHOLD",
         "changeover_minutes": 45,
         "cip_minutes": 60,
-        "rationale": "synthetic hygiene wash between beverage and household-care campaigns"
+        "rationale": "synthetic hygiene wash between personal-care and household-care campaigns"
       }
     ]
   },
   "products": [
     {
-      "sku": "JU-MNG-500",
-      "name": "Mango drink 500 ml",
-      "category": "BEVERAGE",
+      "sku": "SH-SHY-250",
+      "name": "POVU ShinyHair Shampoo 250 ml",
+      "category": "PERSONAL_CARE",
       "uom": "PCS",
       "minimum_run_qty": 250,
       "standard_cost": 42.5,
@@ -60,12 +60,12 @@
         "base_qty": 1000,
         "base_uom": "PCS",
         "components": [
-          {"material_code": "SUGAR-01", "basis_type": "PER_BATCH", "required_qty": 50, "uom": "KG", "wastage_pct": 2, "process_loss_pct": 0}
+          {"material_code": "SLES-01", "basis_type": "PER_BATCH", "required_qty": 50, "uom": "KG", "wastage_pct": 2, "process_loss_pct": 0}
         ]
       },
-      "material_stock": {"SUGAR-01": {"on_hand": 12, "reserved": 2, "uom": "KG"}},
+      "material_stock": {"SLES-01": {"on_hand": 12, "reserved": 2, "uom": "KG"}},
       "work_center": {"code": "FILL-01", "rate": 80, "rate_uom": "PCS/HR", "calendar_hours": 8, "shifts": [{"start": "07:00", "end": "15:00"}], "downtime_hours": 1.5},
-      "campaign": {"family": "BEVERAGE", "sequence": 1, "changeover_minutes": null},
+      "campaign": {"family": "PERSONAL_CARE", "sequence": 1, "changeover_minutes": null},
       "overload_case": {"required_hours": 7.5, "calendar_hours": 8, "downtime_hours": 1.5, "expected_overload_hours": 1.0},
       "cip": {"state": "NOT_CONFIGURED", "duration_minutes": null}
     },
@@ -92,7 +92,7 @@
       "material_stock": {},
       "work_center": {"code": "FILL-01", "rate": 60, "rate_uom": "PCS/HR", "calendar_hours": 8, "shifts": [{"start": "07:00", "end": "15:00"}], "downtime_hours": 0.5},
       "campaign": {"family": "HOUSEHOLD", "sequence": 2, "changeover_minutes": null},
-      "cip": {"state": "CONFIGURED", "duration_minutes": 60, "transition": "BEVERAGE->HOUSEHOLD"}
+      "cip": {"state": "CONFIGURED", "duration_minutes": 60, "transition": "PERSONAL_CARE->HOUSEHOLD"}
     }
   ],
   "assertions": [

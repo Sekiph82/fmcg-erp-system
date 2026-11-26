@@ -516,3 +516,151 @@ async def revoke_signature(user_id: uuid.UUID, http_request: Request, reason: st
                                ip_address=http_request.client.host if http_request.client else None)
     await db.commit()
     return {"user_id": str(user_id), "has_signature": False}
+
+
+# ── M48.S01.T009 provider e-signature: DocuSign eSignature / Adobe Acrobat Sign ────────────────────────────
+# Staff routes need esign rights (sales scope is checked on the quotation itself); the public provider callbacks live in
+# esign_connect_public.py (prefix /public/esign).
+
+from fastapi import Header  # noqa: E402
+from fastapi.responses import Response  # noqa: E402
+from pydantic import EmailStr  # noqa: E402
+
+from app.core.access_control import has_any_permission  # noqa: E402
+from app.services import esign_provider_service as esp  # noqa: E402
+
+
+
+def _esp_fail(e: "esp.ESignError"):
+    raise HTTPException(e.status, str(e))
+
+
+async def _audit(db, user, event: str, target_id: str, details: dict, http_request: Optional[Request] = None):
+    from app.crud import audit as audit_crud
+    await audit_crud.log_event(db, event_type=event, actor_id=user.id, actor_email=user.email, module="esign",
+                               target_type="esign_envelope", target_id=target_id, details=details,
+                               ip_address=http_request.client.host if http_request and http_request.client else None)
+
+
+@router.get("/providers", dependencies=[Depends(require_permission("esign", "view"))])
+async def provider_readiness(db: AsyncSession = Depends(get_db)):
+    """LOCAL signer-code flow plus each provider: mode (SIMULATED/LIVE), ready, and the precise disabled reasons."""
+    return await esp.readiness(db)
+
+
+class ProviderConfigIn(BaseModel):
+    settings: dict = Field(default_factory=dict)
+    secrets: dict = Field(default_factory=dict)       # write-only; never returned
+    live_enabled: Optional[bool] = None
+
+
+@router.put("/providers/{provider}", dependencies=[Depends(require_permission("esign", "admin"))])
+async def provider_config(provider: str, body: ProviderConfigIn, http_request: Request, db: AsyncSession = Depends(get_db),
+                          current_user: User = Depends(get_current_user)):
+    try:
+        out = await esp.save_config(db, provider.upper(), body.settings, body.secrets, body.live_enabled, current_user)
+    except esp.ESignError as e:
+        _esp_fail(e)
+    await _audit(db, current_user, "ESIGN_PROVIDER_CONFIG", provider.upper(),
+                 {"settings": sorted(body.settings), "secrets_changed": sorted(k for k, v in body.secrets.items() if v),
+                  "live_enabled": body.live_enabled}, http_request)
+    await db.commit()
+    return out
+
+
+class ProviderSendIn(BaseModel):
+    provider: str = Field(pattern="^(DOCUSIGN|ADOBE_SIGN)$")
+    source_type: str = Field(pattern="^(QUOTATION|CONTRACT)$")
+    source_id: uuid.UUID
+    signer_name: str = Field(min_length=2, max_length=120)
+    signer_email: EmailStr
+    expire_days: int = Field(30, ge=1, le=120)
+
+
+@router.post("/providers/send", status_code=201, dependencies=[Depends(require_permission("esign", "request"))])
+async def provider_send(body: ProviderSendIn, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user),
+                        idempotency_key: Optional[str] = Header(None, max_length=80, pattern=r"^[A-Za-z0-9_.:-]{8,80}$")):
+    """Send the immutable approved snapshot (quotation SENT with approvals complete, or contract APPROVED/ACTIVE)."""
+    try:
+        env = await esp.send(db, provider=body.provider, source_type=body.source_type, source_id=body.source_id,
+                             signer_name=body.signer_name.strip(), signer_email=str(body.signer_email),
+                             expire_days=body.expire_days, idempotency_key=idempotency_key, user=current_user)
+    except esp.ESignError as e:
+        _esp_fail(e)
+    return esp.envelope_out(env)
+
+
+@router.get("/providers/envelopes", dependencies=[Depends(require_permission("esign", "view"))])
+async def provider_envelopes(source_type: Optional[str] = Query(None, pattern="^(QUOTATION|CONTRACT)$"),
+                             source_id: Optional[uuid.UUID] = None, db: AsyncSession = Depends(get_db)):
+    from app.models.m48_esign import ESignEnvelope
+    q = select(ESignEnvelope).order_by(ESignEnvelope.created_at.desc()).limit(200)
+    if source_type:
+        q = q.where(ESignEnvelope.source_type == source_type)
+    if source_id:
+        q = q.where(ESignEnvelope.source_id == source_id)
+    return [esp.envelope_out(e) for e in (await db.execute(q)).scalars()]
+
+
+async def _envelope(db, env_id):
+    from app.models.m48_esign import ESignEnvelope
+    env = await db.get(ESignEnvelope, env_id)
+    if env is None:
+        raise HTTPException(404, "Signature request not found")
+    return env
+
+
+@router.get("/providers/envelopes/{env_id}", dependencies=[Depends(require_permission("esign", "view"))])
+async def provider_envelope(env_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    return esp.envelope_out(await _envelope(db, env_id))
+
+
+@router.post("/providers/envelopes/{env_id}/reconcile",
+             dependencies=[Depends(require_permission("esign", "request"))])
+async def provider_reconcile(env_id: uuid.UUID, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Read the status back from the provider (and resolve an unknown create by our reference)."""
+    try:
+        env = await esp.reconcile(db, env_id, "user", current_user)
+    except esp.ESignError as e:
+        _esp_fail(e)
+    await db.commit()
+    return esp.envelope_out(env)
+
+
+class ProviderCancelIn(BaseModel):
+    reason: str = Field(min_length=3, max_length=200)
+
+
+@router.post("/providers/envelopes/{env_id}/cancel", dependencies=[Depends(require_permission("esign", "cancel"))])
+async def provider_cancel(env_id: uuid.UUID, body: ProviderCancelIn, db: AsyncSession = Depends(get_db),
+                          current_user: User = Depends(get_current_user)):
+    env = await _envelope(db, env_id)
+    if not (current_user.is_superuser or has_any_permission(current_user, ("esign.admin",)) or env.created_by_id == current_user.id):
+        raise HTTPException(403, "Only the requester or an e-signature admin can cancel this request.")
+    try:
+        env = await esp.cancel(db, env_id, body.reason, current_user)
+    except esp.ESignError as e:
+        _esp_fail(e)
+    await db.commit()
+    return esp.envelope_out(env)
+
+
+@router.get("/providers/envelopes/{env_id}/files/{kind}", dependencies=[Depends(require_permission("esign", "view"))])
+async def provider_file(env_id: uuid.UUID, kind: str, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """snapshot (what was sent), signed (combined signed document), evidence (certificate / audit trail).
+    The stored SHA-256 is checked before the file is served."""
+    import hashlib
+    env = await _envelope(db, env_id)
+    blob, digest = {"snapshot": (env.snapshot_pdf, env.snapshot_sha256), "signed": (env.signed_pdf, env.signed_sha256),
+                    "evidence": (env.evidence_pdf, env.evidence_sha256)}.get(kind, (None, None))
+    if blob is None:
+        raise HTTPException(404, "No such file for this request")
+    if hashlib.sha256(blob).hexdigest() != digest:
+        raise HTTPException(500, "Stored file does not match its recorded SHA-256; not served.")
+    await _audit(db, current_user, "ESIGN_PROVIDER_FILE_DOWNLOADED", str(env.id), {"kind": kind, "sha256": digest})
+    await db.commit()
+    cert = "provider-certified" if env.provider_certified else ("simulated" if env.mode == "SIMULATED" else "not-certified")
+    name = env.source_ref.replace(" ", "_")
+    return Response(blob, media_type="application/pdf", headers={
+        "Content-Disposition": f"attachment; filename={name}-{kind}.pdf",
+        "X-Content-SHA256": digest, "X-Evidence-Status": cert, "Cache-Control": "private, no-store"})

@@ -1,4 +1,4 @@
-"""Social publishing, calendar and listening (M44.S01.T006–T008). Prefix /api/v1/social."""
+"""Social publishing, calendar and listening (M44.S01.T006–T008; async publish state machine M48.S01.T005). Prefix /api/v1/social."""
 from __future__ import annotations
 
 import uuid
@@ -28,6 +28,13 @@ def _w(u) -> None:
         raise HTTPException(403, "Marketing editors only.")
 
 
+def _audit(db, u, event: str, p: SocialPost, details: dict) -> None:
+    from app.models.audit_log import AuditLog
+    db.add(AuditLog(actor_id=getattr(u, "id", None), actor_email=getattr(u, "email", None),
+                    actor_name=getattr(u, "full_name", None), event_type=f"SOCIAL_POST_{event.upper()}", module="marketing",
+                    target_type="social_post", target_id=str(p.id), details={"status": p.status, "version": p.version, **details}))
+
+
 def _tz(name: str) -> str:
     try:
         ZoneInfo(name)
@@ -46,7 +53,8 @@ class ChannelIn(BaseModel):
 
 def _ch(c: SocialChannel) -> dict:
     return {"id": str(c.id), "network": c.network, "external_id": c.external_id, "name": c.name, "time_zone": c.time_zone,
-            "listen_enabled": c.listen_enabled, "publishing": ss.publish_route(c.network)}
+            "listen_enabled": c.listen_enabled, "publishing": ss.publish_route(c.network), "mode": ss.publish_mode(),
+            **({"tiktok_audited": ss.tiktok_audited()} if c.network == "tiktok" else {})}
 
 
 @router.get("/channels")
@@ -103,6 +111,10 @@ async def _out(db, p: SocialPost) -> dict:
             "status": p.status, "version": p.version, "approved": p.approved_version == p.version,
             "approved_by": p.approved_by, "external_post_id": p.external_post_id, "error": p.error,
             "published_at": p.published_at.isoformat() if p.published_at else None, "history": p.history,
+            "provider_ref": p.provider_ref, "provider_status": p.provider_status, "fail_reason": p.fail_reason,
+            "publish_mode": p.publish_mode, "publish_options": p.publish_options,
+            "submitted_at": p.submitted_at.isoformat() if p.submitted_at else None,
+            "next_poll_at": p.next_poll_at.isoformat() if p.next_poll_at else None,
             "created_by": p.created_by, "route": ss.publish_route(ch.network),
             "problems": ss.problems(ch.network, p.text, p.media or [], p.link), "conflicts": await ss.conflicts(db, p)}
 
@@ -117,8 +129,8 @@ def _when(body: PostIn) -> Optional[datetime]:
     return at.astimezone(timezone.utc)
 
 
-async def _post(db, pid: uuid.UUID) -> SocialPost:
-    p = await db.get(SocialPost, pid)
+async def _post(db, pid: uuid.UUID, lock: bool = False) -> SocialPost:
+    p = await db.get(SocialPost, pid, with_for_update=lock)
     if p is None:
         raise HTTPException(404, "Post not found")
     return p
@@ -182,10 +194,75 @@ async def edit_post(pid: uuid.UUID, body: PostIn, db: AsyncSession = Depends(get
     return await _out(db, p)
 
 
+@router.get("/channels/{cid}/tiktok/creator-info")
+async def tiktok_creator_info(cid: uuid.UUID, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
+    """TikTok creator_info: the privacy options this app may offer (unaudited → SELF_ONLY) and interaction settings."""
+    _w(current_user)
+    c = await db.get(SocialChannel, cid)
+    if c is None or c.network != "tiktok":
+        raise HTTPException(404, "TikTok channel not found")
+    if ss.publish_route("tiktok") != "API":
+        raise HTTPException(409, "TikTok publishing is not enabled (SOCIAL_PUBLISHING_ENABLED and a TikTok token are needed).")
+    try:
+        return {**await ss.tiktok_creator_info(), "mode": ss.publish_mode()}
+    except (ss.SocialError, ss.EgressBlocked) as e:
+        raise HTTPException(502, f"TikTok creator info unavailable: {e}") from None
+    except ss.httpx.HTTPError as e:
+        raise HTTPException(504, f"No answer from TikTok ({type(e).__name__})") from None
+
+
+class TikTokOptionsIn(BaseModel):
+    privacy_level: Literal["PUBLIC_TO_EVERYONE", "MUTUAL_FOLLOW_FRIENDS", "FOLLOWER_OF_CREATOR", "SELF_ONLY"]
+    disable_comment: bool = False
+    disable_duet: bool = False
+    disable_stitch: bool = False
+    source: Literal["PULL_FROM_URL", "FILE_UPLOAD"] = "PULL_FROM_URL"
+    consent: bool
+
+
+@router.put("/posts/{pid}/tiktok-options")
+async def set_tiktok_options(pid: uuid.UUID, body: TikTokOptionsIn, db: AsyncSession = Depends(get_db),
+                             current_user=Depends(get_current_user)):
+    """Privacy / interaction choices with the poster's explicit consent. A change after approval needs approval again."""
+    _w(current_user)
+    p = await _post(db, pid, lock=True)
+    ch = await db.get(SocialChannel, p.channel_id)
+    if ch.network != "tiktok":
+        raise HTTPException(422, "TikTok options apply to TikTok posts only.")
+    if p.status not in EDITABLE:
+        raise HTTPException(409, f"A {p.status.lower()} post cannot be changed.")
+    if not body.consent:
+        raise HTTPException(422, "Explicit consent is required before the post can be sent to TikTok.")
+    if not ss.tiktok_audited() and body.privacy_level != "SELF_ONLY":
+        raise HTTPException(422, "This TikTok app is not audited: only SELF_ONLY (private) posts are allowed.")
+    if ss.publish_route("tiktok") == "API":       # offer only what creator_info returns
+        try:
+            info = await ss.tiktok_creator_info()
+        except (ss.SocialError, ss.EgressBlocked, ss.httpx.HTTPError) as e:
+            raise HTTPException(502, f"TikTok creator info unavailable: {e}") from None
+        if body.privacy_level not in info["privacy_level_options"]:
+            raise HTTPException(422, f"{body.privacy_level} is not offered for this creator.")
+        if info["comment_disabled"] and not body.disable_comment:
+            raise HTTPException(422, "The creator has comments turned off; comments must stay disabled.")
+    if body.source == "PULL_FROM_URL" and p.media and not ss.url_verified(p.media[0]["url"]):
+        raise HTTPException(422, "The video URL is not under a TikTok-verified domain or URL prefix; use FILE_UPLOAD.")
+    opts = {**body.model_dump(), "consent_by": current_user.username,
+            "consent_at": datetime.now(timezone.utc).isoformat()}
+    if p.approved_version == p.version and p.status in ("APPROVED", "FAILED"):
+        p.version += 1
+        p.status, p.approved_by = "DRAFT", None
+        ss.log(p, "EDITED", "TikTok options changed: approval needed again")
+    p.publish_options = opts
+    ss.log(p, "TIKTOK_OPTIONS", f"{body.privacy_level}, {body.source}, consent by {current_user.username}")
+    _audit(db, current_user, "tiktok_options", p, {k: v for k, v in opts.items() if k != "consent_at"})
+    await db.commit()
+    return await _out(db, p)
+
+
 @router.post("/posts/{pid}/{action}")
 async def post_action(pid: uuid.UUID, action: str, db: AsyncSession = Depends(get_db), current_user=Depends(get_current_user)):
     _w(current_user)
-    p = await _post(db, pid)
+    p = await _post(db, pid, lock=True)
     if action == "request":
         if p.status != "DRAFT":
             raise HTTPException(409, "Only a draft can be sent for approval.")
@@ -202,11 +279,38 @@ async def post_action(pid: uuid.UUID, action: str, db: AsyncSession = Depends(ge
         else:
             p.status = "DRAFT"
         ss.log(p, "APPROVED" if action == "approve" else "REJECTED", current_user.username)
+    elif action == "submit":                       # send now instead of waiting for the scheduled time
+        if p.status != "APPROVED" or p.approved_version != p.version:
+            raise HTTPException(409, "Only an approved post can be submitted.")
+        _audit(db, current_user, "submit", p, {})
+        await ss.publish(db, p)
+        await db.commit()
+        return await _out(db, p)
+    elif action == "refresh":
+        if p.status not in ss.IN_FLIGHT or not p.provider_ref:
+            raise HTTPException(409, "Only a submitted post with a provider reference can be refreshed.")
+        await ss.refresh(db, p)
+        _audit(db, current_user, "refresh", p, {"provider_status": p.provider_status})
     elif action == "cancel":
-        if p.status in ("PUBLISHED", "PUBLISHING"):
-            raise HTTPException(409, "Already published; delete it on the network itself.")
-        p.status = "CANCELLED"
-        ss.log(p, "CANCELLED", current_user.username)
+        if p.status in ("SUBMITTED", "PROCESSING"):
+            try:
+                await ss.cancel_at_provider(db, p)
+            except ss.SocialError as e:
+                raise HTTPException(409, str(e)) from None
+            except (ss.EgressBlocked, ss.httpx.HTTPError) as e:
+                raise HTTPException(502, f"Cancel not confirmed: {e or type(e).__name__}") from None
+        elif p.status in ("DRAFT", "PENDING", "APPROVED", "FAILED", "EXPORTED"):
+            p.status = "CANCELLED"
+            ss.log(p, "CANCELLED", current_user.username)
+        else:
+            raise HTTPException(409, {"PUBLISHED": "Already published; delete it on the network itself.",
+                                      "UNKNOWN": "The outcome is unknown; reconcile it (or check the channel) first."}
+                                .get(p.status, f"A {p.status.lower()} post cannot be cancelled."))
+    elif action == "release":                      # a person checked the channel: the interrupted post is NOT there
+        if p.status != "UNKNOWN" or p.provider_ref or p.approved_version != p.version:
+            raise HTTPException(409, "Only an unknown post without a provider reference can be released.")
+        p.status, p.error = "APPROVED", None
+        ss.log(p, "VERIFIED_NOT_POSTED", current_user.username)
     elif action == "retry":
         if p.status != "FAILED" or p.approved_version != p.version or p.external_post_id:
             raise HTTPException(409, "Only a failed, approved post can be retried.")
@@ -220,12 +324,15 @@ async def post_action(pid: uuid.UUID, action: str, db: AsyncSession = Depends(ge
             raise HTTPException(409, "The network may already have this post; check the channel before exporting it.")
         p.status = "EXPORTED"
         ss.log(p, "EXPORTED", current_user.username)
+        _audit(db, current_user, "export", p, {})
         await db.commit()
         return {"network": ch.network, "channel": ch.name, "text": p.text + (f"\n{p.link}" if p.link and ch.network != "facebook" else ""),
                 "link": p.link, "media": p.media, "scheduled_local": p.scheduled_at.astimezone(ZoneInfo(p.time_zone)).isoformat() if p.scheduled_at else None,
                 "note": "Post this manually on the network, then paste the post link into the post's history if you want it tracked."}
     else:
         raise HTTPException(404, "Unknown action")
+    if action not in ("refresh",):
+        _audit(db, current_user, action, p, {})
     await db.commit()
     return await _out(db, p)
 

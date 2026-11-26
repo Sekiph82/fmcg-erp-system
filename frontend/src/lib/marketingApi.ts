@@ -744,3 +744,57 @@ export const STORE_STATUS_COLORS: Record<StoreStatus, string> = {
   INACTIVE: "text-slate-400",
   PENDING:  "text-yellow-400",
 };
+
+// ── M48 ad campaign builder (/api/v1/ads) ─────────────────────────────────────
+
+export type AdProvider = "meta" | "google" | "linkedin" | "tiktok";
+export interface AdProviderInfo {
+  provider: AdProvider; configured: boolean; validate_only: boolean; live_publishing: boolean; egress: string;
+  live_flag: boolean; objectives: string[]; levels: { level: string; label: string }[]; write_tier_ok: boolean;
+}
+export interface AdAccountInfo { id: string; provider: AdProvider; external_id: string; name: string; currency: string; status: string }
+export interface AdAccountControls {
+  account_id: string; activated: boolean; activated_by: string | null; daily_cap: number | null; monthly_cap: number | null;
+  members: string[]; mode: "LIVE" | "SIMULATED"; transport: string; live_blockers: string[];
+}
+export interface AdTreeNode {
+  id: string; level: string; label: string; name: string; provider_name: string; provider_id: string | null;
+  provider_status: string | null; status: string; last_error: string | null; last_read_at: string | null;
+}
+export interface AdApprovalInfo {
+  id: string; action: "SUBMIT" | "BUDGET" | "RESUME"; budget_version: number; daily_budget: number; hash: string;
+  status: string; requested_by: string; decided_by: string | null;
+}
+export type AdTreeAction = "validate" | "edit" | "request_submit" | "approve" | "submit" | "pause" | "request_resume" |
+  "resume" | "edit_budget" | "request_budget" | "reconcile";
+export interface AdCampaignTree {
+  id: string; account_id: string; provider: AdProvider; currency: string; name: string; objective: string;
+  spec: Record<string, unknown>; daily_budget: number; budget_version: number; budget_pushed: number; status: string;
+  mode: "LIVE" | "SIMULATED"; transport: string; live_blockers: string[]; last_error: string | null; created_by: string;
+  validation: { ok: boolean; provider_checked: boolean; problems: string[] } | null;
+  nodes: AdTreeNode[]; approvals: AdApprovalInfo[]; pending_unknown: number; actions: Record<AdTreeAction, string | null>;
+}
+export interface AdMutationRow {
+  id: string; node_id: string; operation: string; key: string; mode: string; state: string; provider_id: string | null;
+  attempts: number; error: string | null; request: Record<string, unknown> | null; created_by: string; created_at: string | null;
+}
+
+export const adCampaignsApi = {
+  providers: () => api.get<AdProviderInfo[]>("/api/v1/ads/providers"),
+  accounts: () => api.get<AdAccountInfo[]>("/api/v1/ads/accounts"),
+  controls: (aid: string) => api.get<AdAccountControls>(`/api/v1/ads/accounts/${aid}/controls`),
+  setControls: (aid: string, data: { daily_cap: string; monthly_cap: string; members: string[] }) =>
+    api.put<AdAccountControls>(`/api/v1/ads/accounts/${aid}/controls`, data),
+  activate: (aid: string, active: boolean) => api.post<AdAccountControls>(`/api/v1/ads/accounts/${aid}/activation`, { active }),
+  list: (accountId?: string) => api.get<AdCampaignTree[]>("/api/v1/ads/campaigns", { params: accountId ? { account_id: accountId } : {} }),
+  create: (data: { account_id: string; idempotency_key: string; name: string; objective: string; daily_budget: string;
+    spec: Record<string, unknown> }) => api.post<AdCampaignTree>("/api/v1/ads/campaigns", data),
+  edit: (id: string, data: { name?: string; spec?: Record<string, unknown> }) => api.patch<AdCampaignTree>(`/api/v1/ads/campaigns/${id}`, data),
+  budget: (id: string, daily_budget: string) => api.post<AdCampaignTree>(`/api/v1/ads/campaigns/${id}/budget`, { daily_budget }),
+  requestApproval: (id: string, action: "SUBMIT" | "BUDGET" | "RESUME") =>
+    api.post<AdCampaignTree>(`/api/v1/ads/campaigns/${id}/approvals`, { action }),
+  decide: (approvalId: string, ok: boolean) => api.post<AdCampaignTree>(`/api/v1/ads/approvals/${approvalId}/decide`, { ok }),
+  run: (id: string, action: "validate" | "submit" | "pause" | "resume" | "reconcile") =>
+    api.post<AdCampaignTree>(`/api/v1/ads/campaigns/${id}/${action}`),
+  mutations: (id: string) => api.get<AdMutationRow[]>(`/api/v1/ads/campaigns/${id}/mutations`),
+};

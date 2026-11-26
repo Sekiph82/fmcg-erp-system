@@ -166,7 +166,7 @@ async def test_release_endpoint_rolls_back_persisted_state_on_late_flush_failure
     from app.models.mrp import MRPRun, MRPRunStatus
     from app.models.user import User
 
-    if "postgresql" not in str(settings.DATABASE_URL):
+    if "postgresql" not in str(settings.DATABASE_URL) or os.environ.get("M20_DISPOSABLE_TEST_DATABASE") != "1":  # M48: explicit opt-in, never the dev DB
         pytest.skip("V04 real rollback proof requires the PostgreSQL CI service")
 
     await engine.dispose()
@@ -240,7 +240,7 @@ async def test_concurrent_postgres_mps_releases_allocate_distinct_order_numbers(
     from app.models.mrp import MRPRun, MRPRunStatus
     from app.models.user import User
 
-    if "postgresql" not in str(settings.DATABASE_URL):
+    if "postgresql" not in str(settings.DATABASE_URL) or os.environ.get("M20_DISPOSABLE_TEST_DATABASE") != "1":  # M48: explicit opt-in, never the dev DB
         pytest.skip("V04 concurrency proof requires the PostgreSQL CI service")
     # Never write into whatever database DATABASE_URL happens to point at (e.g. a dev stack).
     import re as _re

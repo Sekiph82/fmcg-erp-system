@@ -2,6 +2,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from typing import List, Optional
 import uuid
 
@@ -352,8 +353,15 @@ async def stock_transfer(
     Atomically debits source and credits destination within a single transaction.
     """
     _require_transfer_scope(current_user, req.from_warehouse_id, req.to_warehouse_id)
-    movement = await svc.stock_transfer(db, req, current_user.id)
-    await db.commit()
+    try:
+        movement = await svc.stock_transfer(db, req, current_user.id)
+        await db.commit()
+    except IntegrityError:
+        # a concurrent request with the same idempotency key won the unique index: answer with its movement
+        await db.rollback()
+        movement = await svc.transfer_replay(db, req, current_user.id) if req.idempotency_key else None
+        if movement is None:
+            raise
     return movement
 
 

@@ -14,7 +14,7 @@ class ExportTarget(Base):
     name       = Column(String(100), nullable=False, unique=True)
     kind       = Column(String(10), nullable=False)          # LOCAL_DIR | S3 | POSTGRES | SNOWFLAKE | BIGQUERY
     config     = Column(JSON, nullable=False)                # non-secret settings (dir, endpoint_url, bucket, prefix, schema)
-    secret     = Column(Text, nullable=True)                 # encrypted: S3 secret key / PostgreSQL DSN
+    secret     = Column(Text, nullable=True)                 # encrypted: S3 secret key / PostgreSQL DSN / Snowflake key JSON / BigQuery SA JSON
     active     = Column(Boolean, nullable=False, default=True)
     created_by = Column(String(100), nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
@@ -48,5 +48,6 @@ class ExportRun(Base):
     files       = Column(JSON, nullable=False, default=list)
     schema_change = Column(JSON, nullable=True)
     error       = Column(String(500), nullable=True)
+    mode        = Column(String(10), nullable=True)                     # SIMULATED | LIVE (Snowflake/BigQuery runs)
     started_at  = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     finished_at = Column(DateTime(timezone=True), nullable=True)

@@ -83,6 +83,8 @@ export interface StockTransferRequest {
   lot_number?: string;
   reference: string;
   notes?: string;
+  /** One key per logical transfer: a retry or double submit with the same key moves stock only once. */
+  idempotency_key?: string;
 }
 
 export interface InsufficientStockError {

@@ -11,7 +11,8 @@ with tiers, promotion schemes, subscription order templates, payment links. Adde
 - quote reporting; readiness check before conversion (credit exposure, stock per line);
 - contract from an accepted quote via a contract template; renewal: notice before end, a renewal quote once per
   contract when it auto-renews;
-- signature adapters: the built-in evidence flow (LOCAL) is active; DocuSign / Adobe Sign are NOT_CONFIGURED;
+- signature: the built-in signer-code evidence flow (LOCAL, never provider-certified); DocuSign and Adobe Acrobat Sign
+  adapters with readiness, snapshot, ledger and reconciliation live in esign_provider_service (M48.S01.T009);
 - recurring billing: open invoices of subscription orders get a payment link, reminders are retried on a schedule,
   settlement comes from the payment link; the customer portal can open a fresh link for its own invoice;
 - credit-note verification against the original invoice (quantities and prices).
@@ -32,6 +33,8 @@ from app.models.cpq import BillingAttempt, ContractRenewal, ContractTemplate, Qu
 DEFAULTS = {"approval_levels": [{"above_pct": 10, "permission": "sales.approve"}, {"above_pct": 25, "permission": "finance.approve"}],
             "billing_retry_days": [3, 7, 14], "credit_check": True}
 NOT_NOTIFIED = datetime(1970, 1, 1, tzinfo=timezone.utc)     # cpq_renewals.notified_at of an imported contract not yet noticed
+# configuration state before an admin saves credentials (the adapters are real); live readiness per provider:
+# esign_provider_service.readiness()
 SIGNATURE_PROVIDERS = {"LOCAL": "ACTIVE", "DOCUSIGN": "NOT_CONFIGURED", "ADOBE_SIGN": "NOT_CONFIGURED"}
 
 
@@ -489,7 +492,7 @@ async def billing_tick(db: AsyncSession, now: Optional[datetime] = None) -> int:
         cust = await db.get(Customer, inv.customer_id)
         if cust and cust.email:
             await outbound.queue(db, to_email=cust.email, subject=f"Invoice {inv.invoice_no}" + (" (reminder)" if b.attempts > 1 else ""),
-                                 body=f"Your subscription invoice {inv.invoice_no} is ready. Pay by M-Pesa: "
+                                 body=f"Your subscription invoice {inv.invoice_no} is ready. Pay by M-Pesa or card: "
                                       f"{settings.PUBLIC_APP_URL.rstrip('/')}/pay/{token}", purpose="INVOICE",
                                  dedupe_key=f"bill:{inv.id}:{b.attempts}", customer_id=cust.id, created_by="billing")
         sent += 1

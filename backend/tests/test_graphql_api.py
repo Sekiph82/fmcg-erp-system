@@ -22,9 +22,9 @@ def _user(*codes):
 @pytest.fixture
 def env():
     db = FakeDB()
-    db.add(Product(id=uuid.uuid4(), sku="SKU-1", name="Synthetic juice", category=ProductCategory.BEVERAGE,
+    db.add(Product(id=uuid.uuid4(), sku="SKU-1", name="Synthetic AllClean", category=ProductCategory.HOUSEHOLD,
                    uom=UnitOfMeasure.PCS, is_active=True))
-    db.add(Product(id=uuid.uuid4(), sku="SKU-2", name="Synthetic water", category=ProductCategory.BEVERAGE,
+    db.add(Product(id=uuid.uuid4(), sku="SKU-2", name="Synthetic WhiteCare", category=ProductCategory.HOUSEHOLD,
                    uom=UnitOfMeasure.PCS, is_active=True))
     db.add(Supplier(id=uuid.uuid4(), code="SUP-1", name="Synthetic supplier", is_active=True))
     app = FastAPI()
@@ -51,7 +51,7 @@ def test_products_query_with_pagination(env):
     _, as_ = env
     status, body = _q(as_(_user()), "{ products(limit: 1) { sku name category uom isActive } }")
     assert status == 200 and "errors" not in body
-    assert body["data"]["products"] == [{"sku": "SKU-1", "name": "Synthetic juice", "category": "BEVERAGE",
+    assert body["data"]["products"] == [{"sku": "SKU-1", "name": "Synthetic AllClean", "category": "HOUSEHOLD",
                                          "uom": "PCS", "isActive": True}]
     _, body = _q(as_(_user()), "query($n: Int) { products(limit: $n, offset: 1) { sku } }", {"n": 5})
     assert body["data"]["products"] == [{"sku": "SKU-2"}]

@@ -263,9 +263,11 @@ async def test_bpa_consumption_tracks_accepted_receipts_and_rejects_overreceipt(
                 AuditLog.event_type == AuditEvent.BPA_CONSUMPTION_RECORDED,
             ))).scalars().all()
             assert len(events) == 4
-            assert sorted(Decimal(event.after_value["consumed_quantity"]) for event in events) == [
-                Decimal("10.000"), Decimal("15.000"), Decimal("22.000"), Decimal("30.000")
-            ]
+            # the two concurrent receipts (7 and 8) serialise in either order: 15→22→30 or 15→23→30
+            assert sorted(Decimal(event.after_value["consumed_quantity"]) for event in events) in (
+                [Decimal("10.000"), Decimal("15.000"), Decimal("22.000"), Decimal("30.000")],
+                [Decimal("10.000"), Decimal("15.000"), Decimal("23.000"), Decimal("30.000")],
+            )
             second = await get_grn(db, concurrent_ids[0])
             with pytest.raises(HTTPException) as duplicate_post:
                 await svc.post_grn(db, second, actor_id)

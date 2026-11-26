@@ -9,7 +9,7 @@ const plan = {
 };
 const line = {
   id: lineId, line_no: "LINE-001", mps_id: planId, product_id: "33333333-3333-4333-8333-333333333333",
-  product_name: "Synthetic Juice", period_label: "2026-11-03", period_start: "2026-11-03", period_end: "2026-11-03",
+  product_name: "Synthetic AllClean", period_label: "2026-11-03", period_start: "2026-11-03", period_end: "2026-11-03",
   net_requirement_qty: 50, planned_production_qty: 50, priority_score: 80, feasibility_status: "FEASIBLE",
   is_locked: false, required_hours: 2, campaign_id: "44444444-4444-4444-8444-444444444444",
 };
