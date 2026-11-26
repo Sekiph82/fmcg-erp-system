@@ -60,14 +60,18 @@ async def _quote(db: AsyncSession, qid) -> "Quotation":
 
 
 def recompute(q) -> None:
+    # quotation discounts and tax rates are percentages (15 = 15 %), as in the quotation API (M47.S01.T002 fix:
+    # CPQ read them as fractions, so a 15 % discount showed as 1500 % and demanded every approval level)
     sub = Decimal("0")
     tax = Decimal("0")
     for ln in q.lines:
-        net = Decimal(ln.qty) * Decimal(ln.unit_price) * (1 - Decimal(ln.discount_pct or 0))
-        ln.line_total = (net * (1 + Decimal(ln.tax_rate or 0))).quantize(Decimal("0.0001"))
+        net = Decimal(ln.qty) * Decimal(ln.unit_price) * (1 - Decimal(ln.discount_pct or 0) / 100)
+        ln.line_total = (net * (1 + Decimal(ln.tax_rate or 0) / 100)).quantize(Decimal("0.0001"))
         sub += net
-        tax += net * Decimal(ln.tax_rate or 0)
-    sub *= 1 - Decimal(q.discount_pct or 0)
+        tax += net * Decimal(ln.tax_rate or 0) / 100
+    keep = 1 - Decimal(q.discount_pct or 0) / 100
+    sub *= keep
+    tax *= keep
     q.total_amount, q.tax_amount = sub.quantize(Decimal("0.0001")), tax.quantize(Decimal("0.0001"))
     q.grand_total = (sub + tax).quantize(Decimal("0.0001"))
 
@@ -126,18 +130,18 @@ async def evaluate_promotions(db: AsyncSession, qid, apply: bool = False) -> dic
         await db.execute(QuotePromo.__table__.delete().where(QuotePromo.quote_id == q.id))
         by_no = {str(ln.line_no): ln for ln in q.lines}
         header = Decimal("0")
-        gross = sum((Decimal(ln.qty) * Decimal(ln.unit_price) * (1 - Decimal(ln.discount_pct or 0)) for ln in q.lines), Decimal("0"))
+        gross = sum((Decimal(ln.qty) * Decimal(ln.unit_price) * (1 - Decimal(ln.discount_pct or 0) / 100) for ln in q.lines), Decimal("0"))
         for a in res.applied_promos:
             db.add(QuotePromo(quote_id=q.id, scheme_code=a.scheme_code, scheme_name=a.scheme_name, benefit=a.calculated_benefit,
                               details=[i.model_dump(mode="json") for i in a.line_impacts]))
             for imp in a.line_impacts:
                 ln = by_no.get(str(imp.sales_order_line_id)) if imp.sales_order_line_id else None
                 if ln is not None and imp.discount_pct:
-                    ln.discount_pct = max(Decimal(ln.discount_pct or 0), Decimal(imp.discount_pct) / 100)
+                    ln.discount_pct = max(Decimal(ln.discount_pct or 0), Decimal(imp.discount_pct))   # both in percent
                 elif imp.discount_amount:          # scheme-level benefit: carried as a quote-level discount
                     header += Decimal(imp.discount_amount)
         if header and gross > 0:
-            q.discount_pct = max(Decimal(q.discount_pct or 0), (header / gross).quantize(Decimal("0.0001")))
+            q.discount_pct = max(Decimal(q.discount_pct or 0), (header / gross * 100).quantize(Decimal("0.0001")))
         recompute(q)
         await _refresh_approval(db, q)
     return {"applied": applied, "skipped": res.skipped_promos, "total_discount": str(res.total_discount),
@@ -160,7 +164,7 @@ async def quote_from_template(db: AsyncSession, template_id, customer_id, user_i
     for i, l in enumerate(t.lines, start=1):
         db.add(QuotationLine(quote_id=q.id, line_no=i, product_id=uuid.UUID(l["product_id"]), qty=Decimal(str(l.get("qty", 1))),
                              unit=l.get("unit", "PCS"), unit_price=Decimal(str(l.get("unit_price", 0))),
-                             discount_pct=Decimal(str(l.get("discount_pct", 0))), tax_rate=Decimal(str(l.get("tax_rate", 0.16)))))
+                             discount_pct=Decimal(str(l.get("discount_pct", 0))), tax_rate=Decimal(str(l.get("tax_rate", 16)))))
     await db.flush()
     await apply_price_book(db, q.id)
     return await _quote(db, q.id)
@@ -272,7 +276,7 @@ async def _refresh_approval(db: AsyncSession, q) -> None:
 
 def quote_discount(q) -> Decimal:
     from app.services import discount_approval_service as disc
-    return disc.discount_pct(q.lines, Decimal(q.discount_pct or 0) * 100, fraction=True)
+    return disc.discount_pct(q.lines, Decimal(q.discount_pct or 0))      # percentages, like discount_approval.refresh
 
 
 async def levels_needed(db: AsyncSession, q) -> list[dict]:

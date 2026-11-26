@@ -301,6 +301,9 @@ async def close_won(db: AsyncSession, record_id: str, data: CRMCloseWonRequest) 
     db.add(wl)
     from app.services.crm_routing_service import handoff   # M43.S01.T014 won → service/finance briefing
     await handoff(db, record)
+    if not record.assigned_customer_id:     # M47.S01.T002: a won deal becomes (or links to) a real customer
+        from app.services.crm_customer_link_service import ensure_customer
+        await ensure_customer(db, record)
     from app.services.crm_contact_service import sync_record as _sync_contact
     await _sync_contact(db, record, "won")
     await db.commit()

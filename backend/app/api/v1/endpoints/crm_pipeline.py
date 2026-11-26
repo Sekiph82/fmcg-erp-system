@@ -252,6 +252,23 @@ async def close_won(record_id: str, data: CRMCloseWonRequest, db: AsyncSession =
     return _record_read(rec, current_user)
 
 
+@router.post("/records/{record_id}/customer")
+async def ensure_record_customer(record_id: str, db: AsyncSession = Depends(get_db),
+                                 current_user=Depends(require_any_permission(CRM_EDIT_PERMISSIONS))):
+    """M47.S01.T002: create (or link an existing) customer for this lead/opportunity."""
+    from app.core.access_control import can_modify_record
+    from app.services.crm_customer_link_service import ensure_customer
+
+    rec = await _scoped_record(db, _uuid(record_id), current_user, "view")   # WON records are not "editable"
+    if not can_modify_record(current_user, "crm", "edit", rec):              # but linking a customer needs edit scope
+        raise HTTPException(403, "You can link a customer only to records in your edit scope.")
+    if getattr(rec.status, "value", rec.status) == "LOST":
+        raise HTTPException(409, "A lost record does not become a customer.")
+    cust, created = await ensure_customer(db, rec, current_user)
+    await db.commit()
+    return {"customer_id": str(cust.id), "customer_code": cust.code, "customer_name": cust.name, "created": created}
+
+
 @router.post("/records/{record_id}/close-lost", response_model=CRMRecordRead)
 async def close_lost(record_id: str, data: CRMCloseLostRequest, db: AsyncSession = Depends(get_db), current_user=Depends(require_any_permission(CRM_EDIT_PERMISSIONS))):
     existing = await svc.get_record(db, record_id)

@@ -164,6 +164,9 @@ async def _ensure_lead(db: AsyncSession, sess: CRMChatSession) -> None:
                              created_by="website-chat", activities=[], interest_lines=[])
         db.add(existing)
         await db.flush()
+        from app.services import crm_intelligence_service as intel, crm_routing_service
+        await crm_routing_service.route(db, existing)   # M47.S01.T002: routed and scored like form leads
+        await intel.rescore(db, existing, await intel.active_rules(db), "website-chat", has_history=False)
     sess.crm_record_id = existing.id
 
 

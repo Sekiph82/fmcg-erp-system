@@ -2863,9 +2863,69 @@ Dependency: previous major milestone gate and synchronization PASS. Reuse shared
     - Content sync stays MISSING (bundles contain no CMS content).
   - Remaining buildable gaps became tasks M47.S01.T007–T011.
   - Library-only items (SAML, Parquet, OCR) need owner consent to install and went to M47.S02.T010. No parity percentage is claimed.
-- [ ] M47.S01.T002 — Prove parity-plus integrated design through synthetic FMCG scenarios: website lead/chat → score → routing/sequence → quote/discount/signature → order → MRP/production/QC/stock → pick/dispatch/POD → invoice/ledger/tahsilat; distributor/shop/field channels; complaint/lot/recall/NPS/loyalty; campaigns/attribution/AI recommendations. Test absent-provider operation and native data continuity. Prepare evidence plan, test only at gate; update TASKS.md immediately.
-- [ ] M47.S01.T003 — Verify all software surfaces, role permissions, privacy, consent, auditability, accessible desktop/mobile screens, multi-company/currency/locales, import/export/backup/recovery, operational limits, deployment configuration and no real business data/credentials in public repo. Record docs, screenshots and missing tasks; do not imply production readiness without actual acceptance. Update TASKS.md immediately.
-- [ ] M47.S01.T004 — Final feature-by-feature comparison report: each HubSpot capability with evidence, achieved local parity/advantage, remaining limitations due to vendor-only/private data or approvals, exact future activation prerequisites, and measurable native FMCG advantages. If a software gap remains, add tasks and close them before final acceptance. No fake market-size or live accuracy equivalence. Update TASKS.md immediately.
+- [v] M47.S01.T002 — Prove parity-plus integrated design through synthetic FMCG scenarios: website lead/chat → score → routing/sequence → quote/discount/signature → order → MRP/production/QC/stock → pick/dispatch/POD → invoice/ledger/tahsilat; distributor/shop/field channels; complaint/lot/recall/NPS/loyalty; campaigns/attribution/AI recommendations. Test absent-provider operation and native data continuity. Prepare evidence plan, test only at gate; update TASKS.md immediately.
+  Done 2026-11-26 [v] (tests NOT RUN as gate; pre-gate check 5/5 twice on a fresh DB):
+  - Integrated synthetic FMCG scenario (tests/test_m47_s01_t002_integrated_flow.py; PROVIDER_EGRESS=local, no keys), every step asserted:
+    - lead and demand: website lead form (HTTP) → scored and routed → sequence → opportunity + rule-based prioritisation → customer created; purchase/GRN → production → QC and quarantine release → lot release → trace;
+    - quote and signature: quotation at 15% with a second-person discount approval and CPQ level → share link + signer code → e-sign ACCEPTED → close-won;
+    - order and delivery: SO confirm/allocate → pick/pack → dispatch → POD twice;
+    - invoice and payment: exactly one invoice, GL AR 3944 / revenue 3400 / VAT 544 → payment-link STK + Daraja callback (simulated) → finance confirm → AR 0;
+    - after-sales: loyalty points + NPS; distributor portal order + field visit order; SAFETY complaint → recall → trace reaches the customer; attribution credits the lead's UTM campaign; copilot brief rule-based.
+  - Chain gaps fixed:
+    - lead→customer (ensure_customer, close-won, POST /crm/records/{id}/customer);
+    - form and chat leads routed and scored;
+    - MRP suggestion → production order used the wrong columns;
+    - complaint → POST /consumer-complaints/{id}/initiate-recall;
+    - office POD now invoices (idempotent).
+  - Extra bugs found by the scenario and fixed:
+    - CPQ read quotation percentages as fractions (15% looked like 1500%, so every quote needed finance approval);
+    - consumer complaint refs collided across restarts/workers (500).
+  - Limits:
+    - staff steps call endpoints/services as real DB users (not through login);
+    - the Daraja push is simulated;
+    - production makes no GL entry without production posting rules.
+- [v] M47.S01.T003 — Verify all software surfaces, role permissions, privacy, consent, auditability, accessible desktop/mobile screens, multi-company/currency/locales, import/export/backup/recovery, operational limits, deployment configuration and no real business data/credentials in public repo. Record docs, screenshots and missing tasks; do not imply production readiness without actual acceptance. Update TASKS.md immediately.
+  Done 2026-11-26 [v] (tests NOT RUN as gate; pre-gate checks 5/5 + 8/8):
+  - Independent read-only surface audit: coordination/milestones/M47/T003/T003_AUDIT.md.
+    - 3,611 routes enumerated. All 107 PUBLIC_ROUTES entries exist. The only other no-auth routes are /live, /ready, / and /metrics.
+    - Secrets scan of 4,163 tracked files: none found. No export endpoint lacks a permission check.
+  - 17 findings; 16 confirmed and fixed with tests, 1 false positive (public web analytics is already rate-limited 120/min):
+    - /metrics: no longer public, labelled by route template, bounded;
+    - approvals: need the step's role and a second person;
+    - chatter: module-scoped, with the author from the session;
+    - JSON body cap of 12 MB;
+    - media volume in the compose files and the Docker image;
+    - weak initial admin password refused in production;
+    - WhatsApp opt-in/STOP/START with a phone consent register, and the token encrypted at rest;
+    - mailbox sends skip bounced/complained/unsubscribed addresses;
+    - calendar shows only own events (redacted for admins);
+    - meeting-recap consent before transcription/AI;
+    - recovery-code attempt cap;
+    - quote/signing pages EN/SW/TR;
+    - service-desk permission guard;
+    - ad uploads consent-only;
+    - form-shortening route listed and rate-limited;
+    - trip notices respect WhatsApp opt-out.
+  - Documented in docs/DEPLOYMENT.md:
+    - a complete backup (DB, documents and media volumes, keys), safe restore, schedule;
+    - METRICS_TOKEN, /docs exposure, FORWARDED_ALLOW_IPS and per-worker limits.
+  - Bounded / document-only:
+    - USD defaults on some money tables;
+    - real-looking demo names in old seed data;
+    - 64 staff routes whose helper checks were not read by the auditor (re-check at the final gate).
+  - Tests: tests/test_m47_s01_t003_hardening.py and tests/test_m47_s01_t003_audit_fixes.py.
+- [v] M47.S01.T004 — Final feature-by-feature comparison report: each HubSpot capability with evidence, achieved local parity/advantage, remaining limitations due to vendor-only/private data or approvals, exact future activation prerequisites, and measurable native FMCG advantages. If a software gap remains, add tasks and close them before final acceptance. No fake market-size or live accuracy equivalence. Update TASKS.md immediately.
+  Done 2026-11-26 [v] (tests NOT RUN as gate):
+  - Final comparison report: coordination/milestones/M47/FINAL_COMPARISON_REPORT.md.
+  - Contents:
+    - each HubSpot hub capability with ERP evidence and milestone;
+    - activation-only items per hub;
+    - deliberate non-goals with reasons;
+    - native FMCG advantages (lead-to-cash-to-factory in one record, lot-level safety, M-Pesa/eTIMS/field channels, trade marketing, governance by default);
+    - honest remaining limitations;
+    - exact activation prerequisites (M47.S02.T001–T010).
+  - No percentage, market-size or live-accuracy claim.
+  - Every software gap found in the v3 re-audit was closed by T007–T011, or recorded as an explicitly bounded delta in the report.
 - [ ] M47.S01.T005 — Consolidated final software milestone test gate: full backend, DB/migration, contracts, frontend build/type/lint, browser actual local app and screenshot walkthrough, critical end-to-end personas and independent security/code audit. Fix failures and rerun; no [x] before applicable PASS. Commit/push all accepted code/evidence/ledger and verify Desktop/main SHA match; update TASKS.md and report in Turkish.
 
 - [v] M47.S01.T006 — M46 carry-overs (from the M46 gate review, 2026-11-26)

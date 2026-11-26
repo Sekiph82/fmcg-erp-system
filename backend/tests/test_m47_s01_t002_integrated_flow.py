@@ -39,7 +39,9 @@ async def _dispose_engine():
 
 def _client():
     from app.main import app
-    return httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://erp.test")
+    import random
+    ip = f"10.{random.randint(0, 255)}.{random.randint(0, 255)}.{random.randint(1, 254)}"   # per-IP limits: re-runs stay apart
+    return httpx.AsyncClient(transport=httpx.ASGITransport(app=app, client=(ip, 50000)), base_url="http://erp.test")
 
 
 def _guard_db():
@@ -60,7 +62,7 @@ async def _actor(db, *codes, name="POVU staff"):
             await db.flush()
         perms.append(p)
     tag = uuid.uuid4().hex
-    u = User(email=f"m47-{tag[:12]}@povu-demo.test", username=f"m47{tag}", full_name=name,
+    u = User(email=f"m47-{tag[:12]}@example.com", username=f"m47{tag}", full_name=name,
              hashed_password="synthetic-test-only-not-a-credential", is_active=True, is_superuser=False,
              roles=[Role(name=f"POVU m47 role {tag}", is_active=True, permissions=perms)])
     db.add(u)
@@ -94,7 +96,7 @@ def _callback(checkout, receipt):
 async def _balance(db, account_id) -> Decimal:
     from app.models.finance import JournalEntry, JournalLine, JournalStatus
     v = (await db.execute(select(func.coalesce(func.sum(JournalLine.debit - JournalLine.credit), 0))
-                          .join(JournalEntry, JournalEntry.id == JournalLine.journal_entry_id)
+                          .join(JournalEntry, JournalEntry.id == JournalLine.entry_id)
                           .where(JournalLine.account_id == account_id, JournalEntry.status == JournalStatus.POSTED))).scalar_one()
     return Decimal(v)
 
@@ -160,7 +162,7 @@ async def test_integrated_povu_flow(monkeypatch):
     _guard_db()
     s = uuid.uuid4().hex[:8]
     today = date.today()
-    email = f"duka-{s}@povu-demo.test"
+    email = f"duka-{s}@example.com"
     campaign = f"povu-launch-{s}"
     # deterministic AI: no provider keys, simulators only
     monkeypatch.setattr(settings, "PROVIDER_EGRESS", "local")
@@ -181,7 +183,7 @@ async def test_integrated_povu_flow(monkeypatch):
     async with AsyncSessionLocal() as db:
         rep_id = await _actor(db, "crm.view_all", "crm.create_all", "crm.edit_all", "sales.view_all", "sales.create_all",
                               "sales.edit_all", "sales.convert_all", name="POVU Rep")
-        mgr_id = await _actor(db, "sales.view_all", "sales.approve_all", name="POVU Sales Manager")
+        mgr_id = await _actor(db, "sales.view_all", "sales.approve", "sales.approve_all", name="POVU Sales Manager")
         fin_id = await _actor(db, "finance.approve", "sales.view", name="POVU Finance")
         qa_id = await _actor(db, "quality.view", "quality.approve", "consumer_complaints.create", "consumer_complaints.view",
                              name="POVU QA Head")
@@ -350,18 +352,22 @@ async def test_integrated_povu_flow(monkeypatch):
         fg_stock = (await db.execute(select(Stock).where(Stock.lot_id == fg_lot_id))).scalar_one()
         fg_stock_id = fg_stock.id
         assert fg_stock.quantity_on_hand == Decimal("50") and fg_stock.is_blocked is True            # quarantined
-        insp = (await db.execute(select(QCInspection).where(QCInspection.production_order_id == mo,
-                                                            QCInspection.qc_type == QCType.FINISHED_GOODS))).scalar_one()
-        insp_id = insp.id
-        param = (await db.execute(select(QCTemplateParameter).where(QCTemplateParameter.template_id == insp.template_id))).scalar_one()
-        db.add(QCTestResult(inspection_id=insp_id, template_parameter_id=param.id, parameter_name=param.parameter_name,
-                            parameter_type=param.parameter_type, unit=param.unit, numeric_value=Decimal("7"),
-                            min_spec=param.min_value, max_spec=param.max_value, is_passed=True,
-                            is_critical=param.is_critical, tested_by_id=qa_id))
-        await db.commit()
-        await make_decision(db, await db.get(QCInspection, insp_id), QCDecision.ACCEPT, qa_id, "POVU FG accepted", False, False)
-        await db.commit()
-        await release_qc_quarantine(db, await db.get(QCInspection, insp_id), qa_id, "FG release")
+        # one FG inspection per required template (a re-run on the same database adds the earlier run's gate too)
+        insp_ids = (await db.execute(select(QCInspection.id).where(QCInspection.production_order_id == mo,
+                                                                   QCInspection.qc_type == QCType.FINISHED_GOODS))).scalars().all()
+        assert insp_ids
+        for insp_id in insp_ids:
+            insp = await db.get(QCInspection, insp_id)
+            for param in (await db.execute(select(QCTemplateParameter).where(
+                    QCTemplateParameter.template_id == insp.template_id))).scalars():
+                db.add(QCTestResult(inspection_id=insp_id, template_parameter_id=param.id, parameter_name=param.parameter_name,
+                                    parameter_type=param.parameter_type, unit=param.unit, numeric_value=Decimal("7"),
+                                    min_spec=param.min_value, max_spec=param.max_value, is_passed=True,
+                                    is_critical=param.is_critical, tested_by_id=qa_id))
+            await db.commit()
+            await make_decision(db, await db.get(QCInspection, insp_id), QCDecision.ACCEPT, qa_id, "POVU FG accepted", False, False)
+            await db.commit()
+        await release_qc_quarantine(db, await db.get(QCInspection, insp_ids[0]), qa_id, "FG release")
         await db.commit()
         await release_lot(db, fg_lot_id, qa_id, "POVU QA lot release")
         await db.commit()
@@ -389,6 +395,17 @@ async def test_integrated_povu_flow(monkeypatch):
         await db.rollback()
         ok = await quote_api.approve_discount(quote_id, quote_api.DiscountDecisionIn(), db, await _load(db, mgr_id))
         assert ok.approval_status == "DISCOUNT_APPROVED"
+        # CPQ multi-step levels read the same percentages: 15 % needs level 1 only (above 10 %), not finance (above 25 %)
+        from app.services import cpq_service as cpq
+        st = await cpq.approval_state(db, await cpq._quote(db, quote_id))
+        assert st["discount_pct"] == "15.00" and [lv["level"] for lv in st["levels"]] == [1] and not st["complete"]
+        with pytest.raises(cpq.CPQError):
+            await cpq.approve_level(db, quote_id, await _load(db, rep_id))              # the price setter
+        await db.rollback()
+        assert (await cpq.approve_level(db, quote_id, await _load(db, mgr_id)))["complete"] is True
+        await db.commit()
+        q_row = await cpq._quote(db, quote_id)
+        assert (q_row.total_amount, q_row.tax_amount, q_row.grand_total) == (Decimal("3400.0000"), Decimal("544.0000"), Decimal("3944.0000"))
         sent = await quote_api.send_quote(quote_id, db, await _load(db, rep_id))
         assert sent.status == QuoteStatus.SENT
         token = (await quote_api.create_share_link(quote_id, quote_api.ShareLinkIn(), db, await _load(db, rep_id)))["url"].rsplit("/d/", 1)[1]
@@ -506,7 +523,7 @@ async def test_integrated_povu_flow(monkeypatch):
                             linked_customer_id=str(cust_id), portal_status=PortalAccountStatus.ACTIVE)
         db.add(acc)
         await db.flush()
-        db.add(PortalUser(portal_account_id=acc.id, full_name="Achieng Otieno", email=f"portal-{s}@povu-demo.test",
+        db.add(PortalUser(portal_account_id=acc.id, full_name="Achieng Otieno", email=f"portal-{s}@example.com",
                           password_hash=hash_password(PW), role_type=PortalUserRole.BUYER, is_active=True))
         frep = SalesRep(code=f"M47-REP-{s}", name="POVU Field Rep", user_id=fld_id)
         db.add(frep)
@@ -522,7 +539,7 @@ async def test_integrated_povu_flow(monkeypatch):
     # ── 14. distributor portal order and 15. field-visit order for the same customer ───────────────────────────────
     tomorrow = (today + timedelta(days=1)).isoformat()
     async with _client() as c:
-        assert (await c.post("/api/v1/portal-self/auth/login", json={"email": f"portal-{s}@povu-demo.test", "password": PW})).status_code == 200
+        assert (await c.post("/api/v1/portal-self/auth/login", json={"email": f"portal-{s}@example.com", "password": PW})).status_code == 200
         po_r = await c.post("/api/v1/portal-self/orders", json={"client_ref": f"portal-{s}", "requested_delivery_date": tomorrow,
                                                                  "lines": [{"product_id": str(ids.product), "quantity": "10"}]})
         assert po_r.status_code == 201, po_r.text
@@ -610,17 +627,19 @@ async def test_close_won_creates_customer_and_endpoint_links_existing():
     async with AsyncSessionLocal() as db:
         rep_id = await _actor(db, "crm.view_all", "crm.edit_all")
         a = CRMRecord(record_type=CRMRecordType.OPPORTUNITY, company_name=f"Duka Mbili {s}", lead_code=f"L-M47A-{s}",
-                      opportunity_code=f"O-M47A-{s}", contact_email=f"mbili-{s}@povu-demo.test", source_type=CRMSourceType.EVENT,
+                      opportunity_code=f"O-M47A-{s}", contact_email=f"mbili-{s}@example.com", source_type=CRMSourceType.EVENT,
                       activities=[], interest_lines=[])
-        existing = Customer(code=f"M47-EX-{s}", name=f"Duka Tatu Ltd {s}", email=f"tatu-{s}@povu-demo.test", currency="KES")
+        existing = Customer(code=f"M47-EX-{s}", name=f"Duka Tatu Ltd {s}", email=f"tatu-{s}@example.com", currency="KES")
         b = CRMRecord(record_type=CRMRecordType.LEAD, company_name=f"Duka Tatu {s}", lead_code=f"L-M47B-{s}",
-                      contact_email=f"TATU-{s}@povu-demo.test", activities=[], interest_lines=[])
-        db.add_all([a, existing, b])
+                      contact_email=f"TATU-{s}@example.com", activities=[], interest_lines=[])
+        for row in (a, existing, b):     # one at a time: the stage-history rows are written in before_flush
+            db.add(row)
+            await db.flush()
         await db.commit()
         won = await pipeline.close_won(db, str(a.id), CRMCloseWonRequest())
         assert won.assigned_customer_id is not None
         cust = await db.get(Customer, won.assigned_customer_id)
-        assert cust.name == f"Duka Mbili {s}" and cust.code == f"C-O-M47A-{s}" and cust.email == f"mbili-{s}@povu-demo.test"
+        assert cust.name == f"Duka Mbili {s}" and cust.code == f"C-O-M47A-{s}" and cust.email == f"mbili-{s}@example.com"
         out = await crm_api.ensure_record_customer(str(b.id), db, await _load(db, rep_id))   # e-mail match, case-insensitive
         assert out == {"customer_id": str(existing.id), "customer_code": existing.code, "customer_name": existing.name,
                        "created": False}
@@ -648,7 +667,7 @@ async def test_chat_lead_is_routed_and_scored():
                               conditions={"source_type": "WEBSITE", "source_detail": "live chat"}, method="FIXED",
                               user_ids=[str(rep_id)]))
         await db.commit()
-        sess, _ = await chat.start(db, ip="10.1.2.3", name="Baraka", email=f"chat-{s}@povu-demo.test", consent=True,
+        sess, _ = await chat.start(db, ip=f"10.9.{int(s[:2], 16)}.{int(s[2:4], 16)}", name="Baraka", email=f"chat-{s}@example.com", consent=True,
                                    page_url="https://povu-demo.test/shop", honeypot=None)
         await db.commit()
         lead = await db.get(CRMRecord, sess.crm_record_id)
@@ -718,8 +737,8 @@ async def test_complaint_recall_refusals():
         db.add_all([quality, unknown])
         await db.commit()
         qa = await _load(db, qa_id)
-        for row, status in ((quality, 409), (unknown, 422)):
+        for row_id, status in ((quality.id, 409), (unknown.id, 422)):
             with pytest.raises(HTTPException) as e:
-                await cc_api.initiate_recall_from_complaint(row.id, db, qa)
+                await cc_api.initiate_recall_from_complaint(row_id, db, qa)
             assert e.value.status_code == status
             await db.rollback()

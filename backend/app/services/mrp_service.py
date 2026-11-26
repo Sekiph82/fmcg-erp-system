@@ -375,20 +375,37 @@ async def convert_suggestion_to_production_order(
         .limit(1)
     )
     recipe = recipe_q.scalar_one_or_none()
+    # M47.S01.T002: the order used non-existent columns (target_quantity / planned_date) and left the required
+    # recipe and target warehouse empty; refuse clearly instead of failing on insert.
+    from fastapi import HTTPException
+    from app.models.master import Warehouse, WarehouseType
+    if recipe is None:
+        raise HTTPException(422, "No active approved recipe for this product; approve a recipe before converting.")
+    run = await db.get(MRPRun, suggestion.run_id) if suggestion.run_id else None
+    warehouse_id = run.warehouse_id if run is not None else None
+    if warehouse_id is None:
+        warehouse_id = (await db.execute(select(Warehouse.id).where(
+            Warehouse.warehouse_type == WarehouseType.FINISHED_GOODS, Warehouse.is_active.is_(True))
+            .order_by(Warehouse.code).limit(1))).scalar_one_or_none()
+    if warehouse_id is None:
+        raise HTTPException(422, "No finished-goods warehouse to produce into.")
 
     order_no = await _next_po_no(db)
     product = await db.get(Product, suggestion.product_id)
+    start = datetime.combine(suggestion.planned_start_date or suggestion.required_date,
+                             datetime.min.time()).replace(tzinfo=timezone.utc)
+    end = datetime.combine(suggestion.required_date, datetime.min.time()).replace(tzinfo=timezone.utc)
 
     order = ProductionOrder(
         order_no=order_no,
         plan_line_id=None,
         product_id=suggestion.product_id,
-        recipe_id=recipe.id if recipe else None,
-        target_quantity=suggestion.suggested_qty,
-        uom=suggestion.uom or (str(product.uom) if product else "PCS"),
-        target_warehouse_id=None,
-        planned_date=datetime.combine(suggestion.planned_start_date or suggestion.required_date,
-                                       datetime.min.time()).replace(tzinfo=timezone.utc),
+        recipe_id=recipe.id,
+        planned_quantity=suggestion.suggested_qty,
+        uom=suggestion.uom or (getattr(product.uom, "value", product.uom) if product else "PCS"),
+        target_warehouse_id=warehouse_id,
+        scheduled_start=start,
+        scheduled_end=max(start, end),
         status=ProductionOrderStatus.PLANNED,
         created_by=created_by_id,
     )

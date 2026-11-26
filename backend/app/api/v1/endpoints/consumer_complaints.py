@@ -20,14 +20,14 @@ from app.models.consumer_complaints import (
 )
 
 router = APIRouter()
-_SEQ = 0
 MODULE_KEY = "consumer_complaints"
 
 
 def _ref() -> str:
-    global _SEQ
-    _SEQ += 1
-    return f"CC-{datetime.utcnow().strftime('%Y%m%d')}-{_SEQ:04d}"
+    # random suffix: the old per-process counter restarted at 0001 after every restart / in every worker and the
+    # unique complaint_ref then failed with a 500 (found by M47.S01.T002)
+    import secrets
+    return f"CC-{datetime.utcnow().strftime('%Y%m%d')}-{secrets.token_hex(4).upper()}"
 
 
 def _out(c: ConsumerComplaint) -> dict:
@@ -232,6 +232,50 @@ async def update_complaint(
 
     await db.commit()
     return _out(c)
+
+
+@router.post("/{complaint_id}/initiate-recall", status_code=201)
+async def initiate_recall_from_complaint(
+    complaint_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user=Depends(require_permission("quality", "approve")),
+):
+    """M47.S01.T002: a SAFETY complaint starts a draft recall on its lot (linked both ways). Once per complaint."""
+    from app.models.audit_log import AuditLog
+    from app.models.inventory import Lot
+    from app.models.traceability import RecallHeader, RecallSeverity, RecallTrigger, RecallType
+    from app.schemas.traceability import RecallCreate
+    from app.services import recall_service
+
+    c = (await db.execute(select(ConsumerComplaint).where(ConsumerComplaint.id == complaint_id)
+                          .with_for_update())).scalar_one_or_none()
+    if not c:
+        raise HTTPException(404, "Complaint not found")
+    if not c.recall_triggered_flag:
+        raise HTTPException(409, "Only a SAFETY complaint (recall flag set) can start a recall.")
+    existing = (await db.execute(select(RecallHeader.recall_no).where(
+        RecallHeader.linked_complaint_id == c.id))).scalars().first()
+    if c.recall_ref or existing:
+        raise HTTPException(409, f"A recall already exists for this complaint: {c.recall_ref or existing}.")
+    if not c.lot_number:
+        raise HTTPException(422, "The complaint has no lot number to recall.")
+    lots = (await db.execute(select(Lot).where(Lot.lot_number == c.lot_number, Lot.product_id.is_not(None)))).scalars().all()
+    if len(lots) != 1:
+        raise HTTPException(422 if not lots else 409,
+                            f"Lot {c.lot_number} {'not found' if not lots else 'is ambiguous (several products)'}.")
+    recall = await recall_service.initiate_recall(db, RecallCreate(
+        recall_type=RecallType.customer, recall_reason=f"Safety complaint {c.complaint_ref}: {c.description}"[:2000],
+        trigger_source=RecallTrigger.complaint, severity_level=RecallSeverity.high, source_lot_id=lots[0].id,
+        source_product_id=lots[0].product_id, initiated_by_id=current_user.id, linked_complaint_id=c.id))
+    c = await db.get(ConsumerComplaint, complaint_id)   # initiate_recall committed (lock released; the recall row now guards)
+    c.recall_ref, c.status = recall.recall_no, ComplaintStatus.ESCALATED
+    db.add(AuditLog(actor_id=current_user.id, actor_email=getattr(current_user, "email", None),
+                    actor_name=getattr(current_user, "full_name", None), event_type="complaint.recall_initiated",
+                    module="quality", target_type="consumer_complaint", target_id=str(c.id),
+                    details={"recall_id": str(recall.id), "recall_no": recall.recall_no, "lot_id": str(lots[0].id)}))
+    await db.commit()
+    return {"recall_id": str(recall.id), "recall_no": recall.recall_no, "status": recall.status.value,
+            "source_lot_id": str(lots[0].id), "complaint": _out(c)}
 
 
 @router.get("/by-lot/{lot_number}")

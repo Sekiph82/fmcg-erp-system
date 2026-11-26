@@ -76,7 +76,7 @@ async def test_cpq_lifecycle(monkeypatch):
         db.add(q)
         await db.flush()
         db.add(QuotationLine(quote_id=q.id, line_no=1, product_id=prod.id, qty=Decimal("20"), unit_price=Decimal("1000"),
-                             discount_pct=Decimal("0.28"), tax_rate=Decimal("0.16")))
+                             discount_pct=Decimal("28"), tax_rate=Decimal("16")))
         await db.flush()
         qid = q.id
         # promotions on the quote
@@ -100,7 +100,7 @@ async def test_cpq_lifecycle(monkeypatch):
         st = await cpq.approve_level(db, qid, fin)
         assert st["complete"]
         await cpq.ensure_levels(db, q, "send it")
-        q.lines[0].discount_pct = Decimal("0.60")                          # raised after approval (e.g. PATCH)
+        q.lines[0].discount_pct = Decimal("60")                          # raised after approval (e.g. PATCH)
         with pytest.raises(cpq.CPQError):
             await cpq.ensure_levels(db, q, "send it")
         await cpq.approve_level(db, qid, mgr)                              # stale approvals are dropped: approve again

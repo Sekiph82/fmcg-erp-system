@@ -143,13 +143,20 @@ async def create_pod(
     db: AsyncSession = Depends(get_db),
     current_user=Depends(get_current_user),
 ):
-    pod = await crud.create_pod(db, data, current_user.id)
-    # Mark the shipment as DELIVERED
     from app.models.sales import Shipment, ShipmentStatus
     from sqlalchemy import select
-    res = await db.execute(select(Shipment).where(Shipment.id == data.shipment_id))
+    # lock the shipment so a resent POD neither duplicates the proof nor the invoice (M47.S01.T002)
+    res = await db.execute(select(Shipment).where(Shipment.id == data.shipment_id).with_for_update())
     shipment = res.scalar_one_or_none()
+    existing = await crud.get_pod_by_shipment(db, data.shipment_id)
+    if existing is not None:
+        return existing
+    pod = await crud.create_pod(db, data, current_user.id)
     if shipment and shipment.status == ShipmentStatus.DISPATCHED:
+        # same as the field app: the invoice is cut at delivery and e-mailed (never blocks the delivery)
+        from app.services.invoice_delivery_service import invoice_on_delivery
+
+        await invoice_on_delivery(db, shipment.id, current_user.id)
         shipment.status = ShipmentStatus.DELIVERED
     await db.commit()
     return pod
