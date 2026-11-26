@@ -3,7 +3,7 @@
  To use this directory, set `turbopack.root` in your Next.js config.
 
 ⚠ React 18 support is deprecated in Next.js 16 and will be removed in Next.js 17. Please upgrade to React 19. Learn more: https://nextjs.org/docs/messages/react-version
-✓ Running next.config.mjs took 41ms
+✓ Running next.config.mjs took 31ms
 
 ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead.
 
@@ -12,7 +12,7 @@
 
   Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
   Creating an optimized production build ...
-✓ Compiled successfully in 28.4s
+✓ Compiled successfully in 22.6s
   Running TypeScript ...
 
   We detected TypeScript in your project and reconfigured your tsconfig.json file for you.
@@ -21,13 +21,13 @@
   	- include was updated to add '.next-m48gate/types/**/*.ts'
   	- include was updated to add '.next-m48gate/dev/types/**/*.ts'
 
-  Finished TypeScript in 107s ...
+  Finished TypeScript in 49s ...
   Collecting page data using 15 workers ...
-  Generating static pages using 15 workers (0/774) ...
-  Generating static pages using 15 workers (193/774) 
-  Generating static pages using 15 workers (386/774) 
-  Generating static pages using 15 workers (580/774) 
-✓ Generating static pages using 15 workers (774/774) in 14.3s
+  Generating static pages using 15 workers (0/775) ...
+  Generating static pages using 15 workers (193/775) 
+  Generating static pages using 15 workers (387/775) 
+  Generating static pages using 15 workers (581/775) 
+✓ Generating static pages using 15 workers (775/775) in 5.0s
   Finalizing page optimization ...
 
 Route (app)
@@ -39,6 +39,7 @@ Route (app)
 ├ ƒ /book/[slug]
 ├ ƒ /book/manage/[token]
 ├ ○ /chat
+├ ○ /consent-confirm
 ├ ƒ /d/[token]
 ├ ○ /dashboard
 ├ ○ /dashboard/admin

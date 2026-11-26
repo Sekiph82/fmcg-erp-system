@@ -120,3 +120,13 @@
 | 3 | /dashboard/marketing/ads/campaigns (walk-outsider) | scrollWidth 375 = viewport 375, so no horizontal overflow; the SIMULATED reasons wrap | 34_mobile_ads_builder.jpg |
 
 Staff page bodies remain English by design; full EN/SW/TR coverage of staff pages is M51.S01.T008.
+
+## 9. Remediation UIs (T022/T023), checked on the final backend
+
+| # | Page | Observed result | Screenshot |
+|---|---|---|---|
+| 1 | /consent-confirm?t=invalid&lang=sw | **Defect:** the new double opt-in page was English-only. The pre-existing /unsubscribe page was English-only too. | 36_consent_page_english_only_before.jpg |
+| 2 | after the fix (M48.S01.T025) | Both pages are localized EN/SW/TR, with a language switcher and messages translated at render time: "Kiungo hiki cha uthibitisho si halali au muda wake umeisha."; "Bu abonelikten çıkma bağlantısı geçerli değil." | 37_consent_page_sw_after.jpg, 38_unsubscribe_page_tr_after.jpg |
+| 3 | Email designer single-send and approvals panel (T023 F4) | Not clicked through: it needs a PUBLISHED design, and the walk DB has none. Covered by test_m48_s01_t023 (7 passed) plus tsc and eslint. Carried to the M52 exhaustive persona walkthrough. | — |
+
+Observation (not an M48 defect, carried to M52.S01.T004): the CBK rate fetcher (`app.services.cbk_rates`) makes a real public HTTPS GET to centralbank.go.ke at startup, outside the PROVIDER_EGRESS guard. It sends public data only, no account and no personal data, but it bypasses the egress policy.

@@ -1,0 +1,29 @@
+{
+  "sha": "a79d27bd1789d110afaeb307c3b811edd23b04cb",
+  "template": "m48_tmpl",
+  "totals": {
+    "PASS": 1
+  },
+  "results": [
+    {
+      "file": "test_m47_s01_t002_integrated_flow.py",
+      "flags": [
+        "M46_DB"
+      ],
+      "legacy_flags": [],
+      "db_name": "m48r_53ab5e9fdb581946345a",
+      "needs_db2": false,
+      "prep": false,
+      "services": [],
+      "class": "RUN",
+      "note": "",
+      "summary": "5 passed, 102 warnings in 22.65s",
+      "counts": {
+        "passed": 5
+      },
+      "rc": 0,
+      "skip_reasons": [],
+      "status": "PASS"
+    }
+  ]
+}

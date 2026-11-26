@@ -281,6 +281,11 @@ async def test_integrated_povu_flow(monkeypatch):
             "contact_phone": "0712345678", "consent": True, "utm_source": "facebook", "utm_medium": "cpc",
             "utm_campaign": campaign, "message": "We want POVU AllClean for our shop."})
         assert r.status_code == 202, r.text
+        # M48.S01.T022 double opt-in: form consent is PENDING until the contact opens the e-mailed link and confirms
+        from app.services import crm_outbound_service as outbound
+        tok = outbound.confirm_token(email)
+        assert (await c.get(f"/api/v1/public/consent-confirm?t={tok}")).json().get("pending") is True
+        assert (await c.post(f"/api/v1/public/consent-confirm?t={tok}")).status_code == 200
     async with AsyncSessionLocal() as db:
         sub = (await db.execute(select(CRMLeadSubmission).where(CRMLeadSubmission.form_id == ids.form))).scalar_one()
         assert sub.status == "ACCEPTED" and sub.crm_record_id and sub.utm_campaign == campaign
